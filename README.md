@@ -29,7 +29,9 @@ reduciendo colisiones con edificios. En Europa existen los datos (Aloft, ENRAM, 
   ajuste de viento en Francia desde 2021 (0 % de perfiles con velocidad en 2023-2026) y casi siempre en España;
   Portugal la conserva. Sin velocidad no hay MTR, así que la métrica operativa pasa a ser el **VID nocturno**
   (aves/km², densidad integrada), que sí forma una serie homogénea en todos los radares y años. El MTR se
-  mantiene como métrica secundaria donde existe.
+  mantiene como métrica secundaria donde existe. La velocidad falta junto con la dirección y `sd_vvp`, lo que
+  apunta a volúmenes sin Doppler o a vol2bird ejecutado sin él: **pendiente preguntar a Aloft** si es recuperable.
+  No hay ningún análisis publicado sobre los radares españoles renovados; esta validación es propia.
 - Comprobación de coherencia: el 10 % de noches más intensas concentra el 50-55 % del paso estacional en
   España, Portugal y Francia, el mismo valor que Horton et al. (2021) midieron en Estados Unidos (54 %).
 - Siguiente: fase 2, modelo LightGBM cuantílico con ERA5 sobre el VID nocturno.
