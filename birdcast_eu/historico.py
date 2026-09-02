@@ -59,11 +59,28 @@ def build_history(radar: str, years: list[int], cache: Path, out_dir: Path, purg
             for sub in ("monthly", "daily"):
                 shutil.rmtree(cache / "baltrad" / sub / radar / str(y), ignore_errors=True)
     if not frames:
+        _marcar_sin_noches(out_dir, radar, years)
         return pd.DataFrame()
     hist = pd.concat(frames, ignore_index=True)
     hist = hist.drop_duplicates(subset=["radar", "night"], keep="last").sort_values("night").reset_index(drop=True)
     hist.to_parquet(dest, index=False)
     return hist
+
+
+def _marcar_sin_noches(out_dir: Path, radar: str, years: list[int]) -> None:
+    """Anota radar-años procesados sin noches utilizables para no reintentarlos en cada verificación."""
+    marca = out_dir / "_sin_noches.csv"
+    prev = pd.read_csv(marca) if marca.exists() else pd.DataFrame(columns=["radar", "year"])
+    nuevo = pd.DataFrame({"radar": radar, "year": years})
+    pd.concat([prev, nuevo]).drop_duplicates().to_csv(marca, index=False)
+
+
+def sin_noches(out_dir: Path) -> set[tuple[str, int]]:
+    marca = out_dir / "_sin_noches.csv"
+    if not marca.exists():
+        return set()
+    d = pd.read_csv(marca)
+    return {(r.radar, int(r.year)) for r in d.itertuples()}
 
 
 def load_all_nightly(nightly_dir: Path) -> pd.DataFrame:

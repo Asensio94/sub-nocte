@@ -164,14 +164,16 @@ def climatologia():
     from . import fase1 as F
 
     OUTPUT.mkdir(parents=True, exist_ok=True)
-    piloto = [r for r in ("estjv", "esgld", "essft", "esahr", "ptprt", "ptlis") if r in set(doy_mtr["radar"])]
-    otros = sorted(set(doy_mtr["radar"]) - set(piloto))
+    piloto = [r for r in ("estjv", "esgld", "essft", "esahr", "ptprt", "ptlis") if r in set(doy["radar"])]
+    otros = sorted(set(doy["radar"]) - set(piloto))
     figs = [OUTPUT / "fase1_clima_piloto.png", OUTPUT / "fase1_clima_resto.png",
+            OUTPUT / "fase1_clima_piloto_mtr.png",
             OUTPUT / "fase1_mapa_primavera.png", OUTPUT / "fase1_mapa_otoño.png"]
-    F.fig_climatology(doy_mtr, piloto, figs[0])
-    F.fig_climatology(doy_mtr, otros, figs[1], ncols=4)
-    F.fig_thresholds_map(th_mtr, figs[2], "primavera")
-    F.fig_thresholds_map(th_mtr, figs[3], "otoño")
+    F.fig_climatology(doy, piloto, figs[0])
+    F.fig_climatology(doy, otros, figs[1], ncols=4)
+    F.fig_climatology(doy_mtr, piloto, figs[2], metric="mtr_night")
+    F.fig_thresholds_map(th, figs[3], "primavera")
+    F.fig_thresholds_map(th, figs[4], "otoño")
     F.write_report(th, doy, n[n["coverage"] >= 0.6], figs, OUTPUT / "fase1.html")
     rprint(f"Informe: {OUTPUT / 'fase1.html'}")
 
@@ -197,8 +199,9 @@ def ciudades():
 @app.command()
 def verificar(paises: str = ",".join(FASE1_PAISES), start_year: int = 2016, reintentar: bool = False):
     """Compara los años disponibles en Aloft con los presentes en data/nightly y, si se pide, reprocesa los que falten."""
-    from .historico import build_history
+    from .historico import build_history, sin_noches
 
+    vacios = sin_noches(NIGHTLY)
     prefijos = tuple(paises.split(","))
     faltan: dict[str, list[int]] = {}
     for r in [x for x in aloft.list_radars() if x.startswith(prefijos)]:
@@ -207,8 +210,8 @@ def verificar(paises: str = ",".join(FASE1_PAISES), start_year: int = 2016, rein
         hay = set()
         if dest.exists():
             hay = set(pd.to_datetime(pd.read_parquet(dest, columns=["night"])["night"]).dt.year)
-        # el histórico de un radar sin noches utilizables queda vacío a propósito (p. ej. esgrm, solo barridos diurnos)
-        pend = [y for y in disp if y not in hay]
+        # los radar-años sin noches utilizables (p. ej. esgrm, solo barridos diurnos) están anotados y no se reintentan
+        pend = [y for y in disp if y not in hay and (r, y) not in vacios]
         if pend:
             faltan[r] = pend
             rprint(f"[yellow]{r}[/yellow]: faltan {pend}")

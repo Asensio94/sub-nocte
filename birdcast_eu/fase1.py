@@ -13,7 +13,12 @@ import pandas as pd
 from .historico import SEASONS
 
 
-def fig_climatology(doy: pd.DataFrame, radars: list[str], path: Path, ncols: int = 3) -> None:
+ETIQUETA = {"mtr_night": "MTR nocturno (aves/km/noche)", "vid_night": "VID nocturno (aves/km²)"}
+
+
+def fig_climatology(doy: pd.DataFrame, radars: list[str], path: Path, ncols: int = 3,
+                    metric: str = "vid_night") -> None:
+    doy = doy[doy["metrica"] == metric]
     radars = [r for r in radars if r in set(doy["radar"])]
     if not radars:
         return
@@ -31,30 +36,33 @@ def fig_climatology(doy: pd.DataFrame, radars: list[str], path: Path, ncols: int
             b = pd.Timestamp(2001, m2, d2).dayofyear
             ax.axvspan(a, b, color="#ccc", alpha=.25, lw=0)
         ax.set_title(f"{r} ({g['years'].iloc[0]:.0f} años, {int(g['n'].notna().sum())} días del año con datos)", fontsize=9)
-        ax.set_yscale("symlog", linthresh=100)
+        ax.set_yscale("symlog", linthresh=1 if metric == "vid_night" else 100)
         ax.grid(alpha=.3)
         ax.set_xticks([1, 60, 121, 182, 244, 305])
         ax.set_xticklabels(["ene", "mar", "may", "jul", "sep", "nov"], fontsize=8)
     for ax in axes.flat[len(radars):]:
         ax.axis("off")
     axes.flat[0].legend(fontsize=7, loc="upper left")
-    fig.suptitle("Climatología del MTR nocturno (aves/km/noche) por día del año; sombreado: ventanas de alerta", fontsize=10)
+    fig.suptitle(f"Climatología del {ETIQUETA.get(metric, metric)} por día del año; sombreado: ventanas de alerta", fontsize=10)
     fig.tight_layout()
     fig.savefig(path, dpi=130)
     plt.close(fig)
 
 
-def fig_thresholds_map(th: pd.DataFrame, path: Path, season: str = "primavera") -> None:
-    s = th[th["season"] == season]
+def fig_thresholds_map(th: pd.DataFrame, path: Path, season: str = "primavera",
+                       metric: str = "vid_night") -> None:
+    s = th[(th["season"] == season) & (th["metrica"] == metric)]
+    # las islas (Azores, Canarias) aplastarían el mapa: se dejan fuera y se listan en la tabla
+    s = s[(s["lon"] > -12) & (s["lat"] > 34)]
     if s.empty:
         return
-    fig, ax = plt.subplots(figsize=(7, 6))
+    fig, ax = plt.subplots(figsize=(7.5, 6.5))
     sc = ax.scatter(s["lon"], s["lat"], c=np.log10(s["p90"].clip(lower=1)), s=40 + 400 * s["share_top10"],
                     cmap="viridis", edgecolor="k", lw=.4)
     for _, r in s.iterrows():
         ax.annotate(r["radar"], (r["lon"], r["lat"]), fontsize=6, xytext=(3, 3), textcoords="offset points")
-    fig.colorbar(sc, ax=ax, label="log10 P90 MTR nocturno")
-    ax.set_title(f"Umbral de alerta alta (P90) en {season}; tamaño = fracción del paso en el 10 % de noches punta", fontsize=9)
+    fig.colorbar(sc, ax=ax, label=f"log10 P90 {ETIQUETA.get(metric, metric)}")
+    ax.set_title(f"Umbral de alerta alta (P90 del {ETIQUETA.get(metric, metric)}) en {season}\ntamaño = fracción del paso en el 10 % de noches punta", fontsize=9)
     ax.set_xlabel("lon"); ax.set_ylabel("lat"); ax.grid(alpha=.3); ax.set_aspect(1.3)
     fig.tight_layout()
     fig.savefig(path, dpi=130)
