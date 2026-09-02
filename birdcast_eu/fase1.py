@@ -20,7 +20,9 @@ def fig_climatology(doy: pd.DataFrame, radars: list[str], path: Path, ncols: int
     nrows = int(np.ceil(len(radars) / ncols))
     fig, axes = plt.subplots(nrows, ncols, figsize=(4.2 * ncols, 2.6 * nrows), sharex=True, squeeze=False)
     for ax, r in zip(axes.flat, radars):
-        g = doy[doy["radar"] == r].sort_values("doy")
+        # reindexar a todos los días del año: los días sin datos quedan NaN y la línea se corta en vez de interpolar
+        g = (doy[doy["radar"] == r].set_index("doy").reindex(range(1, 367))
+             .assign(radar=r, years=lambda x: x["years"].ffill().bfill()).reset_index(names="doy"))
         ax.fill_between(g["doy"], g["p50"], g["p90"], color="#1E6B72", alpha=.25, label="P50-P90")
         ax.plot(g["doy"], g["p50"], color="#1E6B72", lw=1.6, label="mediana")
         ax.plot(g["doy"], g["p90"], color="#B8720C", lw=1.2, label="P90")
@@ -28,7 +30,7 @@ def fig_climatology(doy: pd.DataFrame, radars: list[str], path: Path, ncols: int
             a = pd.Timestamp(2001, m1, d1).dayofyear
             b = pd.Timestamp(2001, m2, d2).dayofyear
             ax.axvspan(a, b, color="#ccc", alpha=.25, lw=0)
-        ax.set_title(f"{r} ({g['years'].iloc[0]} años, n={g['n'].median():.0f}/día)", fontsize=9)
+        ax.set_title(f"{r} ({g['years'].iloc[0]:.0f} años, {int(g['n'].notna().sum())} días del año con datos)", fontsize=9)
         ax.set_yscale("symlog", linthresh=100)
         ax.grid(alpha=.3)
         ax.set_xticks([1, 60, 121, 182, 244, 305])
