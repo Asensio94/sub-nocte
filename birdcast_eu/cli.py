@@ -158,6 +158,19 @@ def climatologia():
     th.to_csv(ROOT / "data" / "umbrales.csv", index=False, float_format="%.1f")
     rprint(f"{n['radar'].nunique()} radares, {len(n):,} noches ({n['night'].min():%Y-%m-%d} → {n['night'].max():%Y-%m-%d})")
     rprint(th.round(1).to_string(index=False))
+    from . import fase1 as F
+
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    piloto = [r for r in ("estjv", "esgld", "essft", "esahr", "ptprt", "ptlis") if r in set(doy["radar"])]
+    otros = sorted(set(doy["radar"]) - set(piloto))
+    figs = [OUTPUT / "fase1_clima_piloto.png", OUTPUT / "fase1_clima_resto.png",
+            OUTPUT / "fase1_mapa_primavera.png", OUTPUT / "fase1_mapa_otoño.png"]
+    F.fig_climatology(doy, piloto, figs[0])
+    F.fig_climatology(doy, otros, figs[1], ncols=4)
+    F.fig_thresholds_map(th, figs[2], "primavera")
+    F.fig_thresholds_map(th, figs[3], "otoño")
+    F.write_report(th, doy, n[n["coverage"] >= 0.6], figs, OUTPUT / "fase1.html")
+    rprint(f"Informe: {OUTPUT / 'fase1.html'}")
 
 
 if __name__ == "__main__":
