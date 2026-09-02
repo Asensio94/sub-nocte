@@ -5,7 +5,7 @@ Pronóstico público de la **intensidad de migración nocturna de aves** por ciu
 perfiles verticales de aves de la red europea de radares meteorológicos, publicados en abierto por
 [Aloft](https://aloftdata.eu) (licencia CC0).
 
-Proyecto abierto y sin ánimo de lucro. Documento de diseño completo: ver `docs/diseno.html` (pendiente de volcar)
+Proyecto abierto y sin ánimo de lucro. Documento de diseño completo: [`docs/diseno.html`](docs/diseno.html)
 o el artefacto «BirdCast Europa» del 2 de septiembre de 2026.
 
 ## Por qué

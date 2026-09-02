@@ -1,0 +1,425 @@
+<title>BirdCast Europa</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F2F4F6; --surface:#FFFFFF; --ink:#16202B; --ink-2:#4A5765; --ink-3:#7C8794;
+  --line:#D5DBE1; --line-2:#E6EAEE;
+  --accent:#1E6B72; --accent-ink:#0F4C52; --accent-soft:#DCEDEE;
+  --night:#1B2A3F; --night-ink:#F1EDE4; --night-2:#8FA3C0;
+  --alto:#A8323E; --alto-soft:#F6E1E3; --medio:#B8720C; --medio-soft:#F8EBD3; --bajo:#2F7A54; --bajo-soft:#DDEFE4;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --display:'Bricolage Grotesque','IBM Plex Sans',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F161F; --surface:#172130; --ink:#E8ECF0; --ink-2:#B3BEC9; --ink-3:#7F8C99;
+    --line:#2C3A4B; --line-2:#22303F;
+    --accent:#5FB8BE; --accent-ink:#8ED3D7; --accent-soft:#163A3E;
+    --night:#0B121C; --night-ink:#F1EDE4; --night-2:#7F95B5;
+    --alto:#E4707B; --alto-soft:#3A1E23; --medio:#E3A94B; --medio-soft:#3B2C14; --bajo:#6CC79A; --bajo-soft:#173A29;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F161F; --surface:#172130; --ink:#E8ECF0; --ink-2:#B3BEC9; --ink-3:#7F8C99;
+  --line:#2C3A4B; --line-2:#22303F;
+  --accent:#5FB8BE; --accent-ink:#8ED3D7; --accent-soft:#163A3E;
+  --night:#0B121C; --night-ink:#F1EDE4; --night-2:#7F95B5;
+  --alto:#E4707B; --alto-soft:#3A1E23; --medio:#E3A94B; --medio-soft:#3B2C14; --bajo:#6CC79A; --bajo-soft:#173A29;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;margin:0;-webkit-font-smoothing:antialiased}
+a{color:var(--accent-ink);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+a:hover{text-decoration-color:var(--accent)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;line-height:1.15;margin:0}
+h2{font-size:1.75rem;font-weight:700;letter-spacing:-.01em}
+h3{font-size:1.15rem;font-weight:700;margin-top:2rem;margin-bottom:.5rem}
+p{margin:0 0 1rem}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+/* header */
+header.hero{background:var(--night);color:var(--night-ink);padding:3.5rem 1.5rem 3rem;position:relative;overflow:hidden}
+header.hero .wrap{max-width:1040px;margin:0 auto;position:relative}
+header.hero .eyebrow{color:var(--night-2)}
+header.hero h1{font-size:clamp(2.4rem,6vw,4.2rem);font-weight:700;letter-spacing:-.02em;margin:.5rem 0 1rem;max-width:18ch}
+header.hero .lede{font-size:1.15rem;max-width:62ch;color:#D6DCE6;margin:0 0 1.75rem}
+header.hero canvas{position:absolute;right:-40px;top:-40px;width:420px;height:420px;opacity:.9;pointer-events:none}
+@media (max-width:820px){header.hero canvas{display:none}}
+.meta{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;font-family:var(--mono);font-size:.78rem;color:var(--night-2)}
+.meta b{color:var(--night-ink);font-weight:500}
+/* layout */
+.page{max-width:1040px;margin:0 auto;padding:2.5rem 1.5rem 5rem;display:grid;grid-template-columns:200px minmax(0,1fr);gap:3rem;align-items:start}
+@media (max-width:820px){.page{grid-template-columns:minmax(0,1fr);gap:1rem}}
+nav.toc{position:sticky;top:1.5rem;font-size:.85rem}
+nav.toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.35rem;border-left:1px solid var(--line);}
+nav.toc li a{display:block;padding:.15rem 0 .15rem .9rem;color:var(--ink-2);text-decoration:none;border-left:2px solid transparent;margin-left:-1px}
+nav.toc li a:hover{color:var(--ink);border-left-color:var(--accent)}
+@media (max-width:820px){nav.toc{position:static}nav.toc ol{flex-direction:row;flex-wrap:wrap;border-left:0;gap:.25rem .75rem}nav.toc li a{padding:0;border:0}}
+main{min-width:0}
+section{padding:0 0 3rem;border-bottom:1px solid var(--line-2);margin-bottom:3rem}
+section:last-of-type{border-bottom:0}
+section .eyebrow{margin-bottom:.4rem;display:block}
+.prose{max-width:68ch}
+.prose ul,.prose ol{padding-left:1.25rem;margin:0 0 1rem}
+.prose li{margin-bottom:.35rem}
+/* callouts */
+.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:1.5rem 0 2rem}
+.verdict div{background:var(--surface);padding:1rem 1.1rem}
+.verdict .k{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.35rem}
+.verdict .v{font-family:var(--display);font-size:1.15rem;font-weight:700;line-height:1.25}
+.verdict .v.ok{color:var(--bajo)}.verdict .v.warn{color:var(--medio)}.verdict .v.bad{color:var(--alto)}
+.verdict p{font-size:.88rem;color:var(--ink-2);margin:.4rem 0 0}
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:.85rem 1rem;border-radius:0 6px 6px 0;margin:1.25rem 0;font-size:.95rem}
+.note.warn{border-left-color:var(--medio);background:var(--medio-soft)}
+.note b{font-weight:600}
+/* tables */
+.tbl{overflow-x:auto;margin:1rem 0 1.5rem;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{text-align:left;padding:.6rem .8rem;border-bottom:1px solid var(--line-2);vertical-align:top}
+th{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:500;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:.84rem}
+code,.code{font-family:var(--mono);font-size:.85em;background:var(--bg);border:1px solid var(--line-2);border-radius:4px;padding:.05em .35em}
+td code{white-space:nowrap}
+.pill{display:inline-block;font-family:var(--mono);font-size:.7rem;letter-spacing:.05em;padding:.1rem .5rem;border-radius:999px;border:1px solid var(--line);color:var(--ink-2);white-space:nowrap}
+.pill.ok{background:var(--bajo-soft);color:var(--bajo);border-color:transparent}
+.pill.warn{background:var(--medio-soft);color:var(--medio);border-color:transparent}
+.pill.bad{background:var(--alto-soft);color:var(--alto);border-color:transparent}
+/* pipeline */
+.pipe{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.75rem;margin:1.25rem 0 1.5rem}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:.9rem 1rem;position:relative}
+.stage .n{font-family:var(--mono);font-size:.7rem;color:var(--accent);letter-spacing:.1em}
+.stage h4{font-size:1rem;margin:.25rem 0 .4rem}
+.stage p{font-size:.86rem;color:var(--ink-2);margin:0}
+.stage .io{font-family:var(--mono);font-size:.72rem;color:var(--ink-3);margin-top:.6rem;border-top:1px dashed var(--line);padding-top:.45rem}
+/* alert levels */
+.levels{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.75rem;margin:1rem 0 1.5rem}
+.lvl{border-radius:6px;padding:.9rem 1rem;border:1px solid var(--line);background:var(--surface)}
+.lvl .name{font-family:var(--display);font-weight:700;font-size:1.05rem;display:flex;align-items:center;gap:.5rem}
+.lvl .dot{width:.7rem;height:.7rem;border-radius:50%;display:inline-block}
+.lvl.alto .dot{background:var(--alto)}.lvl.medio .dot{background:var(--medio)}.lvl.bajo .dot{background:var(--bajo)}
+.lvl p{font-size:.86rem;color:var(--ink-2);margin:.4rem 0 0}
+.lvl .rule{font-family:var(--mono);font-size:.78rem;color:var(--ink);margin-top:.4rem}
+/* roadmap */
+.road{display:flex;flex-direction:column;gap:0;margin:1.25rem 0}
+.phase{display:grid;grid-template-columns:110px minmax(0,1fr);gap:1.25rem;padding:1.1rem 0;border-top:1px solid var(--line-2)}
+.phase:last-child{border-bottom:1px solid var(--line-2)}
+.phase .when{font-family:var(--mono);font-size:.78rem;color:var(--ink-3);padding-top:.2rem}
+.phase .when b{display:block;color:var(--ink);font-weight:500;font-size:.9rem}
+.phase h4{font-size:1.05rem;margin:0 0 .35rem}
+.phase p,.phase li{font-size:.92rem;color:var(--ink-2)}
+.phase ul{margin:.3rem 0 0;padding-left:1.1rem}
+.phase .goal{font-size:.85rem;color:var(--ink);margin-top:.5rem}
+.phase .goal b{font-weight:600}
+@media (max-width:600px){.phase{grid-template-columns:minmax(0,1fr);gap:.4rem}}
+/* sources */
+.sources{font-size:.84rem;columns:2;column-gap:2rem}
+.sources li{break-inside:avoid;margin-bottom:.35rem;color:var(--ink-2)}
+@media (max-width:700px){.sources{columns:1}}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.82rem;line-height:1.5;margin:1rem 0}
+figcaption{font-size:.8rem;color:var(--ink-3);margin-top:.4rem;font-family:var(--mono)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header class="hero">
+  <canvas id="radar" width="420" height="420" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <span class="eyebrow">Documento de diseño · v0.1 · 2 sep 2026</span>
+    <h1>BirdCast Europa</h1>
+    <p class="lede">Un pronóstico público, por ciudad, de la intensidad de migración nocturna de aves en Europa, con alertas «luces fuera» en las noches de pico. Réplica del BirdCast de Cornell sobre los perfiles verticales de la red de radares meteorológicos europea.</p>
+    <div class="meta">
+      <span>Autor · <b>Pablo</b></span>
+      <span>Coste objetivo · <b>0 €</b></span>
+      <span>Datos · <b>Aloft (CC0) + ERA5 + ECMWF Open Data</b></span>
+      <span>Primer ámbito · <b>Península Ibérica</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="page">
+<nav class="toc" aria-label="Índice">
+  <ol>
+    <li><a href="#veredicto">Veredicto</a></li>
+    <li><a href="#existe">Qué existe ya</a></li>
+    <li><a href="#datos">Datos verificados</a></li>
+    <li><a href="#arquitectura">Arquitectura</a></li>
+    <li><a href="#modelo">Modelo</a></li>
+    <li><a href="#alertas">Alertas luces fuera</a></li>
+    <li><a href="#riesgos">Riesgos</a></li>
+    <li><a href="#roadmap">Hoja de ruta</a></li>
+    <li><a href="#decisiones">Decisiones abiertas</a></li>
+    <li><a href="#fuentes">Fuentes</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<section id="veredicto">
+  <span class="eyebrow">01 · Veredicto</span>
+  <h2>El hueco es real y los datos crudos no son el problema</h2>
+  <div class="verdict">
+    <div><div class="k">Hueco</div><div class="v ok">Confirmado</div><p>No existe en Europa ningún pronóstico público por ciudad ni ningún programa municipal «luces fuera» ligado a la migración. Lo más cercano es el pronóstico de la Vogelwarte, limitado a Sempach.</p></div>
+    <div><div class="k">Acceso a datos</div><div class="v ok">Resuelto sin radar crudo</div><p>Aloft publica en un bucket S3 abierto (CC0) los perfiles verticales de aves de unos 150 radares de 22 países, ya procesados con vol2bird. No hace falta pedir volúmenes polares a nadie.</p></div>
+    <div><div class="k">Riesgo real</div><div class="v warn">Latencia y calidad</div><p>Los perfiles llegan con 1-2 días de retraso y sin control de calidad. Sirven para entrenar y verificar, no para un «mapa en vivo». El pronóstico depende solo de la meteorología, como en BirdCast.</p></div>
+    <div><div class="k">España</div><div class="v warn">Validar antes de nada</div><p>La red antigua de AEMET cesa en Aloft en 2023 y la wiki de Aloft la califica de inútil para aves por un filtro de no-precipitación. La red renovada entra en nov 2025 y jun 2026 con 10 radares. Hay que comprobar que sí ven aves.</p></div>
+  </div>
+  <div class="prose">
+    <p>La tesis del proyecto cambia respecto a la idea inicial. La incertidumbre no está en conseguir datos de radar, sino en tres cosas: la calidad de los perfiles españoles nuevos, el filtrado de insectos y lluvia en un producto sin control de calidad, y la capacidad de predecir los picos raros, que es justo lo que pide una alerta «luces fuera». Todo lo demás está publicado, tiene código abierto y cabe en GitHub Actions.</p>
+    <p>La propuesta de valor frente a lo que existe: <b>pronóstico a 3 noches, resuelto por ciudad, con alerta accionable y verificación pública al día siguiente</b>. Nadie ofrece esa combinación en Europa.</p>
+  </div>
+</section>
+
+<section id="existe">
+  <span class="eyebrow">02 · Estado del arte</span>
+  <h2>Qué existe ya en Europa</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Iniciativa</th><th>Qué hace</th><th>Cobertura</th><th>Pronóstico</th><th>Alerta ciudad</th></tr></thead>
+    <tbody>
+      <tr><td>Vogelwarte Sempach (CH)</td><td>Pronóstico a 2 noches con radar ornitológico BirdScan + GFS, publicado a las 12:00 UTC. Cita «apagar luces» como uso.</td><td>Solo Sempach / Suiza</td><td><span class="pill ok">sí</span></td><td><span class="pill bad">no</span></td></tr>
+      <tr><td>FlySafe / BIRDTAM (NL, BE, DE)</td><td>Composite cada 5 min de densidad de aves con radares meteo, más módulo a 72 h. Uso militar; composite abierto en KNMI Data Platform (CC BY 4.0).</td><td>Benelux + oeste DE</td><td><span class="pill warn">restringido</span></td><td><span class="pill bad">no</span></td></tr>
+      <tr><td>Start/Stop eólico offshore (NL)</td><td>Modelo UvA a 48 h de MTR en 25-300 m; el ministerio para turbinas, máx. 60 h/año. Operativo desde 2023.</td><td>Mar del Norte NL</td><td><span class="pill ok">sí</span></td><td><span class="pill bad">no</span></td></tr>
+      <tr><td>CROW (INBO + RMI)</td><td>Visor en tiempo real de perfiles de 10 radares de BE/NL/FR/DE. Feed abierto en opendata.meteo.be.</td><td>Benelux</td><td><span class="pill bad">no</span></td><td><span class="pill bad">no</span></td></tr>
+      <tr><td>DAVVL (DE)</td><td>Pronóstico mensual en PDF para aviación civil.</td><td>Alemania</td><td><span class="pill warn">cualitativo</span></td><td><span class="pill bad">no</span></td></tr>
+      <tr><td>BTO Migblog (UK)</td><td>Blog cualitativo con BirdTrack y sinóptica. Sin radar.</td><td>Reino Unido</td><td><span class="pill warn">cualitativo</span></td><td><span class="pill bad">no</span></td></tr>
+      <tr><td>HiRAD (Biodiversa+, 2023-2027)</td><td>Armonización y acceso a datos de radar para biodiversidad aérea. Aloft es su plataforma. Sin producto de alertas.</td><td>Europa</td><td><span class="pill bad">no</span></td><td><span class="pill bad">no</span></td></tr>
+      <tr><td>España / Portugal</td><td>Nada. SEO/BirdLife, ICO y SPEA no usan radar. Meteocat trata las aves como «ecos falsos».</td><td>—</td><td><span class="pill bad">no</span></td><td><span class="pill bad">no</span></td></tr>
+    </tbody>
+  </table></div>
+  <div class="prose">
+    <h3>Luces fuera en Europa</h3>
+    <ul>
+      <li><b>Ninguna ciudad europea</b> apaga luces coordinada con un pronóstico de migración. Existen eventos anuales fijos (Earth Night el 11 sep 2026, Nacht van de Nacht, Jour de la Nuit) y campañas permanentes de comercios (lichtaus.ch en Basilea, Zug y Thun).</li>
+      <li><b>Casos que demuestran el efecto</b>: la Post Tower de Bonn pasó de más de 1.000 aves muertas por otoño a unas 100 tras apagar logos y focos en 2022. En Hamburgo, tres edificios de 23-90 m produjeron 47 víctimas en un otoño, 77 % migrantes nocturnos. En Berlín se documentaron 812 impactos en más de 20 complejos.</li>
+      <li><b>Normativa aprovechable</b>: Francia obliga a apagar fachadas a la 1:00 (arrêté 2018). Andalucía fija horario nocturno 23:00-06:00 con ornamental apagado (Decreto 37/2025). Cataluña zonifica por sensibilidad de fauna. Alemania tiene el §41a BNatSchG aprobado pero sin reglamento. Ninguna norma menciona la migración dinámica: una alerta de pocas noches al año encaja como medida voluntaria y barata.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="datos">
+  <span class="eyebrow">03 · Datos</span>
+  <h2>Lo que he verificado hoy en las fuentes</h2>
+  <div class="prose">
+    <p>Listé directamente el bucket público de Aloft el 2 de septiembre de 2026. Estas cifras son las que cuentan para el diseño; algunos resúmenes publicados (paper de 2025, Zenodo) están anticuados respecto al bucket.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Dato</th><th>Valor verificado</th></tr></thead>
+    <tbody>
+      <tr><td>Ubicación</td><td><code>s3://aloftdata</code> (eu-west-1), listado anónimo por HTTP. Prefijos <code>baltrad/daily</code>, <code>baltrad/monthly</code>, <code>baltrad/hdf5</code>, <code>uva/</code>, <code>ecog-04003/</code></td></tr>
+      <tr><td>Formato diario</td><td>VPTS CSV, un fichero por radar y día: <code>baltrad/daily/{radar}/{año}/{radar}_vpts_{AAAAMMDD}.csv</code>. Columnas: <code>datetime, height, u, v, w, ff, dd, sd_vvp, gap, eta, dens, dbz, dbz_all, n, n_dbz, rcs, sd_vvp_threshold, radar_latitude, radar_longitude, …</code></td></tr>
+      <tr><td>Resolución</td><td>5 min (10 min en los radares españoles nuevos) × capas de 200 m hasta 5 km. Un día de Jabbeke tiene 6.350 filas.</td></tr>
+      <tr><td>Latencia observada</td><td>El fichero del día D se sube entre las 01:30 y las 03:30 UTC de D+1 o D+2 (el 31 ago 2026 subido el 2 sep a las 02:09). Los HDF5 por timestamp llegan unas 15-19 h después de la medida.</td></tr>
+      <tr><td>Licencia</td><td>CC0 para los perfiles. Los volúmenes polares crudos no se redistribuyen.</td></tr>
+      <tr><td>Radares con datos en 2026</td><td>FR 25 · DE 17 · FI 12 · SE 12 · NO 12 · ES 10 · RO 7 · HR 6 · PT 6 · DK 5 · CH 5 · HU 5 · SK 4 · IS 3 · BE 2 · NL 2 · CZ 2 · SI 2 · EE 2 · LT 2 · IE 1 · GR 1. Sin Italia, Reino Unido, Austria ni Polonia (PL cesa en 2022).</td></tr>
+      <tr><td>Histórico</td><td>Desde 2012 en NL y SE, desde 2016-2017 en la mayoría. España antigua 2017-2023 (25 radares). Suficiente para climatologías y entrenamiento.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Radares españoles activos en Aloft</h3>
+  <div class="prose"><p>Códigos nuevos que corresponden a la red renovada de AEMET (banda C, 5,3 cm). Las ciudades son las que quedan dentro de los 35 km útiles del radar o muy cerca; la asignación exacta se hará con las coordenadas.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Código</th><th class="num">Lat</th><th class="num">Lon</th><th class="num">Alt (m)</th><th>Desde</th><th class="num">Días 2026</th><th>Ciudades cercanas</th></tr></thead>
+    <tbody>
+      <tr><td><code>estjv</code></td><td class="num">40,176</td><td class="num">-3,714</td><td class="num">717</td><td>nov 2025</td><td class="num">217</td><td>Madrid, Getafe, Alcorcón, Aranjuez</td></tr>
+      <tr><td><code>esgld</code></td><td class="num">41,408</td><td class="num">1,885</td><td class="num">662</td><td>nov 2025</td><td class="num">216</td><td>Barcelona, Terrassa, Sabadell, Vilafranca</td></tr>
+      <tr><td><code>esahr</code></td><td class="num">36,613</td><td class="num">-4,659</td><td class="num">1159</td><td>nov 2025</td><td class="num">210</td><td>Málaga, Marbella, Torremolinos</td></tr>
+      <tr><td><code>essft</code></td><td class="num">39,429</td><td class="num">-6,285</td><td class="num">667</td><td>nov 2025</td><td class="num">205</td><td>Cáceres, Trujillo, Mérida (límite)</td></tr>
+      <tr><td><code>esnjr</code></td><td class="num">36,832</td><td class="num">-2,082</td><td class="num">499</td><td>jun 2026</td><td class="num">69</td><td>Almería, Roquetas</td></tr>
+      <tr><td><code>esclg</code></td><td class="num">37,689</td><td class="num">-6,333</td><td class="num">531</td><td>jun 2026</td><td class="num">48</td><td>Sevilla (límite), Huelva (límite), Sierra de Aracena</td></tr>
+      <tr><td><code>espdg</code></td><td class="num">41,734</td><td class="num">-0,546</td><td class="num">835</td><td>jun 2026</td><td class="num">48</td><td>Zaragoza</td></tr>
+      <tr><td><code>esgrm</code></td><td class="num">41,012</td><td class="num">-6,478</td><td class="num">793</td><td>jun 2026</td><td class="num">1</td><td>Salamanca y Zamora (límite). Solo un día: intermitente</td></tr>
+      <tr><td><code>esatn</code></td><td class="num">28,019</td><td class="num">-15,615</td><td class="num">1777</td><td>jun 2026</td><td class="num">—</td><td>Gran Canaria (Las Palmas)</td></tr>
+      <tr><td><code>esbnv</code></td><td class="num">28,311</td><td class="num">-16,824</td><td class="num">1367</td><td>jun 2026</td><td class="num">—</td><td>Tenerife (Santa Cruz, La Laguna)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note warn"><b>Validación pendiente (fase 0).</b> La wiki de Aloft dice de la red antigua de AEMET: «aplica un filtro de no-precipitación que elimina los ecos de aves y los hace inútiles para fines biológicos». En una comprobación rápida del 31 de agosto, Madrid mostraba densidades nocturnas de 15,6 aves/km³ frente a 9,9 de día, y Barcelona lo contrario. Lisboa, por comparación, daba 9,4 de noche y 0,4 de día. Antes de construir nada hay que confirmar con noches de pico (finales de septiembre y octubre de 2025 en los cuatro radares de noviembre) que los perfiles españoles nuevos tienen la señal nocturna esperada. Si no la tienen, Iberia se cubre con Portugal (6 radares, Lisboa y Oporto incluidos) y el sur de Francia, y el piloto español espera a la red completa en T1 2027.</div>
+
+  <h3>Otras fuentes que entran en el diseño</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Fuente</th><th>Uso</th><th>Detalle</th></tr></thead>
+    <tbody>
+      <tr><td>ERA5 (Copernicus CDS)</td><td>Entrenamiento</td><td>Reanálisis horario 0,25°, niveles de presión (u, v, T, RH, gph en 1000-700 hPa), superficie (msl, tp, tcc, t2m). Latencia 5 días. Solo hace falta en los puntos de radar: volumen de descarga pequeño.</td></tr>
+      <tr><td>ECMWF Open Data (IFS)</td><td>Operación</td><td>0,25°, ciclos 00/06/12/18, cada 3 h hasta 144 h, CC BY 4.0. Misma familia que ERA5, lo que reduce el desajuste entrenamiento/operación. ICON-EU (DWD, 6,5 km) como segundo miembro.</td></tr>
+      <tr><td>Open Radar Data API (EUMETNET/RODEO)</td><td>Futuro, opcional</td><td>Volúmenes polares single-site CC BY 4.0 con caché de 24 h en <code>api.meteogate.eu</code>. 127 estaciones; España, Portugal e Italia ausentes (AEMET hasta T1 2027). Permitiría correr vol2bird propio con menor latencia, pero no es necesario para el MVP.</td></tr>
+      <tr><td>RMI Bélgica, feed CROW</td><td>Piloto casi tiempo real</td><td>Perfiles vol2bird de 10 radares cada 5 min, CC BY 4.0, en <code>opendata.meteo.be/ftp/observations/radar/vbird/</code>. Único feed horario abierto de Europa. Ideal para probar un «mapa en vivo» en Benelux.</td></tr>
+      <tr><td>KNMI FlySafe composite</td><td>Referencia</td><td>Densidad integrada cada 5 min NL/BE/DE desde 2016, CC BY 4.0. Sirve para calibrar contra un producto operativo.</td></tr>
+      <tr><td>VIIRS Black Marble (NASA) o Falchi et al. 2016</td><td>Exposición lumínica</td><td>Radiancia nocturna por celda para el índice de exposición ciudad × migración, como Horton et al. 2019.</td></tr>
+      <tr><td>Eurostat GISCO / OSM</td><td>Geometrías de ciudad</td><td>Límites urbanos (Urban Audit / FUA) para resolver el pronóstico por ciudad.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="arquitectura">
+  <span class="eyebrow">04 · Arquitectura</span>
+  <h2>Un pipeline nocturno que cabe en GitHub Actions</h2>
+  <div class="prose"><p>Misma filosofía que el Observatorio de alegaciones: sin servidores, todo en repositorio público, salidas estáticas en GitHub Pages y ficheros JSON como API. Dos flujos separados: el de <b>pronóstico</b> corre cada día a mediodía con la meteorología; el de <b>observación y verificación</b> corre de madrugada cuando Aloft publica el día anterior.</p></div>
+
+  <div class="pipe">
+    <div class="stage"><div class="n">A · INGESTA</div><h4>Perfiles Aloft</h4><p>Descarga incremental de los CSV diarios de los radares activos. Histórico mensual (<code>.csv.gz</code>) para 2012-2025.</p><div class="io">out → parquet por radar/año</div></div>
+    <div class="stage"><div class="n">B · LIMPIEZA</div><h4>Filtros biológicos</h4><p>Descartar capas con <code>sd_vvp</code> &lt; 2 m/s, celdas con lluvia (<code>dbz_all</code> alto y <code>gap</code>), velocidad aérea &lt; 4,8 m/s respecto al viento ERA5 (insectos), altura &lt; 200 m (clutter).</p><div class="io">out → densidad limpia por 5 min × capa</div></div>
+    <div class="stage"><div class="n">C · AGREGADO</div><h4>MTR por noche</h4><p>Integrar densidad × velocidad × espesor entre 200 y 3.000 m, desde el crepúsculo civil hasta el amanecer. Unidad: aves/km/noche, la misma que BirdCast.</p><div class="io">out → tabla radar × noche</div></div>
+    <div class="stage"><div class="n">D · METEO</div><h4>Predictores</h4><p>ERA5 en el punto del radar: u, v, T, RH a 1000/925/850/700 hPa, msl y su tendencia 24 h, precipitación, nubosidad, día del año, noche anterior.</p><div class="io">out → matriz de entrenamiento</div></div>
+    <div class="stage"><div class="n">E · MODELO</div><h4>Gradient boosting</h4><p>LightGBM sobre raíz cúbica de MTR, por temporada. Validación dejando fuera un año y dejando fuera un radar. Baseline: climatología por día del año.</p><div class="io">out → modelo.pkl + skill público</div></div>
+    <div class="stage"><div class="n">F · PRONÓSTICO</div><h4>Tres noches</h4><p>Cada día a las 12:00 UTC con el ciclo 00 de ECMWF Open Data: MTR previsto por radar para esta noche, mañana y pasado, con intervalo por cuantiles.</p><div class="io">out → forecast.json</div></div>
+    <div class="stage"><div class="n">G · CIUDAD</div><h4>Resolución espacial</h4><p>Interpolación entre radares (kriging sencillo o ponderación por distancia) a la malla 0,2° y lectura en el polígono de cada ciudad. Percentil frente a la climatología local.</p><div class="io">out → ciudades.json</div></div>
+    <div class="stage"><div class="n">H · PUBLICACIÓN</div><h4>Web, feed, alertas</h4><p>Mapa europeo, ficha por ciudad, RSS/Atom por ciudad, canal Telegram y correo para suscriptores. Nivel de alerta y texto listo para difundir.</p><div class="io">out → GitHub Pages + JSON</div></div>
+    <div class="stage"><div class="n">I · VERIFICACIÓN</div><h4>Al día siguiente</h4><p>Cuando Aloft publica la noche observada, se compara con lo previsto y se publica el acierto acumulado por radar y temporada. Transparencia como argumento de venta.</p><div class="io">out → skill.json, gráficos</div></div>
+  </div>
+
+  <div class="prose">
+    <h3>Decisiones de arquitectura</h3>
+    <ul>
+      <li><b>Python</b> con polars o pandas, LightGBM, xarray/cfgrib para GRIB de ECMWF, cdsapi para ERA5. Sin R en producción, aunque bioRad y vol2birdR quedan como referencia de definiciones.</li>
+      <li><b>Sin base de datos</b>: parquet en el repo (o en un bucket gratuito de Cloudflare R2 si el histórico crece; unos 47 GB en CSV, mucho menos en parquet filtrado).</li>
+      <li><b>Dos cron</b>: <code>pronostico.yml</code> a las 11:30 UTC (el ciclo 00 de ECMWF está completo hacia las 08:00) y <code>observado.yml</code> a las 04:30 UTC.</li>
+      <li><b>API implícita</b>: <code>/api/ciudades/{slug}.json</code>, <code>/api/radares/{codigo}.json</code>, <code>/api/alertas/hoy.json</code>. Suficiente para que una ONG o un ayuntamiento lo consuma.</li>
+      <li><b>Versionado del modelo</b> y de los umbrales en el repo, con changelog. Una alerta debe ser reproducible.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="modelo">
+  <span class="eyebrow">05 · Modelo</span>
+  <h2>Qué predice y cómo se sabrá si funciona</h2>
+  <div class="prose">
+    <p>La receta de Van Doren y Horton (2018) es reproducible con los datos europeos: XGBoost sobre reanálisis, objetivo raíz cúbica de la reflectividad, R² de 0,78 en test y 72 % con pronósticos a 24 h. Los trabajos europeos con radar meteo y ERA5 obtienen algo menos (LightGBM sobre nueve radares franceses: R² 0,47 en primavera y 0,61 en otoño; GAM sobre diez años de KNMI en Países Bajos), con el mismo defecto en todos: subestiman los picos. Eso marca el diseño del modelo y de las alertas.</p>
+    <h3>Especificación inicial</h3>
+    <ul>
+      <li><b>Objetivo</b>: MTR nocturno integrado 200-3.000 m, transformado con raíz cúbica. Alternativa a evaluar: densidad por capa de 200 m como BirdCast, que permite luego dar altitud media.</li>
+      <li><b>Predictores</b>: viento zonal y meridional a 925 y 850 hPa y su componente favorable respecto a la dirección estacional dominante (SO en otoño, NE en primavera para Iberia), temperatura y su anomalía a 24 h, humedad relativa, presión a nivel del mar y su tendencia, precipitación acumulada 6 h, nubosidad total, latitud, longitud, día del año, horas de noche. Opcional: MTR observado de la noche anterior (mejora 2-3 puntos en BirdCast, pero acopla el pronóstico a la latencia de Aloft).</li>
+      <li><b>Algoritmo</b>: LightGBM con objetivo cuantílico (P10, P50, P90) para dar intervalo. Un modelo por temporada (primavera, otoño) entrenado con todos los radares a la vez, con el código de radar como categoría para absorber diferencias de calibración.</li>
+      <li><b>Validación</b>: dejar fuera un año completo (2023 como test), luego dejar fuera un radar para medir generalización a lugares sin histórico, que es el caso de los radares españoles nuevos. Métricas: R² sobre la transformada, y sobre todo <b>acierto de la categoría de alerta</b> (precisión y exhaustividad de las noches P90) y curva de «fracción de migración capturada por noches alertadas».</li>
+      <li><b>Baseline obligatorio</b>: climatología suavizada por radar y día del año. Si el modelo no bate la climatología en las noches altas, no se publica.</li>
+    </ul>
+    <h3>Problemas conocidos y cómo se tratan</h3>
+    <ul>
+      <li><b>Insectos</b>: dominan en verano y en el sur; el umbral de velocidad aérea de 4,8 m/s (Nussbaumer 2021) con viento ERA5 reduce el error. Las alertas se limitan a las ventanas migratorias.</li>
+      <li><b>Lluvia</b>: no hay MistNet para banda C europea; se usa la máscara de vol2bird más una regla con precipitación ERA5 &gt; 1 mm/h para excluir noches.</li>
+      <li><b>Calibración heterogénea</b> entre radares OPERA: percentiles locales en vez de umbrales absolutos, exactamente lo que hace BirdCast.</li>
+      <li><b>Huecos</b> en Aloft (radares que caen días o meses): la interpolación espacial debe indicar cuántos radares sostienen cada ciudad y degradar la confianza.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="alertas">
+  <span class="eyebrow">06 · Producto</span>
+  <h2>Alertas «luces fuera» que alguien pueda ejecutar</h2>
+  <div class="prose"><p>La alerta es relativa a la historia local, como en BirdCast: «alto» es una noche entre el 10 % más intenso de la temporada en esa zona. Con esa definición, en Estados Unidos el 10 % de las noches concentra más de la mitad del paso migratorio; la selección dinámica necesita unas 14-16 noches por temporada para proteger la mitad de las aves, frente a 19-27 con un calendario fijo. Ese es el argumento para un ayuntamiento: pocas noches, bien elegidas.</p></div>
+  <div class="levels">
+    <div class="lvl alto"><div class="name"><span class="dot"></span>Alto</div><div class="rule">MTR previsto ≥ P90 local de temporada</div><p>Apagar iluminación ornamental, fachadas, logos y publicidad de 23:00 a amanecer. Bajar intensidad del alumbrado donde sea regulable. Difusión a medios locales.</p></div>
+    <div class="lvl medio"><div class="name"><span class="dot"></span>Medio</div><div class="rule">P70 ≤ MTR previsto &lt; P90</div><p>Recomendación a edificios altos y corporativos suscritos. Sin campaña pública.</p></div>
+    <div class="lvl bajo"><div class="name"><span class="dot"></span>Bajo</div><div class="rule">MTR previsto &lt; P70 o fuera de ventana</div><p>Solo informativo en la ficha de ciudad.</p></div>
+  </div>
+  <div class="prose">
+    <h3>Reglas de emisión</h3>
+    <ul>
+      <li><b>Ventanas</b> para Iberia: 15 feb-31 may y 15 ago-30 nov. Para Europa central y norte, ajustar por latitud con la climatología de cada radar.</li>
+      <li><b>Horario</b>: 23:00 a amanecer, alineado con el horario nocturno del Decreto 37/2025 andaluz y el arrêté francés, para que la medida no choque con norma alguna.</li>
+      <li><b>Publicación</b> a las 12:00 UTC del día: alerta firme para esta noche, orientativa para las dos siguientes. Cada alerta enlaza a la verificación de la noche anterior.</li>
+      <li><b>Confianza</b>: se muestra el número de radares que sostienen la predicción y la anchura del intervalo P10-P90. Una ciudad con un solo radar intermitente nunca recibe «alto» sin aviso de incertidumbre.</li>
+      <li><b>Canales</b>: ficha web por ciudad, RSS, canal Telegram por ciudad (misma infraestructura que el Observatorio), correo semanal con resumen de temporada.</li>
+    </ul>
+    <h3>Pieza de lanzamiento: ranking europeo de exposición</h3>
+    <p>Horton et al. (2019) clasificaron ciudades estadounidenses por exposición de aves migratorias a la luz cruzando radar y satélite; Chicago, Houston y Dallas encabezan la lista. <b>No existe equivalente europeo.</b> Con la climatología de MTR de Aloft (2012-2025) y la radiancia VIIRS se puede publicar el primer ranking de ciudades europeas por exposición. Es una pieza con eco mediático, no depende del pronóstico y abre puertas en ONGs y ayuntamientos antes de que las alertas estén maduras.</p>
+    <h3>Ciudades del piloto</h3>
+    <p>Madrid y Barcelona por radar dedicado y peso; Málaga por radar y por el Decreto andaluz vigente; Lisboa y Oporto por la calidad probada de los radares portugueses. Si la fase 0 descarta los radares españoles, el piloto arranca con Lisboa, Oporto, Toulouse y Burdeos.</p>
+  </div>
+</section>
+
+<section id="riesgos">
+  <span class="eyebrow">07 · Riesgos</span>
+  <h2>Qué puede salir mal</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Riesgo</th><th>Probabilidad</th><th>Mitigación</th></tr></thead>
+    <tbody>
+      <tr><td>Los perfiles españoles nuevos están filtrados y no contienen aves</td><td><span class="pill warn">media</span></td><td>Fase 0 lo resuelve en dos semanas. Plan B: Portugal y sur de Francia; contactar a AEMET vía HiRAD/Aloft para pedir volúmenes sin filtro cuando acabe la renovación (T1 2027).</td></tr>
+      <tr><td>Aloft cambia estructura, se retrasa o deja de actualizarse (proyecto financiado por Biodiversa+ hasta 2027)</td><td><span class="pill warn">media</span></td><td>Ingesta tolerante a huecos; espejo propio del histórico; alternativa a medio plazo: correr vol2bird sobre la Open Radar Data API (CC BY 4.0, 24 h de caché).</td></tr>
+      <tr><td>El modelo no predice bien los picos, que es lo que importa</td><td><span class="pill bad">alta</span></td><td>Optimizar y reportar la métrica de categoría, no el R². Cuantiles. Umbral P90 por percentil, no por valor. Verificación pública para que la limitación sea visible y honesta.</td></tr>
+      <tr><td>Insectos inflan la señal en el sur en verano</td><td><span class="pill warn">media</span></td><td>Filtro de velocidad aérea, ventanas de temporada, y excluir capas bajas cálidas si hace falta.</td></tr>
+      <tr><td>Nadie ejecuta las alertas</td><td><span class="pill bad">alta</span></td><td>Buscar un aliado con capacidad de acción antes de la temporada de otoño 2027: SEO/BirdLife (campaña «Aves y cristales»), SPEA, un ayuntamiento con norma lumínica reciente (Andalucía), un gestor de edificios corporativos. El ranking de exposición es el gancho.</td></tr>
+      <tr><td>Critica científica por publicar sin revisión</td><td><span class="pill ok">baja</span></td><td>Métodos abiertos, código abierto, verificación pública, contacto temprano con Aloft/INBO (Peter Desmet) y Vogelwarte, que ya recomiendan apagar luces.</td></tr>
+      <tr><td>Coste de cómputo o de datos</td><td><span class="pill ok">baja</span></td><td>Solo se necesita ERA5 en unos 150 puntos y GRIB de ECMWF de unas pocas variables. Todo cabe en Actions gratuito y un bucket pequeño.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="roadmap">
+  <span class="eyebrow">08 · Hoja de ruta</span>
+  <h2>De la validación al piloto en una temporada</h2>
+  <div class="road">
+    <div class="phase"><div class="when"><b>Fase 0</b>sep 2026<br>2 semanas</div><div><h4>Validar los datos españoles</h4><p>Descargar los cuatro radares de noviembre de 2025 (Madrid, Barcelona, Málaga, Cáceres) y Lisboa como control. Aplicar los filtros de bioRad y comparar el ciclo nocturno y la estacionalidad con Portugal y con el histórico 2017-2023. Decidir el ámbito del piloto.</p><div class="goal"><b>Salida:</b> informe corto con gráficos y decisión Iberia vs Portugal+Francia.</div></div></div>
+    <div class="phase"><div class="when"><b>Fase 1</b>oct-nov 2026<br>6 semanas</div><div><h4>Histórico, filtros y climatología</h4><p>Ingesta de todos los radares con datos 2016-2025 a parquet. Pipeline B-C. Climatología de MTR por radar y día del año. Primer producto publicable: <b>ranking europeo de exposición ciudad × luz</b>.</p><div class="goal"><b>Salida:</b> repo público, dataset limpio, artículo del ranking.</div></div></div>
+    <div class="phase"><div class="when"><b>Fase 2</b>dic 2026-ene 2027<br>6 semanas</div><div><h4>Modelo y backtest</h4><p>ERA5 en puntos de radar, LightGBM cuantílico, validación por año y por radar, comparación con climatología. Backtest de alertas: cuántas noches alertadas, qué fracción del paso capturan.</p><div class="goal"><b>Salida:</b> modelo v1 con skill publicado y umbrales por radar.</div></div></div>
+    <div class="phase"><div class="when"><b>Fase 3</b>feb 2027<br>4 semanas</div><div><h4>Operación y web</h4><p>Cron de pronóstico con ECMWF Open Data, resolución a ciudades, web estática con mapa y fichas, RSS y Telegram, verificación diaria automática. Arranque en modo «beta» al inicio de la primavera de 2027.</p><div class="goal"><b>Salida:</b> servicio público en beta para 5 ciudades piloto.</div></div></div>
+    <div class="phase"><div class="when"><b>Fase 4</b>mar-may 2027</div><div><h4>Primera temporada real</h4><p>Correr la primavera completa, medir, corregir. Presentar resultados a SEO/BirdLife, SPEA, LPO y un ayuntamiento. Objetivo: un compromiso de «luces fuera» para el otoño de 2027.</p><div class="goal"><b>Salida:</b> informe de temporada y primer aliado institucional.</div></div></div>
+    <div class="phase"><div class="when"><b>Fase 5</b>2027-2028</div><div><h4>Europa</h4><p>Extender a los 150 radares, ciudades de más de 100.000 habitantes, mapa en vivo para Benelux con el feed de RMI, vol2bird propio sobre Open Radar Data cuando merezca la pena. Buscar encaje con HiRAD o sucesor.</p></div></div>
+  </div>
+</section>
+
+<section id="decisiones">
+  <span class="eyebrow">09 · Decisiones abiertas</span>
+  <h2>Lo que tienes que decidir tú</h2>
+  <div class="prose">
+    <ol>
+      <li><b>Ámbito del piloto si España falla la fase 0</b>: Portugal más sur de Francia, o esperar a la red AEMET completa en 2027. Mi recomendación: no esperar.</li>
+      <li><b>Producto de lanzamiento</b>: el ranking de exposición (rápido, mediático, sin modelo) antes que las alertas. Mi recomendación: sí, es la forma de conseguir aliados a tiempo para el otoño de 2027.</li>
+      <li><b>Nombre y dominio</b>: «BirdCast» es marca de Cornell. Hace falta un nombre propio. Candidatos: MigraNoche, Paso Nocturno, NightFlux, Aves de Paso.</li>
+      <li><b>Contacto temprano con Aloft/INBO y Vogelwarte</b>: pedirles opinión antes de publicar. Cuesta un correo y evita fricción con quienes producen los datos.</li>
+      <li><b>Relación con el Observatorio</b>: repo independiente pero misma organización de GitHub y misma infraestructura de alertas (Telegram, Pages), para que los dos proyectos se refuercen ante SEO/BirdLife.</li>
+    </ol>
+  </div>
+</section>
+
+<section id="fuentes">
+  <span class="eyebrow">10 · Fuentes</span>
+  <h2>Referencias verificadas</h2>
+  <ul class="sources">
+    <li>Aloft, plataforma y FAQ: <a href="https://aloftdata.eu/faq/">aloftdata.eu/faq</a>; bucket <a href="https://aloftdata.s3-eu-west-1.amazonaws.com/?prefix=baltrad/daily/&delimiter=/">s3 aloftdata</a>; radares: <a href="https://aloftdata.eu/radars/">aloftdata.eu/radars</a>; wiki España: <a href="https://github.com/aloftdata/data-repository/wiki/es">data-repository/wiki/es</a></li>
+    <li>Desmet et al. 2025, Sci Data, dataset BALTRAD VPTS: <a href="https://www.nature.com/articles/s41597-025-04641-5">nature.com</a>; Zenodo <a href="https://zenodo.org/records/14711024">14711024</a></li>
+    <li>Formato VPTS CSV: <a href="https://github.com/aloftdata/vpts-csv">github.com/aloftdata/vpts-csv</a>; vptstools: <a href="https://github.com/enram/vptstools">enram/vptstools</a>; vol2bird: <a href="https://github.com/adokter/vol2bird">adokter/vol2bird</a>; bioRad: <a href="https://adriaandokter.com/bioRad/">adriaandokter.com/bioRad</a></li>
+    <li>Open Radar Data API (EUMETNET): <a href="https://eumetnet.github.io/openradardata-documentation/1-ORD-API-overview/">documentación</a>; salida temporal de AEMET: <a href="https://www.adslzone.net/noticias/internet/aemet-responde-ultima-polemica-salida-ord-eumetnet/">adslzone</a></li>
+    <li>Feed RMI CROW: <a href="https://opendata.meteo.be/ftp/observations/radar/vbird/">opendata.meteo.be</a>; visor <a href="https://www.meteo.be/birddetection">meteo.be/birddetection</a>; KNMI FlySafe composite: <a href="https://dataplatform.knmi.nl/dataset/radar-flysafe-nl-composite-1-0">dataplatform.knmi.nl</a></li>
+    <li>Van Doren &amp; Horton 2018, Science: <a href="https://www.science.org/doi/10.1126/science.aat7526">doi</a>; preprint <a href="https://www.biorxiv.org/content/biorxiv/early/2018/04/02/293092.full.pdf">bioRxiv</a>; Horton et al. 2021: <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC9290813/">PMC</a></li>
+    <li>BirdCast alertas y Lights Out: <a href="https://birdcast.org/migration-tools/local-migration-alerts/">alertas locales</a>; <a href="https://birdcast.org/science-to-action/lights-out/lights-out-texas/">Lights Out Texas</a>; <a href="https://aeroecolab.com/uslights">AeroEco Lab</a></li>
+    <li>Horton et al. 2019, exposición de ciudades: <a href="https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/fee.2029">FEE</a>; Van Doren et al. 2021, McCormick Place: <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8214683/">PMC</a></li>
+    <li>Dokter et al. 2011, RCS 11 cm²: <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3024816/">PMC</a>; Nussbaumer et al. 2019 y 2021: <a href="https://www.biorxiv.org/content/10.1101/690065v1.full">interpolación</a>, <a href="https://royalsocietypublishing.org/doi/10.1098/rsif.2021.0194">flujos</a>, <a href="https://www.biorxiv.org/content/10.1101/2021.03.08.434434v1.full">insectos 4,8 m/s</a></li>
+    <li>Nilsson et al. 2019, Ecography: <a href="https://nsojournals.onlinelibrary.wiley.com/doi/10.1111/ecog.04003">doi</a>; Roy et al. 2025 (Météo-France, LightGBM): <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12178967/">PMC</a>; Kranstauber et al. 2022: <a href="https://besjournals.onlinelibrary.wiley.com/doi/full/10.1002/2688-8319.12158">ESE</a>; Bradarić et al. 2024: <a href="https://besjournals.onlinelibrary.wiley.com/doi/10.1111/1365-2664.14651">JAE</a></li>
+    <li>Bauer et al. 2026, Nat Sustain (eólica y radar): <a href="https://www.nature.com/articles/s41893-026-01853-4">doi</a></li>
+    <li>Vogelwarte, pronóstico: <a href="https://www.vogelwarte.ch/en/research/bird-migration/forecast-of-bird-migration/">vogelwarte.ch</a>; luz: <a href="https://www.vogelwarte.ch/stoerung-durch-licht">stoerung-durch-licht</a>; Hirschhofer et al. 2026: <a href="https://www.sciencedirect.com/science/article/pii/S0006320725006573">Biol Conserv</a></li>
+    <li>Start/Stop NL: <a href="https://www.noordzeeloket.nl/functies-gebruik/windenergie/start-stop/vogeltrekvoorspellingsmodel-threshold-protocol/">Noordzeeloket</a>; FlySafe: <a href="http://www.flysafe-birdtam.eu/background.php">flysafe-birdtam.eu</a>; UvA 2026: <a href="https://www.uva.nl/content/nieuws/nieuwsberichten/2026/06/druk-vogeltrekgebied-in-kaart-brengen-samen-met-de-luchtmacht-en-het-knmi.html">nota</a></li>
+    <li>Post Tower Bonn: <a href="https://link.springer.com/article/10.1007/s10336-022-01985-2">J Ornithol</a>; Hamburgo: <a href="https://www.hamburg.de/resource/blob/171428/2a049de9a9cc99af15613c22b94c51a1/download-vogelschlag-monitoring-data.pdf">monitoreo BUKEA</a>; Berlín: <a href="https://www.lbv.de/files/user_upload/Dokumente/Projektreporte_Projektskizzen/Vogelschlag/Steiof_2022_23_Vogelkollisionen_Glas_Berlin_BzV_58-59.pdf">Steiof 2022</a></li>
+    <li>Normativa: Francia <a href="https://www.legifrance.gouv.fr/loda/id/JORFTEXT000037864346">arrêté 27/12/2018</a>; Andalucía <a href="https://www.juntadeandalucia.es/boja/2025/31/5">Decreto 37/2025</a>; Alemania <a href="https://www.igb-berlin.de/news/lichtverschmutzung-im-bundesnaturschutzgesetz">§41a BNatSchG</a>; Cataluña <a href="https://portaljuridic.gencat.cat/ca/document-del-pjur/?documentId=701266">Decret 190/2015</a></li>
+    <li>Meteo: <a href="https://www.ecmwf.int/en/forecasts/datasets/open-data">ECMWF Open Data</a>; <a href="https://cds.climate.copernicus.eu/datasets/reanalysis-era5-pressure-levels?tab=overview">ERA5 niveles de presión</a>; <a href="https://www.dwd.de/EN/ourservices/nwp_forecast_data/nwp_forecast_data.html">DWD ICON-EU</a></li>
+    <li>HiRAD: <a href="https://hirad.science/">hirad.science</a>; GloBAM balance: <a href="https://www.biodiversa.eu/2026/07/30/when-weather-radar-sees-more-than-rain-the-globam-story/">Biodiversa+</a>; Earth Night: <a href="https://www.earth-night.info/">earth-night.info</a>; lichtaus.ch: <a href="https://lichtaus.ch/">lichtaus.ch</a></li>
+  </ul>
+</section>
+
+</main>
+</div>
+
+<script>
+(function(){
+  var c=document.getElementById('radar'); if(!c) return;
+  var ctx=c.getContext('2d'), W=c.width, H=c.height, cx=W/2, cy=H/2, R=190;
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // pseudo-random but stable "bird echoes"
+  var pts=[], seed=7; function rnd(){seed=(seed*9301+49297)%233280;return seed/233280;}
+  for(var i=0;i<140;i++){var a=rnd()*Math.PI*2, r=Math.sqrt(rnd())*R*0.95; pts.push({a:a,r:r,s:0.6+rnd()*1.6});}
+  var sweep=0;
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle='rgba(143,163,192,0.28)'; ctx.lineWidth=1;
+    for(var k=1;k<=4;k++){ctx.beginPath();ctx.arc(cx,cy,R*k/4,0,Math.PI*2);ctx.stroke();}
+    ctx.beginPath();ctx.moveTo(cx-R,cy);ctx.lineTo(cx+R,cy);ctx.moveTo(cx,cy-R);ctx.lineTo(cx,cy+R);ctx.stroke();
+    // echoes: brighter just behind the sweep
+    for(var i=0;i<pts.length;i++){var p=pts[i]; var d=(sweep-p.a)%(Math.PI*2); if(d<0)d+=Math.PI*2; var f=Math.max(0,1-d/(Math.PI*1.2));
+      ctx.fillStyle='rgba(241,237,228,'+(0.12+0.75*f)+')'; ctx.beginPath(); ctx.arc(cx+Math.cos(p.a)*p.r, cy+Math.sin(p.a)*p.r, p.s*(0.8+f*0.6), 0, Math.PI*2); ctx.fill();}
+    // sweep
+    var g=ctx.createConicGradient ? ctx.createConicGradient(sweep-0.9,cx,cy) : null;
+    if(g){g.addColorStop(0,'rgba(95,184,190,0)');g.addColorStop(0.14,'rgba(95,184,190,0.35)');g.addColorStop(0.145,'rgba(95,184,190,0)');g.addColorStop(1,'rgba(95,184,190,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();}
+    ctx.strokeStyle='rgba(95,184,190,0.9)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(sweep)*R, cy+Math.sin(sweep)*R); ctx.stroke();
+    if(!reduce){sweep+=0.012; requestAnimationFrame(draw);}
+  }
+  draw();
+})();
+</script>
