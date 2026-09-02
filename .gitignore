@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+# Descargas de Aloft: se vuelven a bajar del bucket público
+data/cache/
+# Perfiles completos en parquet: pesados, se regeneran desde la caché
+data/vpts/
+output/*.png
+# Perfiles instantáneos derivados: se regeneran
+data/nightly/*_profiles.parquet
