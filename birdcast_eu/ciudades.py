@@ -58,13 +58,25 @@ def distancia_km(lat1, lon1, lat2, lon2):
     return 2 * R_TIERRA * np.arcsin(np.sqrt(a))
 
 
+RANGO_CALIDAD = {"alta": 0, "sin evaluar": 1, "baja": 2}
+
+
 def asignar(radares: pd.DataFrame, ciudades=CIUDADES) -> pd.DataFrame:
-    """radares: columnas radar, lat, lon (de data/umbrales.csv o de las tablas nocturnas)."""
+    """radares: columnas radar, lat, lon y (opcional) ultimo_anio, de las tablas nocturnas.
+
+    La red renovada de AEMET ocupa los mismos emplazamientos que la antigua (esbad/essft, esmad/estjv,
+    esbar/esgld, esalm/esnjr comparten coordenadas), así que a igual distancia se desempata por calidad
+    conocida y por el año más reciente con datos.
+    """
     rows = []
+    ultimo = dict(zip(radares["radar"], radares.get("ultimo_anio", pd.Series(0, index=radares.index))))
     for nombre, pais, lat, lon in ciudades:
         d = distancia_km(lat, lon, radares["lat"].to_numpy(), radares["lon"].to_numpy())
-        orden = np.argsort(d)
-        elegido = next((i for i in orden if D_MIN <= d[i] <= D_MAX), None)
+        cand = [i for i in range(len(d)) if D_MIN <= d[i] <= D_MAX]
+        orden = sorted(range(len(d)), key=lambda i: d[i])
+        cand.sort(key=lambda i: (round(d[i] / 10), RANGO_CALIDAD.get(CALIDAD.get(radares["radar"].iloc[i], "sin evaluar"), 1),
+                                 -ultimo.get(radares["radar"].iloc[i], 0), d[i]))
+        elegido = cand[0] if cand else None
         row = {"ciudad": nombre, "pais": pais, "lat": lat, "lon": lon}
         if elegido is None:
             i = orden[0]

@@ -186,11 +186,40 @@ def ciudades():
     if n.empty:
         rprint("[red]No hay tablas nocturnas en data/nightly[/red]")
         raise typer.Exit(1)
-    pos = n.groupby("radar")[["lat", "lon"]].first().reset_index()
+    pos = n.groupby("radar").agg(lat=("lat", "first"), lon=("lon", "first"),
+                                 ultimo_anio=("night", lambda x: x.dt.year.max())).reset_index()
     tabla = asignar(pos)
     tabla.to_csv(ROOT / "data" / "ciudades.csv", index=False)
     rprint(tabla.to_string(index=False))
     rprint(f"\n{(tabla['radar'].notna()).sum()} de {len(tabla)} ciudades con radar entre 5 y 100 km")
+
+
+@app.command()
+def verificar(paises: str = ",".join(FASE1_PAISES), start_year: int = 2016, reintentar: bool = False):
+    """Compara los años disponibles en Aloft con los presentes en data/nightly y, si se pide, reprocesa los que falten."""
+    from .historico import build_history
+
+    prefijos = tuple(paises.split(","))
+    faltan: dict[str, list[int]] = {}
+    for r in [x for x in aloft.list_radars() if x.startswith(prefijos)]:
+        disp = [y for y in aloft.radar_years(r) if y >= start_year]
+        dest = NIGHTLY / f"{r}.parquet"
+        hay = set()
+        if dest.exists():
+            hay = set(pd.to_datetime(pd.read_parquet(dest, columns=["night"])["night"]).dt.year)
+        # el histórico de un radar sin noches utilizables queda vacío a propósito (p. ej. esgrm, solo barridos diurnos)
+        pend = [y for y in disp if y not in hay]
+        if pend:
+            faltan[r] = pend
+            rprint(f"[yellow]{r}[/yellow]: faltan {pend}")
+    if not faltan:
+        rprint("[green]Todos los radar-años disponibles están procesados[/green]")
+        return
+    rprint(f"{sum(len(v) for v in faltan.values())} radar-años pendientes en {len(faltan)} radares")
+    if reintentar:
+        for r, years in faltan.items():
+            rprint(f"[bold]{r}[/bold] {years}")
+            build_history(r, years, CACHE, NIGHTLY, purge=True, log=rprint)
 
 
 if __name__ == "__main__":
