@@ -225,5 +225,26 @@ def verificar(paises: str = ",".join(FASE1_PAISES), start_year: int = 2016, rein
             build_history(r, years, CACHE, NIGHTLY, purge=True, log=rprint)
 
 
+METEO = ROOT / "data" / "meteo"
+
+
+@app.command()
+def meteo(radares: list[str] = typer.Argument(None), start_year: int = 2016):
+    """Descarga ERA5 horario (Open-Meteo) para cada radar con tabla nocturna → data/meteo/{radar}.parquet."""
+    from .historico import load_all_nightly
+    from .meteo import fetch_radar_meteo
+
+    n = load_all_nightly(NIGHTLY)
+    pos = n.groupby("radar").agg(lat=("lat", "first"), lon=("lon", "first"),
+                                 y0=("night", lambda x: x.dt.year.min()), y1=("night", lambda x: x.dt.year.max()))
+    if radares:
+        pos = pos.loc[[r for r in radares if r in pos.index]]
+    rprint(f"{len(pos)} radares")
+    for r, p in pos.iterrows():
+        years = list(range(max(start_year, int(p.y0)), int(p.y1) + 1))
+        rprint(f"[bold]{r}[/bold] {years[0]}-{years[-1]}")
+        fetch_radar_meteo(r, float(p.lat), float(p.lon), years, METEO, log=rprint)
+
+
 if __name__ == "__main__":
     app()
