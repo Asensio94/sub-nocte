@@ -173,5 +173,22 @@ def climatologia():
     rprint(f"Informe: {OUTPUT / 'fase1.html'}")
 
 
+@app.command()
+def ciudades():
+    """Asigna cada ciudad del piloto al radar útil más cercano (5-100 km) → data/ciudades.csv."""
+    from .ciudades import asignar
+    from .historico import load_all_nightly
+
+    n = load_all_nightly(NIGHTLY)
+    if n.empty:
+        rprint("[red]No hay tablas nocturnas en data/nightly[/red]")
+        raise typer.Exit(1)
+    pos = n.groupby("radar")[["lat", "lon"]].first().reset_index()
+    tabla = asignar(pos)
+    tabla.to_csv(ROOT / "data" / "ciudades.csv", index=False)
+    rprint(tabla.to_string(index=False))
+    rprint(f"\n{(tabla['radar'].notna()).sum()} de {len(tabla)} ciudades con radar entre 5 y 100 km")
+
+
 if __name__ == "__main__":
     app()

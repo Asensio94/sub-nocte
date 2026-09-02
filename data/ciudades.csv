@@ -1,0 +1,30 @@
+ciudad,pais,lat,lon,radar,dist_km,confianza,radar_mas_cercano
+Alicante,ES,38.3452,-0.481,,219.5,sin radar útil,esalm
+Almería,ES,36.834,-2.4637,esalm,34.0,media,esalm
+Barcelona,ES,41.3874,2.1686,esgld,23.8,alta,esgld
+Bilbao,ES,43.263,-2.935,,349.3,sin radar útil,estjv
+Cáceres,ES,39.4753,-6.3724,essft,9.1,alta,essft
+Córdoba,ES,37.8882,-4.7794,,142.1,sin radar útil,esahr
+Gijón,ES,43.5322,-5.6611,,368.5,sin radar útil,ptprt
+Granada,ES,37.1773,-3.5986,,113.3,sin radar útil,esahr
+Madrid,ES,40.4168,-3.7038,estjv,26.8,alta,estjv
+Murcia,ES,37.9922,-1.1307,,153.9,sin radar útil,esalm
+Málaga,ES,36.7213,-4.4214,esahr,24.4,baja,esahr
+Palma,ES,39.5696,2.6502,,214.4,sin radar útil,esgld
+Salamanca,ES,40.9701,-5.6635,,179.3,sin radar útil,essft
+Santander,ES,43.4623,-3.81,,365.5,sin radar útil,estjv
+Sevilla,ES,37.3891,-5.9845,,145.9,sin radar útil,esahr
+Valencia,ES,39.4699,-0.3763,,288.2,sin radar útil,esgld
+Valladolid,ES,41.6523,-4.7245,,184.8,sin radar útil,estjv
+Vigo,ES,42.2406,-8.7207,,159.5,sin radar útil,ptprt
+Zaragoza,ES,41.6488,-0.8891,,232.5,sin radar útil,esgld
+Bordeaux,FR,44.8378,-0.5792,,430.6,sin radar útil,esgld
+Lyon,FR,45.764,4.8357,,539.4,sin radar útil,esgld
+Marseille,FR,43.2965,5.3698,,355.0,sin radar útil,esgld
+Montpellier,FR,43.6108,3.8767,,294.3,sin radar útil,esgld
+Nice,FR,43.7102,7.262,,509.2,sin radar útil,esgld
+Toulouse,FR,43.6047,1.4442,,246.9,sin radar útil,esgld
+Coimbra,PT,40.2033,-8.4103,ptprt,72.2,media,ptprt
+Faro,PT,37.0194,-7.9304,ptfar,31.9,media,ptfar
+Lisboa,PT,38.7223,-9.1393,ptlis,74.8,baja,ptlis
+Porto,PT,41.1579,-8.6291,ptprt,45.5,alta,ptprt

@@ -46,6 +46,7 @@ python -m birdcast_eu.cli fase0
 python -m birdcast_eu.cli historico --paises es,pt,fr --start-year 2016
 python -m birdcast_eu.cli historico estjv ptprt --start-year 2019
 python -m birdcast_eu.cli climatologia
+python -m birdcast_eu.cli ciudades
 
 # Piezas sueltas
 python -m birdcast_eu.cli radars                       # radares del bucket y sus años
@@ -53,8 +54,11 @@ python -m birdcast_eu.cli ingest estjv --start 2026-03-01 --end 2026-05-31
 python -m birdcast_eu.cli nightly estjv
 ```
 
+Informes: `output/fase0.html` (validación de radares) y `output/fase1.html` (climatologías y umbrales).
+
 Datos: `data/cache/` (descargas, no versionado), `data/vpts/` (perfiles en parquet, no versionado),
-`data/nightly/{radar}.parquet` (tabla nocturna, versionado), `data/umbrales.csv` y `data/climatologia_doy.csv`.
+`data/nightly/{radar}.parquet` (tabla nocturna, versionado), `data/umbrales.csv`, `data/climatologia_doy.csv` y
+`data/ciudades.csv` (ciudad → radar útil más cercano, entre 5 y 100 km, con nivel de confianza).
 
 ## Aviso metodológico
 
