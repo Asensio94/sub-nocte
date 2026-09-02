@@ -75,13 +75,14 @@ def load_all_nightly(nightly_dir: Path) -> pd.DataFrame:
     return df
 
 
-def climatology_doy(nightly: pd.DataFrame, window: int = WINDOW_DAYS, min_n: int = 20) -> pd.DataFrame:
-    """Cuantiles del MTR nocturno por radar y día del año, agrupando todos los años en una ventana circular."""
+def climatology_doy(nightly: pd.DataFrame, window: int = WINDOW_DAYS, min_n: int = 20,
+                    metric: str = "mtr_night") -> pd.DataFrame:
+    """Cuantiles de la métrica nocturna por radar y día del año, agrupando todos los años en ventana circular."""
     rows = []
-    n = nightly[(nightly["coverage"] >= COVERAGE_MIN) & nightly["mtr_night"].notna()]
+    n = nightly[(nightly["coverage"] >= COVERAGE_MIN) & nightly[metric].notna()]
     for radar, g in n.groupby("radar"):
         doy = g["night"].dt.dayofyear.to_numpy()
-        val = g["mtr_night"].to_numpy()
+        val = g[metric].to_numpy()
         years = g["night"].dt.year.nunique()
         for d in range(1, 367):
             dist = np.abs(doy - d)
@@ -90,7 +91,8 @@ def climatology_doy(nightly: pd.DataFrame, window: int = WINDOW_DAYS, min_n: int
             if len(v) < min_n:
                 continue
             q = np.quantile(v, [0.5, 0.7, 0.9])
-            rows.append({"radar": radar, "doy": d, "n": len(v), "years": years, "p50": q[0], "p70": q[1], "p90": q[2]})
+            rows.append({"radar": radar, "metrica": metric, "doy": d, "n": len(v), "years": years,
+                         "p50": q[0], "p70": q[1], "p90": q[2]})
     return pd.DataFrame(rows)
 
 
@@ -100,18 +102,19 @@ def season_mask(night: pd.Series, season: str) -> pd.Series:
     return (md >= m1 * 100 + d1) & (md <= m2 * 100 + d2)
 
 
-def thresholds(nightly: pd.DataFrame, min_nights: int = 60) -> pd.DataFrame:
-    """Umbrales de alerta por radar y temporada: P70 (medio) y P90 (alto) del MTR nocturno histórico."""
+def thresholds(nightly: pd.DataFrame, min_nights: int = 60, metric: str = "mtr_night") -> pd.DataFrame:
+    """Umbrales de alerta por radar y temporada: P70 (medio) y P90 (alto) de la métrica nocturna histórica."""
     rows = []
-    n = nightly[(nightly["coverage"] >= COVERAGE_MIN) & nightly["mtr_night"].notna()]
+    n = nightly[(nightly["coverage"] >= COVERAGE_MIN) & nightly[metric].notna()]
     for radar, g in n.groupby("radar"):
         for season in SEASONS:
             s = g[season_mask(g["night"], season)]
             if len(s) < min_nights:
                 continue
-            v = s["mtr_night"]
+            v = s[metric]
             rows.append({
-                "radar": radar, "season": season, "nights": len(v), "years": s["night"].dt.year.nunique(),
+                "radar": radar, "metrica": metric, "season": season, "nights": len(v),
+                "years": s["night"].dt.year.nunique(),
                 "first": s["night"].min().date(), "last": s["night"].max().date(),
                 "p50": v.median(), "p70": v.quantile(0.7), "p90": v.quantile(0.9), "max": v.max(),
                 # fracción del paso estacional que ocurre en el 10 % de noches más intensas (Horton 2021: ~54 % en EE. UU.)

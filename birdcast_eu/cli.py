@@ -152,23 +152,26 @@ def climatologia():
         rprint("[red]No hay tablas nocturnas en data/nightly[/red]")
         raise typer.Exit(1)
     n.to_parquet(ROOT / "data" / "noches.parquet", index=False)
-    doy = climatology_doy(n)
+    # dos métricas: MTR nocturno (aves/km/noche, exige velocidad) y VID nocturno (aves/km2, solo densidad).
+    # Muchos radares franceses no publican velocidad desde 2023, así que el VID es la única serie homogénea.
+    doy = pd.concat([climatology_doy(n, metric=m) for m in ("mtr_night", "vid_night")], ignore_index=True)
     doy.to_csv(ROOT / "data" / "climatologia_doy.csv", index=False, float_format="%.1f")
-    th = thresholds(n)
+    th = pd.concat([thresholds(n, metric=m) for m in ("mtr_night", "vid_night")], ignore_index=True)
     th.to_csv(ROOT / "data" / "umbrales.csv", index=False, float_format="%.1f")
+    doy_mtr, th_mtr = doy[doy["metrica"] == "mtr_night"], th[th["metrica"] == "mtr_night"]
     rprint(f"{n['radar'].nunique()} radares, {len(n):,} noches ({n['night'].min():%Y-%m-%d} → {n['night'].max():%Y-%m-%d})")
-    rprint(th.round(1).to_string(index=False))
+    rprint(th[th["metrica"] == "mtr_night"].round(1).to_string(index=False))
     from . import fase1 as F
 
     OUTPUT.mkdir(parents=True, exist_ok=True)
-    piloto = [r for r in ("estjv", "esgld", "essft", "esahr", "ptprt", "ptlis") if r in set(doy["radar"])]
-    otros = sorted(set(doy["radar"]) - set(piloto))
+    piloto = [r for r in ("estjv", "esgld", "essft", "esahr", "ptprt", "ptlis") if r in set(doy_mtr["radar"])]
+    otros = sorted(set(doy_mtr["radar"]) - set(piloto))
     figs = [OUTPUT / "fase1_clima_piloto.png", OUTPUT / "fase1_clima_resto.png",
             OUTPUT / "fase1_mapa_primavera.png", OUTPUT / "fase1_mapa_otoño.png"]
-    F.fig_climatology(doy, piloto, figs[0])
-    F.fig_climatology(doy, otros, figs[1], ncols=4)
-    F.fig_thresholds_map(th, figs[2], "primavera")
-    F.fig_thresholds_map(th, figs[3], "otoño")
+    F.fig_climatology(doy_mtr, piloto, figs[0])
+    F.fig_climatology(doy_mtr, otros, figs[1], ncols=4)
+    F.fig_thresholds_map(th_mtr, figs[2], "primavera")
+    F.fig_thresholds_map(th_mtr, figs[3], "otoño")
     F.write_report(th, doy, n[n["coverage"] >= 0.6], figs, OUTPUT / "fase1.html")
     rprint(f"Informe: {OUTPUT / 'fase1.html'}")
 

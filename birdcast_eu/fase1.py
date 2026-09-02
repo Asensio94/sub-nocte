@@ -63,6 +63,7 @@ def fig_thresholds_map(th: pd.DataFrame, path: Path, season: str = "primavera") 
 
 def write_report(th: pd.DataFrame, doy: pd.DataFrame, nightly: pd.DataFrame, figures: list[Path], out: Path) -> None:
     t = th.copy()
+    t["metrica"] = t["metrica"].map({"mtr_night": "MTR (aves/km/noche)", "vid_night": "VID (aves/km²)"}).fillna(t["metrica"])
     for c in ("p50", "p70", "p90", "max"):
         t[c] = t[c].map("{:,.0f}".format)
     t["share_top10"] = t["share_top10"].map("{:.0%}".format)
@@ -83,6 +84,8 @@ def write_report(th: pd.DataFrame, doy: pd.DataFrame, nightly: pd.DataFrame, fig
         "Solo noches con cobertura ≥ 60 %.</p>",
         "<div class='note'>Umbrales relativos: «alta» = MTR nocturno ≥ P90 histórico del radar en la temporada; «media» = P70-P90. "
         "share_top10 = fracción del paso estacional concentrado en el 10 % de noches más intensas (BirdCast EE. UU.: ~54 %). "
+        "Dos métricas: el MTR necesita la velocidad del ajuste de viento, que muchos radares franceses dejaron de publicar "
+        "en 2023; el VID (densidad integrada) solo necesita la densidad y es la única serie homogénea 2016-2026. "
         "Sin filtro de insectos: los radares del sur y los veranos están inflados.</div>",
         "<h2>Umbrales por radar y temporada</h2>", t.to_html(index=False, escape=True),
         "<h2>Cobertura del histórico</h2>", cov.to_html(index=False, escape=True),
