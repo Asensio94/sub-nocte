@@ -21,7 +21,18 @@ reduciendo colisiones con edificios. En Europa existen los datos (Aloft, ENRAM, 
   con arranque brusco a primeros de marzo tras un invierno a cero, y correlación noche a noche entre radares de
   0,4-0,5. Limitación: solo hay datos en 6 capas (unos 1.000 m sobre la antena) y hace falta el filtro de insectos
   con viento (fase 2). Informe: `output/fase0.html`.
-- Fase 1 (histórico 2016-2026 de España, Portugal y Francia, climatologías y umbrales P70/P90): en marcha.
+- **Fase 1 completada: histórico 2016-2026 de España, Portugal y Francia.** 105.684 noches en 56 radares
+  (`data/nightly/`), climatologías por día del año y umbrales P70/P90 por radar y temporada (`data/umbrales.csv`),
+  y 25 de 29 ciudades candidatas con un radar utilizable entre 5 y 100 km (`data/ciudades.csv`). Las series
+  francesas de 10-11 años son la base para entrenar el modelo. Informe: `output/fase1.html`.
+- **Hallazgo que cambia el diseño: la velocidad falta en gran parte del archivo.** vol2bird deja de publicar el
+  ajuste de viento en Francia desde 2021 (0 % de perfiles con velocidad en 2023-2026) y casi siempre en España;
+  Portugal la conserva. Sin velocidad no hay MTR, así que la métrica operativa pasa a ser el **VID nocturno**
+  (aves/km², densidad integrada), que sí forma una serie homogénea en todos los radares y años. El MTR se
+  mantiene como métrica secundaria donde existe.
+- Comprobación de coherencia: el 10 % de noches más intensas concentra el 50-55 % del paso estacional en
+  España, Portugal y Francia, el mismo valor que Horton et al. (2021) midieron en Estados Unidos (54 %).
+- Siguiente: fase 2, modelo LightGBM cuantílico con ERA5 sobre el VID nocturno.
 
 ## Cómo funciona
 
@@ -69,6 +80,12 @@ Datos: `data/cache/` (descargas, no versionado), `data/vpts/` (perfiles en parqu
   calibración distinta de cada radar no importe.
 - Los radares españoles nuevos tienen perfil truncado (6 capas): su MTR absoluto no es comparable con otros
   radares, pero sí sus percentiles.
+- La velocidad ausente **no** se trata como cero: las capas sin ajuste de viento no suman al MTR y las noches con
+  menos del 50 % de la densidad con velocidad medida dejan el MTR como dato ausente (`ff_frac` en la tabla
+  nocturna). Tratarla como cero hundía el MTR y concentraba falsamente el paso en el 10 % de noches (share_top10
+  de 0,8-1,0 frente al 0,54 esperado).
+- La red renovada de AEMET ocupa los mismos emplazamientos que la antigua (esbad/essft, esmad/estjv, esbar/esgld,
+  esalm/esnjr comparten coordenadas), así que sus series son del mismo lugar aunque no de la misma calibración.
 
 ## Créditos y fuentes
 
