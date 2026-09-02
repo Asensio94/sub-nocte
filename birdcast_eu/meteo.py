@@ -27,29 +27,34 @@ HOURLY = [
 ]
 LEVELS = ("10m", "100m")
 PAUSE_S = 1.0     # cortesía con el servicio gratuito
-RETRIES = 4
+RETRIES = 8
+BACKOFF_S = 90   # la cuota gratuita se renueva por minuto y por hora
 
 # Dirección hacia la que migra el grueso de las aves en Europa occidental (grados, hacia dónde)
 HEADING = {"primavera": 30.0, "otoño": 210.0}
 
 
-def fetch_hourly(lat: float, lon: float, start: dt.date, end: dt.date) -> pd.DataFrame:
+def fetch_hourly(lat: float, lon: float, start: dt.date, end: dt.date, log=print) -> pd.DataFrame:
     params = {"latitude": lat, "longitude": lon, "start_date": start.isoformat(), "end_date": end.isoformat(),
               "hourly": ",".join(HOURLY), "timezone": "UTC", "wind_speed_unit": "ms"}
     for intento in range(RETRIES):
         try:
             r = requests.get(ARCHIVE, params=params, timeout=300)
             if r.status_code == 429 or r.status_code >= 500:
-                time.sleep(10 * (intento + 1))
-                continue
+                raise requests.RequestException(f"HTTP {r.status_code}")
             r.raise_for_status()
-            break
-        except requests.RequestException:
+            j = r.json()
+            if "hourly" in j:
+                break
+            # cuota agotada u otro error lógico: llega con 200 y {"error": true, "reason": "..."}
+            raise requests.RequestException(j.get("reason", "respuesta sin 'hourly'"))
+        except requests.RequestException as e:
             if intento == RETRIES - 1:
                 raise
-            time.sleep(10 * (intento + 1))
-    h = r.json()["hourly"]
-    df = pd.DataFrame(h)
+            espera = BACKOFF_S * (intento + 1)
+            log(f"  Open-Meteo: {e}; reintento en {espera} s")
+            time.sleep(espera)
+    df = pd.DataFrame(j["hourly"])
     df["time"] = pd.to_datetime(df.pop("time"), utc=True)
     return df
 
@@ -67,16 +72,14 @@ def fetch_radar_meteo(radar: str, lat: float, lon: float, years: list[int], out_
         end = min(dt.date(y, 12, 31), hoy - dt.timedelta(days=6))  # ERA5 llega con ~5 días de retraso
         if end < dt.date(y, 1, 1):
             continue
-        df = fetch_hourly(lat, lon, dt.date(y, 1, 1), end)
+        df = fetch_hourly(lat, lon, dt.date(y, 1, 1), end, log=log)
         df.insert(0, "radar", radar)
         frames.append(df)
         log(f"  {radar} {y}: {len(df):,} horas")
+        m = pd.concat(frames, ignore_index=True).drop_duplicates("time").sort_values("time").reset_index(drop=True)
+        m.to_parquet(dest, index=False)  # tras cada año, para no perder el avance si el proceso muere
         time.sleep(PAUSE_S)
-    if not frames:
-        return pd.DataFrame()
-    m = pd.concat(frames, ignore_index=True).drop_duplicates("time").sort_values("time").reset_index(drop=True)
-    m.to_parquet(dest, index=False)
-    return m
+    return pd.read_parquet(dest) if dest.exists() else pd.DataFrame()
 
 
 def _wind_components(speed: pd.Series, direction_from: pd.Series, heading_to: float) -> tuple[pd.Series, pd.Series]:

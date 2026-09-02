@@ -11,3 +11,7 @@ output/*.png
 data/nightly/*_profiles.parquet
 # Concatenación de data/nightly: derivada
 data/noches.parquet
+data/meteo/
+data/fase2_dataset.parquet
+output/logs/
+output/*.log
