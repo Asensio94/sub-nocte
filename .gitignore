@@ -9,3 +9,5 @@ data/vpts/
 output/*.png
 # Perfiles instantáneos derivados: se regeneran
 data/nightly/*_profiles.parquet
+# Concatenación de data/nightly: derivada
+data/noches.parquet
