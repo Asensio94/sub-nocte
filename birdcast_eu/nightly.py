@@ -20,6 +20,7 @@ H_MIN, H_MAX = 200, 3000  # capas útiles: por debajo de 200 m hay clutter; por 
 SD_VVP_MIN = 2.0        # umbral de desviación radial (m/s) bajo el cual vol2bird no considera aves (banda C)
 NIGHT_ELEV = -6.0       # crepúsculo civil
 DAY_ELEV = 6.0
+FF_FRAC_MIN = 0.5       # fracción mínima de la densidad nocturna con velocidad medida para fiarse del MTR
 
 
 def clean(df: pd.DataFrame, h_min: int = H_MIN, h_max: int = H_MAX, sd_vvp_min: float = SD_VVP_MIN) -> pd.DataFrame:
@@ -35,7 +36,9 @@ def clean(df: pd.DataFrame, h_min: int = H_MIN, h_max: int = H_MAX, sd_vvp_min: 
     low = np.isfinite(sd) & (sd < sd_vvp_min)
     dens = np.where(low, 0.0, dens)
     d["dens_clean"] = dens
-    d["ff"] = d["ff"].where(np.isfinite(d["ff"]), 0.0)
+    # ff ausente NO es velocidad cero: en varios radares (Francia 2023-2026) vol2bird deja de guardar el ajuste
+    # de viento y solo publica densidad. Rellenar con 0 hundía el MTR a cero; aquí se marca como dato ausente.
+    d["has_ff"] = np.isfinite(d["ff"].to_numpy(dtype=float))
     return d
 
 
@@ -44,8 +47,9 @@ def profiles(df: pd.DataFrame) -> pd.DataFrame:
     d = df.copy()
     d["valid"] = np.isfinite(d["dens_clean"])
     d["dens0"] = d["dens_clean"].fillna(0.0)
-    d["mtr_layer"] = d["dens0"] * d["ff"] * 3.6 * LAYER_KM   # aves/km/h
+    d["mtr_layer"] = d["dens0"] * d["ff"].fillna(0.0) * 3.6 * LAYER_KM   # aves/km/h (capas sin ff no suman)
     d["vid_layer"] = d["dens0"] * LAYER_KM                      # aves/km²
+    d["dens_con_ff"] = np.where(d["has_ff"], d["dens0"], 0.0)
     d["h_w"] = d["dens0"] * d["height"]
     g = d.groupby("datetime", sort=True)
     out = pd.DataFrame({
@@ -55,9 +59,12 @@ def profiles(df: pd.DataFrame) -> pd.DataFrame:
         "h_w": g["h_w"].sum(),
         "dens_sum": g["dens0"].sum(),
         "dens_mean": g["dens0"].mean(),
+        "dens_con_ff": g["dens_con_ff"].sum(),
     })
     out["alt_mean"] = np.where(out["dens_sum"] > 0, out["h_w"] / out["dens_sum"], np.nan)
-    out = out.drop(columns=["h_w", "dens_sum"]).reset_index()
+    # fracción de la densidad del perfil que tiene velocidad medida: sin ella el MTR está subestimado
+    out["ff_frac"] = np.where(out["dens_sum"] > 0, out["dens_con_ff"] / out["dens_sum"], np.nan)
+    out = out.drop(columns=["h_w", "dens_sum", "dens_con_ff"]).reset_index()
     return out
 
 
@@ -89,6 +96,8 @@ def nightly(p: pd.DataFrame, radar: str) -> pd.DataFrame:
         "vid_mean": gn["vid"].mean(),
         "alt_mean": gn.apply(lambda x: np.average(x["alt_mean"].fillna(0), weights=x["vid"] + 1e-9)),
         "dens_night": gn["dens_mean"].mean(),
+        "vid_night": gn["vid"].mean(),                     # aves/km² medias de la noche (no necesita velocidad)
+        "ff_frac": gn.apply(lambda x: np.average(x["ff_frac"].fillna(0), weights=x["vid"] + 1e-9)),
         "first": gn["datetime"].min(),
         "last": gn["datetime"].max(),
     })
@@ -101,6 +110,9 @@ def nightly(p: pd.DataFrame, radar: str) -> pd.DataFrame:
     out = out.reset_index().rename(columns={"night": "night"})
     out["night"] = pd.to_datetime(out["night"])
     out["step_min"] = round(step_h * 60)
+    # sin velocidad para al menos la mitad de la densidad el MTR no es interpretable: se marca ausente
+    out.loc[out["ff_frac"] < FF_FRAC_MIN, "mtr_night"] = np.nan
+    out.loc[out["ff_frac"] < FF_FRAC_MIN, "mtr_peak"] = np.nan
     return out
 
 

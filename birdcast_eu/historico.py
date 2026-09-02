@@ -52,7 +52,9 @@ def build_history(radar: str, years: list[int], cache: Path, out_dir: Path, purg
                 log(f"  {radar} {y}: sin noches utilizables")
             else:
                 frames.append(n)
-                log(f"  {radar} {y}: {len(n)} noches, MTR mediana {n['mtr_night'].median():,.0f}")
+                usable = n["mtr_night"].notna().mean()
+                log(f"  {radar} {y}: {len(n)} noches, MTR mediana {n['mtr_night'].median():,.0f}"
+                    f"{'' if usable > 0.9 else f' (solo {usable:.0%} con velocidad medida)'}")
         if purge:
             for sub in ("monthly", "daily"):
                 shutil.rmtree(cache / "baltrad" / sub / radar / str(y), ignore_errors=True)
@@ -76,7 +78,7 @@ def load_all_nightly(nightly_dir: Path) -> pd.DataFrame:
 def climatology_doy(nightly: pd.DataFrame, window: int = WINDOW_DAYS, min_n: int = 20) -> pd.DataFrame:
     """Cuantiles del MTR nocturno por radar y día del año, agrupando todos los años en una ventana circular."""
     rows = []
-    n = nightly[nightly["coverage"] >= COVERAGE_MIN]
+    n = nightly[(nightly["coverage"] >= COVERAGE_MIN) & nightly["mtr_night"].notna()]
     for radar, g in n.groupby("radar"):
         doy = g["night"].dt.dayofyear.to_numpy()
         val = g["mtr_night"].to_numpy()
@@ -101,7 +103,7 @@ def season_mask(night: pd.Series, season: str) -> pd.Series:
 def thresholds(nightly: pd.DataFrame, min_nights: int = 60) -> pd.DataFrame:
     """Umbrales de alerta por radar y temporada: P70 (medio) y P90 (alto) del MTR nocturno histórico."""
     rows = []
-    n = nightly[nightly["coverage"] >= COVERAGE_MIN]
+    n = nightly[(nightly["coverage"] >= COVERAGE_MIN) & nightly["mtr_night"].notna()]
     for radar, g in n.groupby("radar"):
         for season in SEASONS:
             s = g[season_mask(g["night"], season)]
