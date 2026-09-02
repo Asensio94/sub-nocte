@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import datetime as dt
 import io
+import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Iterable, Iterator
@@ -26,6 +27,7 @@ NUMERIC = [
     "radar_latitude", "radar_longitude", "radar_height", "radar_wavelength",
 ]
 
+RETRIES = 4          # el bucket corta conexiones al descargar en paralelo
 _session = requests.Session()
 _session.headers["User-Agent"] = "birdcast-europa/0.1 (proyecto abierto de conservación)"
 
@@ -89,13 +91,25 @@ def download(key: str, cache_dir: Path) -> Path | None:
     dest = cache_dir / key
     if dest.exists() and dest.stat().st_size > 0:
         return dest
-    r = _session.get(f"{BUCKET}/{key}", timeout=300)
-    if r.status_code == 404:
-        return None
-    r.raise_for_status()
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_bytes(r.content)
-    return dest
+    # el bucket corta conexiones cuando se descarga en paralelo: reintentos con espera creciente
+    for intento in range(RETRIES):
+        try:
+            r = _session.get(f"{BUCKET}/{key}", timeout=300)
+        except requests.RequestException:
+            if intento == RETRIES - 1:
+                raise
+            time.sleep(2 ** intento)
+            continue
+        if r.status_code == 404:
+            return None
+        if r.status_code >= 500 and intento < RETRIES - 1:
+            time.sleep(2 ** intento)
+            continue
+        r.raise_for_status()
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(r.content)
+        return dest
+    return None
 
 
 def read_vpts(path: Path) -> pd.DataFrame:
