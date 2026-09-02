@@ -43,9 +43,16 @@ def build_history(radar: str, years: list[int], cache: Path, out_dir: Path, purg
         if df.empty:
             log(f"  {radar} {y}: sin datos")
         else:
-            _, n = build_nightly(df, radar)
-            frames.append(n)
-            log(f"  {radar} {y}: {len(n)} noches, MTR mediana {n['mtr_night'].median():,.0f}")
+            try:
+                _, n = build_nightly(df, radar)
+            except Exception as e:  # un radar-año raro no debe abortar el barrido completo
+                log(f"  {radar} {y}: error al resumir ({type(e).__name__}: {e})")
+                n = pd.DataFrame()
+            if n.empty:
+                log(f"  {radar} {y}: sin noches utilizables")
+            else:
+                frames.append(n)
+                log(f"  {radar} {y}: {len(n)} noches, MTR mediana {n['mtr_night'].median():,.0f}")
         if purge:
             for sub in ("monthly", "daily"):
                 shutil.rmtree(cache / "baltrad" / sub / radar / str(y), ignore_errors=True)

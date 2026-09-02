@@ -78,6 +78,8 @@ def nightly(p: pd.DataFrame, radar: str) -> pd.DataFrame:
     step_h = p["datetime"].diff().dt.total_seconds().median() / 3600.0
     night = p[p["is_night"]]
     day = p[p["is_day"]]
+    if night.empty:  # radares con solo barridos diurnos (p. ej. esgrm en 2026)
+        return pd.DataFrame()
     gn = night.groupby("night")
     gd = day.groupby("night")
     out = pd.DataFrame({
