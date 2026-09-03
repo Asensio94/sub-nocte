@@ -17,3 +17,8 @@ output/logs/
 output/*.log
 data/fase2_dataset_superficie.parquet
 data/fase2_predicciones.parquet
+data/luces/
+data/meteo_ciudades/
+data/fase3_clima_ciudades.parquet
+data/fase3_prevision_bruta.parquet
+data/log_*.txt

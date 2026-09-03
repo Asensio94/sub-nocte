@@ -338,5 +338,142 @@ def fase2(cache: bool = False, niveles: bool = True, referencia_en_fichero: bool
     rprint(f"Informe: {OUTPUT / 'fase2.html'}")
 
 
+CIUDADES_METEO = ROOT / "data" / "meteo_ciudades"
+CLIMA_CIUDADES = ROOT / "data" / "fase3_clima_ciudades.parquet"
+UMBRALES_CSV = ROOT / "data" / "fase3_umbrales.csv"
+PREVISION_CSV = ROOT / "data" / "fase3_prevision.csv"
+
+
+@app.command()
+def fase3_archivo(ciudades_pedidas: list[str] = typer.Argument(None), start_year: int = 2021):
+    """Archivo meteorológico en el punto de cada ciudad, en ventanas migratorias, para calibrar sus umbrales."""
+    from .ciudades import CIUDADES
+    from .prevision import descargar_archivo
+
+    anos = list(range(start_year, dt.date.today().year + 1))
+    lista = [c for c in CIUDADES if not ciudades_pedidas or c[0] in ciudades_pedidas]
+    rprint(f"{len(lista)} ciudades, {anos[0]}-{anos[-1]}")
+    for nombre, pais, lat, lon in lista:
+        rprint(f"[bold]{nombre}[/bold] ({pais})")
+        descargar_archivo(nombre, lat, lon, anos, CIUDADES_METEO, log=rprint)
+
+
+@app.command()
+def fase3_entrenar(cache: bool = True):
+    """Modelos operativos: los de la fase 2 sin climatología local, la configuración validada dejando radares fuera."""
+    from . import modelo as M
+
+    ds, cols = _conjunto_fase2(cache, niveles=True)
+    cols = [c for c in cols if not c.startswith("clim_")]
+    paths = M.fit_final(ds, cols, ROOT / "data", prefijo="modelo_op")
+    rprint(f"{len(cols)} rasgos sin climatologia local -> " + ", ".join(p.name for p in paths))
+
+
+def _rasgos_ciudades(modelos, log=rprint) -> pd.DataFrame:
+    """Rasgos y predicciones del archivo meteorológico de todas las ciudades con descarga hecha."""
+    from . import prevision as P
+    from .ciudades import CIUDADES
+
+    partes = []
+    for nombre, pais, lat, lon in CIUDADES:
+        f = CIUDADES_METEO / f"{nombre}.parquet"
+        if not f.exists():
+            log(f"  {nombre}: sin archivo meteorológico")
+            continue
+        r = P.rasgos(nombre, lat, lon, pd.read_parquet(f))
+        if r.empty:
+            continue
+        partes.append(P.predecir(r, modelos).assign(pais=pais))
+        log(f"  {nombre}: {len(r)} noches")
+    return pd.concat(partes, ignore_index=True) if partes else pd.DataFrame()
+
+
+@app.command()
+def fase3_umbrales():
+    """Corre el modelo sobre el archivo de cada ciudad y guarda los percentiles que definen los niveles de aviso."""
+    from . import prevision as P
+
+    modelos = P.cargar_modelos(ROOT / "data")
+    pred = _rasgos_ciudades(modelos)
+    if pred.empty:
+        rprint("[red]ninguna ciudad tiene archivo meteorológico: corre antes fase3-archivo[/red]")
+        raise typer.Exit(1)
+    pred.to_parquet(CLIMA_CIUDADES, index=False)
+    u = P.calcular_umbrales(pred)
+    u.to_csv(UMBRALES_CSV, index=False, float_format="%.4f")
+    rprint(u[["ciudad", "season", "noches", "alerta_q75", "alerta_q90"]].round(3).to_string(index=False))
+    rprint(f"Umbrales de {u['ciudad'].nunique()} ciudades en {UMBRALES_CSV}")
+
+
+@app.command()
+def fase3(dias: int = 7, cache: bool = False):
+    """Previsión de las próximas noches por ciudad, con el nivel de aviso propio de cada sitio."""
+    from . import fase3 as F3
+    from . import prevision as P
+    from .ciudades import CIUDADES
+
+    modelos = P.cargar_modelos(ROOT / "data")
+    umbrales = pd.read_csv(UMBRALES_CSV)
+    con_umbral = set(umbrales["ciudad"])
+    bruto = ROOT / "data" / "fase3_prevision_bruta.parquet"
+    if cache and bruto.exists():
+        prev = pd.read_parquet(bruto)
+        rprint(f"previsión reutilizada de {bruto}")
+    else:
+        partes = []
+        for nombre, pais, lat, lon in CIUDADES:
+            if nombre not in con_umbral:
+                continue
+            h = P.descargar_prevision(lat, lon, dias, log=rprint)
+            r = P.rasgos(nombre, lat, lon, h)
+            if r.empty:
+                rprint(f"  {nombre}: el pronóstico no cubre ninguna noche completa")
+                continue
+            partes.append(P.predecir(r, modelos).assign(pais=pais))
+            rprint(f"  {nombre}: {len(r)} noches previstas")
+        prev = pd.concat(partes, ignore_index=True)
+        prev.to_parquet(bruto, index=False)
+    prev = P.aplicar_umbrales(prev, umbrales)
+    prev.to_csv(PREVISION_CSV, index=False, float_format="%.4f")
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    figs = F3.figures(prev, umbrales, OUTPUT)
+    F3.write_report(prev, umbrales, figs, OUTPUT / "fase3.html")
+    aviso = prev[prev["nivel"].isin(["alto", "muy alto"])]
+    rprint(f"[bold]{len(prev)} noches-ciudad previstas, {len(aviso)} con aviso alto o muy alto[/bold]")
+    if not aviso.empty:
+        rprint(aviso.assign(noche=aviso["night"].dt.strftime("%d/%m"))
+               [["ciudad", "noche", "nivel", "p_alerta"]].round(2).to_string(index=False))
+    rprint(f"Informe: {OUTPUT / 'fase3.html'}")
+
+
+LUCES = ROOT / "data" / "luces"
+
+
+@app.command()
+def ranking(radio_km: float = 10.0):
+    """Ranking de exposición: luz artificial de cada ciudad × densidad de aves prevista sobre ella."""
+    from . import fase3 as F3
+    from . import luces as L
+    from .ciudades import CIUDADES
+
+    tif = L.asegurar_atlas(LUCES, log=rprint)
+    luz = L.muestrear(tif, CIUDADES, radio_km=radio_km, log=rprint)
+    luz.to_csv(ROOT / "data" / "luces_ciudades.csv", index=False, float_format="%.3f")
+    if not CLIMA_CIUDADES.exists():
+        rprint("[red]falta el archivo de predicciones por ciudad: corre antes fase3-umbrales[/red]")
+        raise typer.Exit(1)
+    mig = L.indice_migracion(pd.read_parquet(CLIMA_CIUDADES))
+    rk = L.ranking(luz, mig)
+    rk.to_csv(ROOT / "data" / "ranking_exposicion.csv", index=False, float_format="%.3f")
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    figs = F3.figura_ranking(rk, OUTPUT)
+    F3.write_ranking(rk, figs, OUTPUT / "ranking.html")
+    for temporada, g in rk.groupby("season"):
+        rprint(f"[bold]{temporada}[/bold]")
+        rprint(g.nlargest(10, "exposicion_picos")[["ciudad", "luz_media", "vid_picos", "exposicion_picos"]]
+               .round(1).to_string(index=False))
+    rprint(f"Informe: {OUTPUT / 'ranking.html'}")
+
+
 if __name__ == "__main__":
     app()

@@ -234,11 +234,11 @@ def importance(ds: pd.DataFrame, cols: list[str]) -> pd.DataFrame:  # noqa: D401
     return pd.DataFrame(out).sort_values("alerta", ascending=False)
 
 
-def fit_final(ds: pd.DataFrame, cols: list[str], out_dir: Path) -> list[Path]:
+def fit_final(ds: pd.DataFrame, cols: list[str], out_dir: Path, prefijo: str = "modelo") -> list[Path]:
     """Entrena con todo y guarda los dos modelos listos para operar."""
     paths = []
     for nombre, f in (("vid", _fit), ("alerta", _fit_alerta)):
-        p = out_dir / f"modelo_{nombre}.txt"
+        p = out_dir / f"{prefijo}_{nombre}.txt"
         f(ds, cols).save_model(str(p))
         paths.append(p)
     return paths
