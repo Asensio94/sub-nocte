@@ -36,11 +36,29 @@ HOURLY_LEVELS = [f"{v}_{h}hPa" for h in LEVEL_HPA for v in ("wind_speed", "wind_
                 ["temperature_850hPa", "geopotential_height_850hPa"]
 LEVELS_YEAR0 = 2021  # el archivo de pronósticos no tiene niveles de presión antes de 2021
 PAUSE_S = 1.0        # cortesía con el servicio gratuito
-RETRIES = 8
+RETRIES = 14
 BACKOFF_S = 90       # la cuota gratuita se renueva por minuto y por hora
+BACKOFF_MAX_S = 900  # con la cuota horaria agotada hay que esperar de verdad, no reintentar en bucle
 
 # Dirección hacia la que migra el grueso de las aves en Europa occidental (grados, hacia dónde)
 HEADING = {"primavera": 30.0, "otoño": 210.0}
+
+
+def _hasta_siguiente_hora() -> int:
+    ahora = dt.datetime.now(dt.timezone.utc)
+    siguiente = (ahora + dt.timedelta(hours=1)).replace(minute=0, second=30, microsecond=0)
+    return max(int((siguiente - ahora).total_seconds()), 60)
+
+
+def _tramos(years: list[int], maximo: int) -> list[tuple[int, int]]:
+    """Agrupa años consecutivos en tramos de como mucho `maximo` años, para pedir menos veces."""
+    tramos: list[tuple[int, int]] = []
+    for y in sorted(years):
+        if tramos and y == tramos[-1][1] + 1 and tramos[-1][1] - tramos[-1][0] + 1 < maximo:
+            tramos[-1] = (tramos[-1][0], y)
+        else:
+            tramos.append((y, y))
+    return tramos
 
 
 def fetch_hourly(lat: float, lon: float, start: dt.date, end: dt.date, url: str = ARCHIVE,
@@ -61,7 +79,10 @@ def fetch_hourly(lat: float, lon: float, start: dt.date, end: dt.date, url: str 
         except requests.RequestException as e:
             if intento == RETRIES - 1:
                 raise
-            espera = BACKOFF_S * (intento + 1)
+            if "hourly api request limit" in str(e).lower():
+                espera = _hasta_siguiente_hora()  # reintentar antes no sirve: la cuota se renueva en punto
+            else:
+                espera = min(BACKOFF_S * (intento + 1), BACKOFF_MAX_S)
             log(f"  Open-Meteo: {e}; reintento en {espera} s")
             time.sleep(espera)
     df = pd.DataFrame(j["hourly"])
@@ -70,25 +91,29 @@ def fetch_hourly(lat: float, lon: float, start: dt.date, end: dt.date, url: str 
 
 
 def fetch_radar_meteo(radar: str, lat: float, lon: float, years: list[int], out_dir: Path, log=print,
-                      url: str = ARCHIVE, hourly: list[str] | None = None, retraso_dias: int = 6) -> pd.DataFrame:
-    """Descarga año a año (unas 9.000 horas por año) y guarda `{out_dir}/{radar}.parquet`."""
+                      url: str = ARCHIVE, hourly: list[str] | None = None, retraso_dias: int = 6,
+                      anos_por_peticion: int = 1) -> pd.DataFrame:
+    """Descarga por tramos de años y guarda `{out_dir}/{radar}.parquet`.
+
+    La cuota gratuita se agota por peticiones y por hora, así que conviene pedir varios años de una vez: el
+    volumen de datos es el mismo y se gastan menos peticiones.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
     dest = out_dir / f"{radar}.parquet"
     frames = [pd.read_parquet(dest)] if dest.exists() else []
     tengo = set(frames[0]["time"].dt.year) if frames else set()
     hoy = dt.datetime.now(dt.timezone.utc).date()
-    for y in years:
-        if y in tengo:
+    faltan = [y for y in years if y not in tengo]
+    for y0, y1 in _tramos(faltan, anos_por_peticion):
+        end = min(dt.date(y1, 12, 31), hoy - dt.timedelta(days=retraso_dias))
+        if end < dt.date(y0, 1, 1):
             continue
-        end = min(dt.date(y, 12, 31), hoy - dt.timedelta(days=retraso_dias))
-        if end < dt.date(y, 1, 1):
-            continue
-        df = fetch_hourly(lat, lon, dt.date(y, 1, 1), end, url=url, hourly=hourly, log=log)
+        df = fetch_hourly(lat, lon, dt.date(y0, 1, 1), end, url=url, hourly=hourly, log=log)
         df.insert(0, "radar", radar)
         frames.append(df)
-        log(f"  {radar} {y}: {len(df):,} horas")
+        log(f"  {radar} {y0}{'' if y0 == y1 else f'-{y1}'}: {len(df):,} horas")
         m = pd.concat(frames, ignore_index=True).drop_duplicates("time").sort_values("time").reset_index(drop=True)
-        m.to_parquet(dest, index=False)  # tras cada año, para no perder el avance si el proceso muere
+        m.to_parquet(dest, index=False)  # tras cada tramo, para no perder el avance si el proceso muere
         time.sleep(PAUSE_S)
     return pd.read_parquet(dest) if dest.exists() else pd.DataFrame()
 
@@ -97,7 +122,7 @@ def fetch_radar_niveles(radar: str, lat: float, lon: float, years: list[int], ou
     """Viento y temperatura en niveles de presión (altura de vuelo), disponibles desde 2021."""
     years = [y for y in years if y >= LEVELS_YEAR0]
     return fetch_radar_meteo(radar, lat, lon, years, out_dir, log=log, url=ARCHIVE_LEVELS, hourly=HOURLY_LEVELS,
-                             retraso_dias=1)
+                             retraso_dias=1, anos_por_peticion=6)
 
 
 def _wind_components(speed: pd.Series, direction_from: pd.Series, heading_to: float) -> tuple[pd.Series, pd.Series]:
