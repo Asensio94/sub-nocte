@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from .informe import incrustar_imagenes
+
 NOMBRE = {
     "tail_100m": "viento a favor 100 m", "tail_10m": "viento a favor 10 m", "tail0_100m": "viento a favor al inicio 100 m",
     "tail0_10m": "viento a favor al inicio 10 m", "cross_100m": "viento lateral 100 m", "cross_10m": "viento lateral 10 m",
@@ -251,3 +253,4 @@ def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: l
         "que se conseguirá en operación.</li></ul>",
     ]
     out.write_text("\n".join(parts), encoding="utf-8", newline="\n")
+    incrustar_imagenes(out)  # autocontenido: el informe se puede enviar o abrir desde cualquier carpeta
