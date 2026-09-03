@@ -55,7 +55,20 @@ reduciendo colisiones con edificios. En Europa existen los datos (Aloft, ENRAM, 
     contaminación de insectos son los sospechosos.
   - El viento a la altura a la que vuelan las aves (925, 850 y 700 hectopascales) mejora el área bajo la curva en
     0,023 de media y en 37 de los 49 radares frente a usar solo superficie: aporta, poco y de forma consistente.
-- Siguiente: fase 3, pasar de reanálisis a pronóstico (ECMWF Open Data), umbrales por ciudad y web con alertas.
+- **Fase 3 en marcha: previsión operativa por ciudad y ranking de exposición a la luz.** El modelo de la fase 2
+  reentrenado **sin climatología local** (la configuración validada dejando radares enteros fuera, la única
+  honesta para una ciudad sin radar) se alimenta del pronóstico de Open-Meteo en las coordenadas de cada ciudad.
+  La ventana nocturna se calcula con la elevación del sol, porque sin radar no hay perfiles que la marquen.
+  Los niveles de aviso se cortan por los percentiles de las predicciones de **esa misma ciudad** sobre el archivo
+  2021-hoy (moderado > mediana, alto > P75, muy alto > P90), así que «muy alto» significa lo mismo en Sevilla que
+  en Bilbao. Informes: `output/fase3.html` (previsión) y `output/ranking.html` (exposición).
+- El **ranking de exposición** multiplica el brillo artificial del cielo de cada ciudad (Atlas de Falchi 2016,
+  media en un disco de 10 km) por la densidad de aves prevista, al estilo de Horton et al. (2019). Aviso: el
+  atlas mide brillo visto desde el suelo, no radiancia emitida hacia arriba, es de 2015 y **su licencia prohíbe
+  redistribuir los ficheros**; para la versión pública conviene la radiancia VIIRS, de dominio público (pide un
+  registro gratuito en el Earth Observation Group).
+- Siguiente: rutina diaria automática y web pública; ampliar a los radares alemanes, holandeses, belgas y checos,
+  que tienen histórico largo en el mismo archivo y son lo que más margen de mejora tiene.
 
 ## Cómo funciona
 
@@ -92,14 +105,29 @@ python -m birdcast_eu.cli meteo-niveles --start-year 2021  # viento a 925/850/70
 python -m birdcast_eu.cli fase2                            # conjunto, validación, modelos e informe
 python -m birdcast_eu.cli fase2 --cache --no-niveles       # reutiliza el conjunto; solo meteorología de superficie
 
+# Fase 3: previsión por ciudad
+python -m birdcast_eu.cli fase3-archivo                    # archivo meteorológico en el punto de cada ciudad
+python -m birdcast_eu.cli fase3-entrenar                   # modelos operativos, sin climatología local
+python -m birdcast_eu.cli fase3-umbrales                   # percentiles propios de cada ciudad
+python -m birdcast_eu.cli fase3 --dias 7                   # previsión de las próximas noches e informe
+python -m birdcast_eu.cli ranking                          # exposición a la luz artificial (necesita el atlas)
+
 # Piezas sueltas
 python -m birdcast_eu.cli radars                       # radares del bucket y sus años
 python -m birdcast_eu.cli ingest estjv --start 2026-03-01 --end 2026-05-31
 python -m birdcast_eu.cli nightly estjv
 ```
 
-Informes: `output/fase0.html` (validación de radares), `output/fase1.html` (climatologías y umbrales) y
-`output/fase2.html` (modelo meteorológico y validación).
+Informes: `output/fase0.html` (validación de radares), `output/fase1.html` (climatologías y umbrales),
+`output/fase2.html` (modelo meteorológico y validación), `output/fase3.html` (previsión por ciudad) y
+`output/ranking.html` (exposición a la luz). Todos son autocontenidos: las figuras van incrustadas dentro del
+propio HTML, así que se pueden enviar o abrir desde cualquier carpeta.
+
+El atlas de luz no se versiona y no se descarga automáticamente. Para el ranking hay que bajarlo a mano una vez:
+
+```bash
+curl -sSL -o data/luces/World_Atlas_2015.zip https://datapub.gfz-potsdam.de/download/10.5880.GFZ.1.4.2016.001/World_Atlas_2015.zip
+```
 
 Datos: `data/cache/` (descargas, no versionado), `data/vpts/` (perfiles en parquet, no versionado),
 `data/nightly/{radar}.parquet` (tabla nocturna, versionado), `data/umbrales.csv`, `data/climatologia_doy.csv` y
