@@ -93,28 +93,53 @@ def fetch_hourly(lat: float, lon: float, start: dt.date, end: dt.date, url: str 
     return df
 
 
+# Ventanas migratorias con tres dias de margen a cada lado (el margen deja calcular tendencias de 24 h)
+VENTANAS = ((( 2, 12), ( 6,  3)), (( 8, 12), (12,  3)))
+
+
+def _ventanas_ano(y: int) -> list[tuple[dt.date, dt.date]]:
+    return [(dt.date(y, m0, d0), dt.date(y, m1, d1)) for (m0, d0), (m1, d1) in VENTANAS]
+
+
 def fetch_radar_meteo(radar: str, lat: float, lon: float, years: list[int], out_dir: Path, log=print,
                       url: str = ARCHIVE, hourly: list[str] | None = None, retraso_dias: int = 6,
-                      anos_por_peticion: int = 1) -> pd.DataFrame:
-    """Descarga por tramos de años y guarda `{out_dir}/{radar}.parquet`.
+                      anos_por_peticion: int = 1, solo_temporadas: bool = False) -> pd.DataFrame:
+    """Descarga por tramos y guarda `{out_dir}/{radar}.parquet`.
 
-    La cuota gratuita se agota por peticiones y por hora, así que conviene pedir varios años de una vez: el
-    volumen de datos es el mismo y se gastan menos peticiones.
+    La cuota gratuita se mide por volumen de datos, no por numero de peticiones, asi que hay dos palancas:
+    pedir varios anos de una vez (menos peticiones, mismo volumen) y, con `solo_temporadas`, pedir unicamente
+    las dos ventanas migratorias, que es lo unico que usa el modelo y recorta el volumen un 40 %.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     dest = out_dir / f"{radar}.parquet"
     frames = [pd.read_parquet(dest)] if dest.exists() else []
-    tengo = set(frames[0]["time"].dt.year) if frames else set()
     hoy = dt.datetime.now(dt.timezone.utc).date()
-    faltan = [y for y in years if y not in tengo]
-    for y0, y1 in _tramos(faltan, anos_por_peticion):
-        end = min(dt.date(y1, 12, 31), hoy - dt.timedelta(days=retraso_dias))
-        if end < dt.date(y0, 1, 1):
-            continue
-        df = fetch_hourly(lat, lon, dt.date(y0, 1, 1), end, url=url, hourly=hourly, log=log)
+    tope = hoy - dt.timedelta(days=retraso_dias)
+    if solo_temporadas:
+        dias = set(frames[0]["time"].dt.date) if frames else set()
+        pendientes = []
+        for y in sorted(years):
+            for a, b in _ventanas_ano(y):
+                b = min(b, tope)
+                if b < a:
+                    continue
+                # una ventana ya descargada tiene practicamente todos sus dias; si falta mas del 10 %, se repite
+                esperados = (b - a).days + 1
+                if sum((a + dt.timedelta(days=i)) in dias for i in range(esperados)) >= 0.9 * esperados:
+                    continue
+                pendientes.append((a, b))
+    else:
+        tengo = set(frames[0]["time"].dt.year) if frames else set()
+        pendientes = []
+        for y0, y1 in _tramos([y for y in years if y not in tengo], anos_por_peticion):
+            b = min(dt.date(y1, 12, 31), tope)
+            if b >= dt.date(y0, 1, 1):
+                pendientes.append((dt.date(y0, 1, 1), b))
+    for a, b in pendientes:
+        df = fetch_hourly(lat, lon, a, b, url=url, hourly=hourly, log=log)
         df.insert(0, "radar", radar)
         frames.append(df)
-        log(f"  {radar} {y0}{'' if y0 == y1 else f'-{y1}'}: {len(df):,} horas")
+        log(f"  {radar} {a}/{b}: {len(df):,} horas")
         m = pd.concat(frames, ignore_index=True).drop_duplicates("time").sort_values("time").reset_index(drop=True)
         m.to_parquet(dest, index=False)  # tras cada tramo, para no perder el avance si el proceso muere
         time.sleep(PAUSE_S)
@@ -125,7 +150,7 @@ def fetch_radar_niveles(radar: str, lat: float, lon: float, years: list[int], ou
     """Viento y temperatura en niveles de presión (altura de vuelo), disponibles desde 2021."""
     years = [y for y in years if y >= LEVELS_YEAR0]
     return fetch_radar_meteo(radar, lat, lon, years, out_dir, log=log, url=ARCHIVE_LEVELS, hourly=HOURLY_LEVELS,
-                             retraso_dias=1, anos_por_peticion=6)
+                             retraso_dias=1, solo_temporadas=True)
 
 
 def _wind_components(speed: pd.Series, direction_from: pd.Series, heading_to: float) -> tuple[pd.Series, pd.Series]:

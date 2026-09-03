@@ -103,6 +103,7 @@ def _fit_alerta(train: pd.DataFrame, cols: list[str], seed: int = 0):
                      lgb.Dataset(train[cols], train["alerta_obs"].astype(int)), num_boost_round=ROUNDS)
 
 
+MIN_NOCHES_RADAR = 100
 ALERT_Q = 0.9  # se alerta en el 10 % de noches con mayor predicción, la misma tasa que el P90 observado
 
 
@@ -159,9 +160,11 @@ def evaluate(ds: pd.DataFrame, cols: list[str], log=print, solo_anos: bool = Fal
         if len(te) < 100 or len(tr) < 1000:
             continue
         fold(tr, te, f"año {y}", "año")
-    # 2) por radar: dejar fuera cada radar con al menos 150 noches (los españoles nuevos son el objetivo)
+    # 2) por radar: dejar fuera cada radar con al menos MIN_NOCHES_RADAR noches. El límite se fija en 100 para
+    # que los radares españoles renovados (122-130 noches, una sola temporada) tengan validación propia: son
+    # justamente el caso de uso, una ciudad donde el modelo no ha visto nunca datos de radar.
     for r, te in ds.groupby("radar"):
-        if solo_anos or len(te) < 150:
+        if solo_anos or len(te) < MIN_NOCHES_RADAR:
             continue
         fold(ds[ds["radar"] != r], te, f"radar {r}", "radar")
     return pd.DataFrame(rows), pd.concat(preds, ignore_index=True)

@@ -1,0 +1,856 @@
+<!doctype html><meta charset='utf-8'><title>Fase 2 · modelo meteorológico</title>
+<style>body{font:15px/1.5 system-ui;max-width:1100px;margin:2em auto;padding:0 1em;color:#222}table{border-collapse:collapse;font-size:13px}td,th{border:1px solid #ddd;padding:3px 8px;text-align:right}th{background:#f4f4f4}td:first-child,th:first-child{text-align:left}img{max-width:100%}.k{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}.k div{background:#f7f7f7;padding:8px 12px;border-radius:6px}.k b{display:block;font-size:20px}</style>
+<h1>Fase 2 · ¿predice la meteorología la migración nocturna?</h1>
+<p>Modelo de árboles potenciados (LightGBM) que estima la <b>densidad nocturna de aves</b> (VID, aves/km²) de cada radar a partir de la meteorología de la noche (reanálisis ERA5 vía Open-Meteo: viento a 10 y 100 m descompuesto en componente a favor y lateral respecto al rumbo migratorio, temperatura, humedad, presión y sus cambios en 24 h, precipitación y nubosidad), el día del año y la climatología local. Objetivo transformado con la raíz cúbica. Solo noches con cobertura ≥ 60 % dentro de las ventanas migratorias (15 feb-31 may, 15 ago-30 nov).</p>
+<p><b>Dos validaciones honestas:</b> (1) dejar fuera un año completo y predecirlo con el resto (¿funciona en un año nuevo?); (2) dejar fuera un radar completo (¿funciona en un lugar donde no se entrenó? — es el caso de los radares españoles nuevos, que tienen pocos años).</p>
+<p><b>Cómo se decide una alerta.</b> Se llama <i>noche de paso fuerte</i> a la que supera el percentil 90 histórico local de su temporada, es decir una noche de cada diez. Un modelo de media encoge las predicciones hacia el centro y casi nunca cruza ese valor absoluto, así que la alerta la decide un <b>segundo modelo</b>, entrenado para clasificar directamente ese suceso, y el umbral se calibra sobre la distribución de sus predicciones: se alerta en el decil superior de las noches previstas de ese radar y temporada. En operación esa distribución se obtiene corriendo el modelo sobre diez años de reanálisis en el punto de interés, sin necesidad de un radar en la ciudad. Como se emiten tantas alertas como noches de paso fuerte hay, el porcentaje capturado es directamente comparable con el 10 % que daría el azar. El área bajo la curva resume la capacidad de separar esas noches sin depender de ningún umbral (0,5 = azar).</p>
+<div class='k'><div>radar-noches<b>63,023</b></div><div>radares<b>56</b></div><div>años<b>2016-2026</b></div><div>rasgos<b>22</b></div><div>Spearman mediano (año fuera)<b>0.64</b></div><div>R² mediano (año fuera) / solo climatología<b>0.20 / 0.24</b></div><div>Spearman mediano (radar fuera)<b>0.44</b></div><div>Spearman mediano radares españoles (fuera)<b>0.42</b></div><div>Área bajo la curva mediana (radar fuera)<b>0.80</b></div><div>Noches de paso fuerte capturadas (radar fuera)<b>35%</b></div><div>Alertas erróneas (radar fuera)<b>64%</b></div></div>
+<h2>Qué usa el modelo</h2><img src='fase2_importancia.png'>
+<h2>Validación radar a radar</h2><img src='fase2_radares.png'>
+<h2>Observado frente a predicho</h2><img src='fase2_dispersion.png'>
+<h2>Ejemplos: radares españoles nuevos y Oporto</h2><img src='fase2_series.png'>
+<h2>Tablas</h2><h3>Validación</h3>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>validación</th>
+      <th>n</th>
+      <th>spearman</th>
+      <th>R²</th>
+      <th>R² climatología</th>
+      <th>área bajo la curva</th>
+      <th>área bajo la curva (intensidad)</th>
+      <th>noches de paso fuerte</th>
+      <th>alertas emitidas</th>
+      <th>paso fuerte capturado</th>
+      <th>alertas erróneas</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>año 2016</td>
+      <td>4828</td>
+      <td>0.71</td>
+      <td>0.45</td>
+      <td>-0.33</td>
+      <td>0.77</td>
+      <td>0.72</td>
+      <td>877</td>
+      <td>507</td>
+      <td>24%</td>
+      <td>58%</td>
+    </tr>
+    <tr>
+      <td>año 2017</td>
+      <td>4213</td>
+      <td>0.70</td>
+      <td>0.56</td>
+      <td>-0.02</td>
+      <td>0.79</td>
+      <td>0.80</td>
+      <td>767</td>
+      <td>443</td>
+      <td>29%</td>
+      <td>49%</td>
+    </tr>
+    <tr>
+      <td>año 2018</td>
+      <td>6215</td>
+      <td>0.84</td>
+      <td>0.38</td>
+      <td>0.01</td>
+      <td>0.74</td>
+      <td>0.86</td>
+      <td>2149</td>
+      <td>651</td>
+      <td>19%</td>
+      <td>37%</td>
+    </tr>
+    <tr>
+      <td>año 2019</td>
+      <td>6472</td>
+      <td>0.68</td>
+      <td>-1.20</td>
+      <td>0.35</td>
+      <td>0.72</td>
+      <td>0.63</td>
+      <td>130</td>
+      <td>675</td>
+      <td>22%</td>
+      <td>96%</td>
+    </tr>
+    <tr>
+      <td>año 2020</td>
+      <td>8328</td>
+      <td>0.48</td>
+      <td>0.20</td>
+      <td>0.34</td>
+      <td>0.52</td>
+      <td>0.67</td>
+      <td>705</td>
+      <td>859</td>
+      <td>18%</td>
+      <td>85%</td>
+    </tr>
+    <tr>
+      <td>año 2021</td>
+      <td>8425</td>
+      <td>0.23</td>
+      <td>-0.58</td>
+      <td>-0.33</td>
+      <td>0.70</td>
+      <td>0.36</td>
+      <td>665</td>
+      <td>880</td>
+      <td>24%</td>
+      <td>82%</td>
+    </tr>
+    <tr>
+      <td>año 2022</td>
+      <td>3877</td>
+      <td>0.36</td>
+      <td>0.15</td>
+      <td>0.24</td>
+      <td>0.77</td>
+      <td>0.36</td>
+      <td>364</td>
+      <td>410</td>
+      <td>24%</td>
+      <td>78%</td>
+    </tr>
+    <tr>
+      <td>año 2023</td>
+      <td>5699</td>
+      <td>0.29</td>
+      <td>0.03</td>
+      <td>0.08</td>
+      <td>0.79</td>
+      <td>0.24</td>
+      <td>291</td>
+      <td>597</td>
+      <td>18%</td>
+      <td>91%</td>
+    </tr>
+    <tr>
+      <td>año 2024</td>
+      <td>5687</td>
+      <td>0.59</td>
+      <td>0.17</td>
+      <td>0.25</td>
+      <td>0.80</td>
+      <td>0.64</td>
+      <td>105</td>
+      <td>586</td>
+      <td>20%</td>
+      <td>96%</td>
+    </tr>
+    <tr>
+      <td>año 2025</td>
+      <td>5481</td>
+      <td>0.64</td>
+      <td>0.37</td>
+      <td>0.38</td>
+      <td>0.76</td>
+      <td>0.73</td>
+      <td>175</td>
+      <td>560</td>
+      <td>28%</td>
+      <td>91%</td>
+    </tr>
+    <tr>
+      <td>año 2026</td>
+      <td>3798</td>
+      <td>0.64</td>
+      <td>0.37</td>
+      <td>0.36</td>
+      <td>0.83</td>
+      <td>0.73</td>
+      <td>139</td>
+      <td>349</td>
+      <td>27%</td>
+      <td>89%</td>
+    </tr>
+    <tr>
+      <td>radar esalm</td>
+      <td>857</td>
+      <td>0.23</td>
+      <td>0.05</td>
+      <td>-0.01</td>
+      <td>0.55</td>
+      <td>0.57</td>
+      <td>87</td>
+      <td>87</td>
+      <td>11%</td>
+      <td>89%</td>
+    </tr>
+    <tr>
+      <td>radar esbad</td>
+      <td>879</td>
+      <td>0.51</td>
+      <td>0.25</td>
+      <td>0.07</td>
+      <td>0.76</td>
+      <td>0.73</td>
+      <td>90</td>
+      <td>89</td>
+      <td>30%</td>
+      <td>70%</td>
+    </tr>
+    <tr>
+      <td>radar esbar</td>
+      <td>857</td>
+      <td>0.50</td>
+      <td>0.23</td>
+      <td>0.17</td>
+      <td>0.72</td>
+      <td>0.72</td>
+      <td>87</td>
+      <td>87</td>
+      <td>23%</td>
+      <td>77%</td>
+    </tr>
+    <tr>
+      <td>radar escor</td>
+      <td>720</td>
+      <td>0.18</td>
+      <td>-0.20</td>
+      <td>-0.33</td>
+      <td>0.71</td>
+      <td>0.66</td>
+      <td>74</td>
+      <td>73</td>
+      <td>19%</td>
+      <td>81%</td>
+    </tr>
+    <tr>
+      <td>radar eslid</td>
+      <td>867</td>
+      <td>0.57</td>
+      <td>0.31</td>
+      <td>0.19</td>
+      <td>0.80</td>
+      <td>0.74</td>
+      <td>88</td>
+      <td>88</td>
+      <td>33%</td>
+      <td>67%</td>
+    </tr>
+    <tr>
+      <td>radar esmad</td>
+      <td>864</td>
+      <td>0.51</td>
+      <td>0.26</td>
+      <td>0.15</td>
+      <td>0.81</td>
+      <td>0.74</td>
+      <td>88</td>
+      <td>87</td>
+      <td>33%</td>
+      <td>67%</td>
+    </tr>
+    <tr>
+      <td>radar esmal</td>
+      <td>877</td>
+      <td>0.39</td>
+      <td>0.16</td>
+      <td>0.08</td>
+      <td>0.77</td>
+      <td>0.76</td>
+      <td>89</td>
+      <td>89</td>
+      <td>31%</td>
+      <td>69%</td>
+    </tr>
+    <tr>
+      <td>radar esmur</td>
+      <td>661</td>
+      <td>0.44</td>
+      <td>0.18</td>
+      <td>-0.01</td>
+      <td>0.73</td>
+      <td>0.70</td>
+      <td>67</td>
+      <td>67</td>
+      <td>28%</td>
+      <td>72%</td>
+    </tr>
+    <tr>
+      <td>radar espma</td>
+      <td>840</td>
+      <td>0.32</td>
+      <td>-0.12</td>
+      <td>0.03</td>
+      <td>0.78</td>
+      <td>0.78</td>
+      <td>85</td>
+      <td>85</td>
+      <td>26%</td>
+      <td>74%</td>
+    </tr>
+    <tr>
+      <td>radar essan</td>
+      <td>850</td>
+      <td>0.22</td>
+      <td>-0.04</td>
+      <td>-0.05</td>
+      <td>0.78</td>
+      <td>0.70</td>
+      <td>87</td>
+      <td>86</td>
+      <td>33%</td>
+      <td>66%</td>
+    </tr>
+    <tr>
+      <td>radar essev</td>
+      <td>835</td>
+      <td>0.52</td>
+      <td>0.24</td>
+      <td>0.11</td>
+      <td>0.80</td>
+      <td>0.78</td>
+      <td>86</td>
+      <td>84</td>
+      <td>30%</td>
+      <td>69%</td>
+    </tr>
+    <tr>
+      <td>radar essse</td>
+      <td>795</td>
+      <td>0.40</td>
+      <td>0.15</td>
+      <td>0.10</td>
+      <td>0.74</td>
+      <td>0.73</td>
+      <td>81</td>
+      <td>81</td>
+      <td>28%</td>
+      <td>72%</td>
+    </tr>
+    <tr>
+      <td>radar esval</td>
+      <td>817</td>
+      <td>0.24</td>
+      <td>0.05</td>
+      <td>-0.07</td>
+      <td>0.76</td>
+      <td>0.74</td>
+      <td>83</td>
+      <td>83</td>
+      <td>43%</td>
+      <td>57%</td>
+    </tr>
+    <tr>
+      <td>radar eszar</td>
+      <td>869</td>
+      <td>0.62</td>
+      <td>0.36</td>
+      <td>0.24</td>
+      <td>0.81</td>
+      <td>0.73</td>
+      <td>88</td>
+      <td>88</td>
+      <td>34%</td>
+      <td>66%</td>
+    </tr>
+    <tr>
+      <td>radar frabb</td>
+      <td>2024</td>
+      <td>0.32</td>
+      <td>-0.29</td>
+      <td>-0.02</td>
+      <td>0.83</td>
+      <td>0.76</td>
+      <td>204</td>
+      <td>204</td>
+      <td>42%</td>
+      <td>58%</td>
+    </tr>
+    <tr>
+      <td>radar fraja</td>
+      <td>1331</td>
+      <td>0.17</td>
+      <td>-0.12</td>
+      <td>-0.01</td>
+      <td>0.54</td>
+      <td>0.61</td>
+      <td>135</td>
+      <td>134</td>
+      <td>8%</td>
+      <td>92%</td>
+    </tr>
+    <tr>
+      <td>radar frale</td>
+      <td>1901</td>
+      <td>0.35</td>
+      <td>-0.25</td>
+      <td>0.06</td>
+      <td>0.69</td>
+      <td>0.73</td>
+      <td>191</td>
+      <td>191</td>
+      <td>26%</td>
+      <td>74%</td>
+    </tr>
+    <tr>
+      <td>radar frave</td>
+      <td>2013</td>
+      <td>0.39</td>
+      <td>0.23</td>
+      <td>-0.06</td>
+      <td>0.86</td>
+      <td>0.84</td>
+      <td>202</td>
+      <td>202</td>
+      <td>44%</td>
+      <td>56%</td>
+    </tr>
+    <tr>
+      <td>radar frbla</td>
+      <td>2001</td>
+      <td>0.63</td>
+      <td>0.38</td>
+      <td>0.05</td>
+      <td>0.91</td>
+      <td>0.86</td>
+      <td>202</td>
+      <td>201</td>
+      <td>56%</td>
+      <td>43%</td>
+    </tr>
+    <tr>
+      <td>radar frbol</td>
+      <td>1743</td>
+      <td>0.67</td>
+      <td>0.21</td>
+      <td>0.17</td>
+      <td>0.75</td>
+      <td>0.74</td>
+      <td>176</td>
+      <td>175</td>
+      <td>29%</td>
+      <td>71%</td>
+    </tr>
+    <tr>
+      <td>radar frbor</td>
+      <td>2047</td>
+      <td>0.42</td>
+      <td>0.12</td>
+      <td>-0.05</td>
+      <td>0.85</td>
+      <td>0.81</td>
+      <td>206</td>
+      <td>205</td>
+      <td>40%</td>
+      <td>60%</td>
+    </tr>
+    <tr>
+      <td>radar frbou</td>
+      <td>1898</td>
+      <td>0.58</td>
+      <td>0.21</td>
+      <td>0.02</td>
+      <td>0.81</td>
+      <td>0.81</td>
+      <td>192</td>
+      <td>191</td>
+      <td>46%</td>
+      <td>54%</td>
+    </tr>
+    <tr>
+      <td>radar frcae</td>
+      <td>2007</td>
+      <td>0.55</td>
+      <td>0.11</td>
+      <td>0.00</td>
+      <td>0.84</td>
+      <td>0.81</td>
+      <td>202</td>
+      <td>201</td>
+      <td>49%</td>
+      <td>51%</td>
+    </tr>
+    <tr>
+      <td>radar frche</td>
+      <td>1875</td>
+      <td>0.40</td>
+      <td>0.12</td>
+      <td>-0.00</td>
+      <td>0.89</td>
+      <td>0.86</td>
+      <td>189</td>
+      <td>188</td>
+      <td>49%</td>
+      <td>51%</td>
+    </tr>
+    <tr>
+      <td>radar frcol</td>
+      <td>1989</td>
+      <td>0.43</td>
+      <td>0.16</td>
+      <td>-0.00</td>
+      <td>0.72</td>
+      <td>0.71</td>
+      <td>200</td>
+      <td>200</td>
+      <td>28%</td>
+      <td>72%</td>
+    </tr>
+    <tr>
+      <td>radar frgre</td>
+      <td>2017</td>
+      <td>0.41</td>
+      <td>0.20</td>
+      <td>-0.01</td>
+      <td>0.88</td>
+      <td>0.82</td>
+      <td>203</td>
+      <td>202</td>
+      <td>51%</td>
+      <td>49%</td>
+    </tr>
+    <tr>
+      <td>radar frlep</td>
+      <td>1946</td>
+      <td>0.70</td>
+      <td>0.38</td>
+      <td>0.17</td>
+      <td>0.87</td>
+      <td>0.81</td>
+      <td>196</td>
+      <td>195</td>
+      <td>44%</td>
+      <td>56%</td>
+    </tr>
+    <tr>
+      <td>radar frmcl</td>
+      <td>1972</td>
+      <td>0.50</td>
+      <td>0.24</td>
+      <td>0.06</td>
+      <td>0.82</td>
+      <td>0.75</td>
+      <td>199</td>
+      <td>198</td>
+      <td>38%</td>
+      <td>62%</td>
+    </tr>
+    <tr>
+      <td>radar frmom</td>
+      <td>1855</td>
+      <td>0.43</td>
+      <td>-0.10</td>
+      <td>0.08</td>
+      <td>0.82</td>
+      <td>0.78</td>
+      <td>188</td>
+      <td>186</td>
+      <td>36%</td>
+      <td>64%</td>
+    </tr>
+    <tr>
+      <td>radar frmtc</td>
+      <td>1938</td>
+      <td>0.48</td>
+      <td>0.27</td>
+      <td>0.01</td>
+      <td>0.86</td>
+      <td>0.80</td>
+      <td>195</td>
+      <td>195</td>
+      <td>40%</td>
+      <td>60%</td>
+    </tr>
+    <tr>
+      <td>radar frnan</td>
+      <td>1977</td>
+      <td>0.62</td>
+      <td>0.38</td>
+      <td>0.05</td>
+      <td>0.86</td>
+      <td>0.84</td>
+      <td>199</td>
+      <td>198</td>
+      <td>47%</td>
+      <td>53%</td>
+    </tr>
+    <tr>
+      <td>radar frnim</td>
+      <td>2018</td>
+      <td>0.50</td>
+      <td>0.18</td>
+      <td>-0.01</td>
+      <td>0.77</td>
+      <td>0.74</td>
+      <td>203</td>
+      <td>203</td>
+      <td>35%</td>
+      <td>65%</td>
+    </tr>
+    <tr>
+      <td>radar frniz</td>
+      <td>2042</td>
+      <td>0.43</td>
+      <td>0.23</td>
+      <td>-0.01</td>
+      <td>0.84</td>
+      <td>0.78</td>
+      <td>205</td>
+      <td>205</td>
+      <td>43%</td>
+      <td>57%</td>
+    </tr>
+    <tr>
+      <td>radar fropo</td>
+      <td>1763</td>
+      <td>0.43</td>
+      <td>0.08</td>
+      <td>0.01</td>
+      <td>0.76</td>
+      <td>0.71</td>
+      <td>178</td>
+      <td>177</td>
+      <td>25%</td>
+      <td>75%</td>
+    </tr>
+    <tr>
+      <td>radar frpla</td>
+      <td>2045</td>
+      <td>0.44</td>
+      <td>0.23</td>
+      <td>0.03</td>
+      <td>0.78</td>
+      <td>0.77</td>
+      <td>206</td>
+      <td>206</td>
+      <td>35%</td>
+      <td>65%</td>
+    </tr>
+    <tr>
+      <td>radar frtou</td>
+      <td>2025</td>
+      <td>0.39</td>
+      <td>0.13</td>
+      <td>-0.02</td>
+      <td>0.82</td>
+      <td>0.80</td>
+      <td>204</td>
+      <td>204</td>
+      <td>35%</td>
+      <td>65%</td>
+    </tr>
+    <tr>
+      <td>radar frtra</td>
+      <td>1733</td>
+      <td>0.64</td>
+      <td>0.39</td>
+      <td>0.02</td>
+      <td>0.91</td>
+      <td>0.86</td>
+      <td>175</td>
+      <td>175</td>
+      <td>55%</td>
+      <td>45%</td>
+    </tr>
+    <tr>
+      <td>radar frtre</td>
+      <td>1691</td>
+      <td>0.53</td>
+      <td>0.23</td>
+      <td>0.01</td>
+      <td>0.89</td>
+      <td>0.83</td>
+      <td>171</td>
+      <td>170</td>
+      <td>49%</td>
+      <td>51%</td>
+    </tr>
+    <tr>
+      <td>radar frtro</td>
+      <td>2016</td>
+      <td>0.41</td>
+      <td>0.19</td>
+      <td>-0.08</td>
+      <td>0.88</td>
+      <td>0.86</td>
+      <td>203</td>
+      <td>202</td>
+      <td>56%</td>
+      <td>44%</td>
+    </tr>
+    <tr>
+      <td>radar ptfar</td>
+      <td>962</td>
+      <td>0.28</td>
+      <td>0.07</td>
+      <td>0.01</td>
+      <td>0.75</td>
+      <td>0.76</td>
+      <td>96</td>
+      <td>97</td>
+      <td>24%</td>
+      <td>76%</td>
+    </tr>
+    <tr>
+      <td>radar ptlis</td>
+      <td>458</td>
+      <td>0.46</td>
+      <td>0.25</td>
+      <td>0.19</td>
+      <td>0.74</td>
+      <td>0.71</td>
+      <td>50</td>
+      <td>46</td>
+      <td>16%</td>
+      <td>83%</td>
+    </tr>
+    <tr>
+      <td>radar ptprt</td>
+      <td>788</td>
+      <td>0.62</td>
+      <td>0.08</td>
+      <td>0.21</td>
+      <td>0.79</td>
+      <td>0.80</td>
+      <td>81</td>
+      <td>80</td>
+      <td>27%</td>
+      <td>72%</td>
+    </tr>
+    <tr>
+      <td>radar pttrc</td>
+      <td>507</td>
+      <td>0.71</td>
+      <td>0.51</td>
+      <td>0.09</td>
+      <td>0.79</td>
+      <td>0.87</td>
+      <td>52</td>
+      <td>51</td>
+      <td>48%</td>
+      <td>51%</td>
+    </tr>
+  </tbody>
+</table>
+<h3>Importancia de los rasgos</h3>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>rasgo</th>
+      <th>intensidad %</th>
+      <th>alerta %</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>latitud</td>
+      <td>17.1</td>
+      <td>18.3</td>
+    </tr>
+    <tr>
+      <td>día del año (cos)</td>
+      <td>2.7</td>
+      <td>11.6</td>
+    </tr>
+    <tr>
+      <td>longitud</td>
+      <td>12.3</td>
+      <td>11.5</td>
+    </tr>
+    <tr>
+      <td>día del año (sen)</td>
+      <td>3.2</td>
+      <td>8.4</td>
+    </tr>
+    <tr>
+      <td>temperatura 2 m</td>
+      <td>2.1</td>
+      <td>5.9</td>
+    </tr>
+    <tr>
+      <td>presión al nivel del mar</td>
+      <td>2.9</td>
+      <td>5.3</td>
+    </tr>
+    <tr>
+      <td>climatología local P90</td>
+      <td>18.3</td>
+      <td>4.5</td>
+    </tr>
+    <tr>
+      <td>viento a favor 100 m</td>
+      <td>3.2</td>
+      <td>4.2</td>
+    </tr>
+    <tr>
+      <td>nubosidad</td>
+      <td>2.0</td>
+      <td>4.0</td>
+    </tr>
+    <tr>
+      <td>humedad relativa</td>
+      <td>2.1</td>
+      <td>2.9</td>
+    </tr>
+    <tr>
+      <td>cambio presión 24 h</td>
+      <td>1.0</td>
+      <td>2.9</td>
+    </tr>
+    <tr>
+      <td>velocidad viento 10 m</td>
+      <td>1.1</td>
+      <td>2.4</td>
+    </tr>
+    <tr>
+      <td>viento a favor al inicio 100 m</td>
+      <td>1.3</td>
+      <td>2.4</td>
+    </tr>
+    <tr>
+      <td>cambio temperatura 24 h</td>
+      <td>0.8</td>
+      <td>2.3</td>
+    </tr>
+    <tr>
+      <td>precipitación acumulada</td>
+      <td>1.0</td>
+      <td>2.1</td>
+    </tr>
+    <tr>
+      <td>velocidad viento 100 m</td>
+      <td>0.8</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <td>viento lateral 100 m</td>
+      <td>1.2</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <td>viento a favor 10 m</td>
+      <td>1.3</td>
+      <td>1.9</td>
+    </tr>
+    <tr>
+      <td>climatología local P50</td>
+      <td>22.6</td>
+      <td>1.6</td>
+    </tr>
+    <tr>
+      <td>viento a favor al inicio 10 m</td>
+      <td>1.0</td>
+      <td>1.5</td>
+    </tr>
+    <tr>
+      <td>viento lateral 10 m</td>
+      <td>1.2</td>
+      <td>1.5</td>
+    </tr>
+    <tr>
+      <td>fracción horas con lluvia</td>
+      <td>0.6</td>
+      <td>0.9</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Limitaciones</h2><ul><li>Open-Meteo no sirve los niveles de presión (925/850/700 hPa) en su archivo; el viento en la capa de vuelo se aproxima con el de 100 m. El modelo definitivo debe usar ERA5 completo (Copernicus CDS).</li><li>Sin la velocidad de vol2bird no se pueden separar insectos de aves por velocidad aérea; en otoño y en el sur parte del VID es insecto. La climatología local absorbe parte del sesgo, no todo.</li><li>La predicción usa el reanálisis de la propia noche, no un pronóstico: es la cota superior de lo que se conseguirá en operación con pronósticos a 24-72 h.</li></ul>

@@ -76,13 +76,16 @@ def figures(ds: pd.DataFrame, met: pd.DataFrame, preds: pd.DataFrame, imp: pd.Da
             s = s[(s["night"].dt.year == yr) & (s["night"].dt.month.between(2, 5))]
             if s.empty:
                 s = q[q["radar"] == r].sort_values("night"); s = s[s["night"].dt.year == yr]
+            # reindexar a días naturales: las noches sin dato quedan como hueco y la línea se corta
+            s = (s.set_index("night").reindex(pd.date_range(s["night"].min(), s["night"].max(), freq="D"))
+                 .rename_axis("night").reset_index())
             ax.plot(s["night"], s["y"] ** 3, color="#333", lw=1, label="observado (radar)")
             ax.plot(s["night"], s["pred"].clip(lower=0) ** 3, color="#e67e22", lw=1.2, label="predicho (solo meteorología)")
             thr = ds.loc[ds["radar"] == r, "p90_temporada"].iloc[0]
             ax.axhline(thr, color="#c0392b", ls=":", lw=0.8, label="paso fuerte: P90 local observado")
             # noches en las que el modelo de alerta habría avisado
             corte = q[q["radar"] == r].groupby("season")["p_alerta"].quantile(0.9)
-            av = s[s["p_alerta"] >= s["season"].map(corte)]
+            av = s[s["p_alerta"] >= s["season"].map(corte).fillna(np.inf)]
             for x in av["night"]:
                 ax.axvline(x, color="#f39c12", alpha=0.35, lw=3, zorder=0)
             ax.plot([], [], color="#f39c12", alpha=0.5, lw=3, label="noche con alerta emitida")
