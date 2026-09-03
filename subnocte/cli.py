@@ -475,5 +475,22 @@ def ranking(radio_km: float = 10.0):
     rprint(f"Informe: {OUTPUT / 'ranking.html'}")
 
 
+INFORMES = ["output/fase0.html", "output/fase1.html", "output/fase2.html", "output/fase3.html",
+            "output/ranking.html", "docs/diseno.html"]
+
+
+@app.command()
+def web():
+    """Regenera la web pública (`docs/`) desde la última previsión y el último ranking."""
+    from . import web as W
+
+    prev = pd.read_csv(PREVISION_CSV, parse_dates=["night"]) if PREVISION_CSV.exists() else None
+    rk_csv = ROOT / "data" / "ranking_exposicion.csv"
+    rk = pd.read_csv(rk_csv) if rk_csv.exists() else None
+    if prev is None:
+        rprint("[yellow]sin previsión: la web sale sin la sección de próximas noches[/yellow]")
+    W.construir(prev, rk, [ROOT / n for n in INFORMES], ROOT, log=rprint)
+
+
 if __name__ == "__main__":
     app()

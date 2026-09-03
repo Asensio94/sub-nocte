@@ -1,0 +1,52 @@
+name: prevision
+
+# Cada mañana: pronóstico de las próximas siete noches, niveles de aviso por ciudad y web regenerada.
+# La web se publica con GitHub Pages leyendo la raíz de esta misma rama, así que basta con hacer commit:
+# no hace falta el despliegue por Actions ni permisos adicionales.
+
+on:
+  schedule:
+    - cron: "20 5 * * *"   # 05:20 UTC ≈ 07:20 en Madrid, con el pronóstico del día ya publicado
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: prevision
+  cancel-in-progress: false
+
+jobs:
+  prevision:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Previsión de las próximas noches
+        run: python -m subnocte.cli fase3 --dias 7
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: Regenerar la web
+        run: python -m subnocte.cli web
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: Publicar si algo ha cambiado
+        run: |
+          git config user.name "sub-nocte"
+          git config user.email "actions@github.com"
+          git add index.html .nojekyll data/fase3_prevision.csv output/fase3.html
+          if git diff --cached --quiet; then
+            echo "sin cambios"
+          else
+            git commit -m "Previsión del $(date -u +%Y-%m-%d)"
+            git push
+          fi
