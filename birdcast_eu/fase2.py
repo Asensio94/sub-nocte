@@ -92,7 +92,8 @@ def figures(ds: pd.DataFrame, met: pd.DataFrame, preds: pd.DataFrame, imp: pd.Da
     return figs
 
 
-def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: list[str], figs: list[Path], out: Path) -> None:
+def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: list[str], figs: list[Path], out: Path,
+                 ref: pd.DataFrame | None = None) -> None:
     an = met[met["split"].str.startswith("año")]
     ra = met[met["split"].str.startswith("radar")].copy()
     ra["pais"] = ra["split"].str.split().str[1].str[:2].map(PAIS)
@@ -153,6 +154,23 @@ def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: l
     ]
     if len(figs) > 3:
         parts.append(f"<h2>Ejemplos: radares españoles nuevos y Oporto</h2><img src='{figs[3].name}'>")
+    parts += [
+    ]
+    if ref is not None and not ref.empty:
+        rr = ref[ref["split"].str.startswith("año")]
+        aa = met[met["split"].str.startswith("año")]
+        comp = pd.DataFrame({
+            "con viento en altura de vuelo": [f"{aa['spearman'].median():.2f}", f"{aa['auc'].median():.2f}",
+                                              f"{aa['acierto'].mean():.0%}"],
+            "solo meteorología de superficie": [f"{rr['spearman'].median():.2f}", f"{rr['auc'].median():.2f}",
+                                                f"{rr['acierto'].mean():.0%}"],
+        }, index=["Spearman mediano", "área bajo la curva mediana", "paso fuerte capturado"])
+        parts += [
+            "<h2>¿Cuánto aporta el viento a la altura a la que vuelan?</h2>",
+            "<p>Las mismas noches y los mismos pliegues por año, cambiando solo el conjunto de rasgos: con el viento en "
+            "925, 850 y 700 hectopascales (unos 750, 1.500 y 3.000 m) frente a solo el de 10 y 100 m.</p>",
+            comp.to_html(),
+        ]
     parts += [
         "<h2>Tablas</h2><h3>Validación</h3>", fmt.to_html(index=False),
         "<h3>Importancia de los rasgos</h3>", imp_t.to_html(index=False),

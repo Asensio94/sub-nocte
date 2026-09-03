@@ -226,6 +226,7 @@ def verificar(paises: str = ",".join(FASE1_PAISES), start_year: int = 2016, rein
 
 
 METEO = ROOT / "data" / "meteo"
+METEO_NIVELES = ROOT / "data" / "meteo_niveles"
 
 
 @app.command()
@@ -247,7 +248,27 @@ def meteo(radares: list[str] = typer.Argument(None), start_year: int = 2016):
 
 
 @app.command()
-def fase2(cache: bool = False):
+def meteo_niveles(radares: list[str] = typer.Argument(None), start_year: int = 2021):
+    """Descarga viento y temperatura en niveles de presión (925/850/700 hPa, altura de vuelo) desde 2021."""
+    from .historico import load_all_nightly
+    from .meteo import fetch_radar_niveles
+
+    n = load_all_nightly(NIGHTLY)
+    pos = n.groupby("radar").agg(lat=("lat", "first"), lon=("lon", "first"),
+                                 y0=("night", lambda x: x.dt.year.min()), y1=("night", lambda x: x.dt.year.max()))
+    if radares:
+        pos = pos.loc[[r for r in radares if r in pos.index]]
+    rprint(f"{len(pos)} radares")
+    for r, pp in pos.iterrows():
+        years = list(range(max(start_year, int(pp.y0)), int(pp.y1) + 1))
+        if not years:
+            continue
+        rprint(f"[bold]{r}[/bold] {years[0]}-{years[-1]}")
+        fetch_radar_niveles(r, float(pp.lat), float(pp.lon), years, METEO_NIVELES, log=rprint)
+
+
+@app.command()
+def fase2(cache: bool = False, niveles: bool = True):
     """Modelo meteorológico del VID nocturno: conjunto radar × noche, validación por año y por radar, informe."""
     from . import fase2 as F
     from . import modelo as M
@@ -260,9 +281,12 @@ def fase2(cache: bool = False):
     else:
         n = load_all_nightly(NIGHTLY)
         clim = pd.read_csv(ROOT / "data" / "climatologia_doy.csv")
-        ds = M.build_dataset(n, METEO, clim, log=rprint)
+        ds = M.build_dataset(n, METEO, clim, log=rprint, niveles_dir=METEO_NIVELES)
         ds.to_parquet(dsf, index=False)
-    cols = M.feature_columns(ds)
+    if niveles and "ws_850hPa" in ds:
+        ds = ds[ds["ws_850hPa"].notna()].reset_index(drop=True)
+        rprint("[bold]con viento en altura de vuelo[/bold] (925/850/700 hPa, desde 2021)")
+    cols = M.feature_columns(ds, niveles=niveles)
     rprint(f"{len(ds):,} radar-noches en ventana migratoria, {ds['radar'].nunique()} radares, {len(cols)} rasgos")
     met, preds = M.evaluate(ds, cols, log=rprint)
     met.to_csv(ROOT / "data" / "fase2_validacion.csv", index=False, float_format="%.3f")
@@ -270,8 +294,14 @@ def fase2(cache: bool = False):
     imp.to_csv(ROOT / "data" / "fase2_importancia.csv", float_format="%.2f")
     M.fit_final(ds, cols, ROOT / "data")
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    # referencia: mismas noches, solo meteorología de superficie, para medir lo que aporta la altura de vuelo
+    ref = None
+    if niveles and any("hPa" in c for c in cols):
+        rprint("[bold]referencia sin viento en altura[/bold]")
+        ref, _ = M.evaluate(ds, M.feature_columns(ds, niveles=False), log=rprint, solo_anos=True)
+        ref.to_csv(ROOT / "data" / "fase2_validacion_superficie.csv", index=False, float_format="%.3f")
     figs = F.figures(ds, met, preds, imp, OUTPUT)
-    F.write_report(ds, met, imp, cols, figs, OUTPUT / "fase2.html")
+    F.write_report(ds, met, imp, cols, figs, OUTPUT / "fase2.html", ref=ref)
     ra = met[met["split"].str.startswith("radar")]
     rprint(ra.round(2).to_string(index=False))
     rprint(f"[bold]radar fuera[/bold]: área bajo la curva mediana {ra['auc'].median():.2f}, "

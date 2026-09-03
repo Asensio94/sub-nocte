@@ -25,7 +25,8 @@ TARGET = "vid_night"
 META = ["radar", "night", "season", "year", TARGET, "y", "clim_p50", "clim_p90", "alerta_obs"]
 
 
-def build_dataset(nightly: pd.DataFrame, meteo_dir: Path, clim: pd.DataFrame, log=print) -> pd.DataFrame:
+def build_dataset(nightly: pd.DataFrame, meteo_dir: Path, clim: pd.DataFrame, log=print,
+                  niveles_dir: Path | None = None) -> pd.DataFrame:
     """Une noches, meteorología y climatología en una fila por radar-noche dentro de las ventanas migratorias."""
     n = nightly[(nightly["coverage"] >= COVERAGE_MIN) & nightly[TARGET].notna()].copy()
     n["night"] = pd.to_datetime(n["night"])
@@ -39,12 +40,15 @@ def build_dataset(nightly: pd.DataFrame, meteo_dir: Path, clim: pd.DataFrame, lo
         if not f.exists():
             log(f"  {radar}: sin meteorología")
             continue
-        feats = night_features(pd.read_parquet(f), g)
+        fv = niveles_dir / f"{radar}.parquet" if niveles_dir else None
+        niv = pd.read_parquet(fv) if fv and fv.exists() else None
+        feats = night_features(pd.read_parquet(f), g, niveles=niv)
         if feats.empty:
             continue
         d = g.merge(feats, on=["radar", "night"], how="inner")
         parts.append(d)
-        log(f"  {radar}: {len(d)} noches con meteorología")
+        alt = f", {d['ws_850hPa'].notna().sum()} con viento en altura" if "ws_850hPa" in d else ""
+        log(f"  {radar}: {len(d)} noches con meteorología{alt}")
     ds = pd.concat(parts, ignore_index=True)
     ds["doy"] = ds["night"].dt.dayofyear
     ds["year"] = ds["night"].dt.year
@@ -59,10 +63,20 @@ def build_dataset(nightly: pd.DataFrame, meteo_dir: Path, clim: pd.DataFrame, lo
     return ds
 
 
-def feature_columns(ds: pd.DataFrame) -> list[str]:
-    """Rasgos: meteorología de la noche, ciclo anual, climatología local y posición. Nada derivado del radar esa noche."""
+SUPERFICIE = {"t2m", "rh2m", "pmsl", "precip", "precip_h", "cloud", "dp24", "dt24"}
+ALTURA = {"t850", "gh850", "dt850_24"}
+
+
+def feature_columns(ds: pd.DataFrame, niveles: bool = True) -> list[str]:
+    """Rasgos: meteorología de la noche, ciclo anual, climatología local y posición. Nada derivado del radar esa noche.
+
+    Con `niveles=False` se excluye todo lo que venga de niveles de presión, para medir cuánto aporta conocer el
+    viento a la altura a la que vuelan las aves frente a conocer solo el de superficie.
+    """
     meteo = [c for c in ds.columns if c.split("_")[0] in {"ws", "tail", "cross", "tail0"}
-             or c in {"t2m", "rh2m", "pmsl", "precip", "precip_h", "cloud", "dp24", "dt24"}]
+             or c in SUPERFICIE | ALTURA]
+    if not niveles:
+        meteo = [c for c in meteo if "hPa" not in c and c not in ALTURA]
     return meteo + ["doy_sin", "doy_cos", "clim_p50", "clim_p90", "lat", "lon"]
 
 
@@ -108,7 +122,7 @@ def alert_flags(d: pd.DataFrame, pred: np.ndarray, q: float = ALERT_Q) -> np.nda
     return out
 
 
-def evaluate(ds: pd.DataFrame, cols: list[str], log=print) -> tuple[pd.DataFrame, pd.DataFrame]:
+def evaluate(ds: pd.DataFrame, cols: list[str], log=print, solo_anos: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Validación cruzada por año y por radar. Devuelve (tabla de métricas, predicciones fuera de muestra)."""
     from scipy.stats import spearmanr
     from sklearn.metrics import roc_auc_score
@@ -147,7 +161,7 @@ def evaluate(ds: pd.DataFrame, cols: list[str], log=print) -> tuple[pd.DataFrame
         fold(tr, te, f"año {y}", "año")
     # 2) por radar: dejar fuera cada radar con al menos 150 noches (los españoles nuevos son el objetivo)
     for r, te in ds.groupby("radar"):
-        if len(te) < 150:
+        if solo_anos or len(te) < 150:
             continue
         fold(ds[ds["radar"] != r], te, f"radar {r}", "radar")
     return pd.DataFrame(rows), pd.concat(preds, ignore_index=True)
