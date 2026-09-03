@@ -151,8 +151,13 @@ def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: l
         "transformado con la raíz cúbica. Solo noches con cobertura ≥ 60 % dentro de las ventanas migratorias "
         "(15 feb-31 may, 15 ago-30 nov).</p>",
         "<p><b>Dos validaciones honestas:</b> (1) dejar fuera un año completo y predecirlo con el resto (¿funciona en un año "
-        "nuevo?); (2) dejar fuera un radar completo (¿funciona en un lugar donde no se entrenó? — es el caso de los radares "
-        "españoles nuevos, que tienen pocos años).</p>",
+        "nuevo?); (2) dejar fuera un radar completo (¿funciona en un lugar donde no se entrenó? — es el caso de una ciudad "
+        "sin radar cerca, y también el de los radares españoles nuevos, que solo tienen una temporada).</p>",
+        "<p><b>Cada pliegue solo ve lo que habría estado disponible.</b> La climatología local del radar se calcula con sus "
+        "propias observaciones, así que dársela sin más al modelo sería filtrarle la respuesta. Al dejar fuera un año se "
+        "recalcula con los años restantes (ventana móvil de ±7 días); al dejar fuera un radar <b>desaparece de los rasgos</b>, "
+        "porque en una ciudad sin radar no existe. Por eso las cifras por radar son más bajas que las anuales: el modelo se "
+        "queda solo con la meteorología, el calendario y la posición geográfica.</p>",
         "<p><b>Cómo se decide una alerta.</b> Se llama <i>noche de paso fuerte</i> a la que supera el percentil 90 histórico "
         "local de su temporada, es decir una noche de cada diez. Un modelo de media encoge las predicciones hacia el centro "
         "y casi nunca cruza ese valor absoluto, así que la alerta la decide un <b>segundo modelo</b>, entrenado para "
@@ -163,7 +168,8 @@ def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: l
         "directamente comparable con el 10 % que daría el azar. El área bajo la curva resume la capacidad de separar esas "
         "noches sin depender de ningún umbral (0,5 = azar).</p>",
         "<div class='k'>" + "".join(f"<div>{k}<b>{v}</b></div>" for k, v in resumen.items()) + "</div>",
-        f"<h2>Qué usa el modelo</h2><img src='{figs[0].name}'>",
+        f"<h2>Qué usa el modelo</h2><p>Ganancia relativa de cada rasgo entrenando con todo, es decir en el escenario con "
+        f"climatología local disponible.</p><img src='{figs[0].name}'>",
         f"<h2>Validación radar a radar</h2><img src='{figs[1].name}'>",
         f"<h2>Observado frente a predicho</h2><img src='{figs[2].name}'>",
     ]
@@ -197,6 +203,8 @@ def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: l
         "parte del VID es insecto. La climatología local absorbe parte del sesgo, no todo.</li>"
         f"<li>Solo los {n_folds} radares con al menos {min_noches} noches tienen validación propia; los demás aportan al "
         "entrenamiento pero no se validan por separado. Seis radares tienen menos de 20 noches en total.</li>"
+        "<li>La columna «R² climatología» de los pliegues por radar compara con la climatología observada de ese mismo "
+        "radar, que el modelo no ha podido usar: es un punto de referencia deliberadamente generoso.</li>"
         "<li>Los años con pocos radares dan R² muy negativo (el modelo acierta el orden de las noches pero no el nivel "
         "absoluto de un radar que apenas ha visto). El Spearman y el área bajo la curva son las métricas de fiar; el R² "
         "solo tiene sentido comparado con el de la climatología, en la misma columna.</li>"

@@ -123,8 +123,41 @@ def alert_flags(d: pd.DataFrame, pred: np.ndarray, q: float = ALERT_Q) -> np.nda
     return out
 
 
+VENTANA_CLIM = 7   # dias a cada lado para la climatologia movil
+MIN_CLIM = 5       # noches minimas en la ventana para dar un percentil
+
+
+def clim_ventana(df: pd.DataFrame, doys: pd.DataFrame, ventana: int = VENTANA_CLIM) -> pd.DataFrame:
+    """P50 y P90 del VID por radar y dia del ano con ventana movil circular, calculados solo con `df`.
+
+    Se recalcula dentro de cada pliegue: la climatologia del fichero se hizo con todos los anos, incluido el
+    que se deja fuera, y usarla tal cual seria filtrar la respuesta al modelo.
+    """
+    filas = []
+    objetivo = doys.groupby("radar")["doy"].unique().to_dict()
+    for radar, g in df.groupby("radar"):
+        doy = g["doy"].to_numpy(); v = g[TARGET].to_numpy()
+        for d in objetivo.get(radar, []):
+            dist = np.abs(doy - d)
+            dist = np.minimum(dist, 365 - dist)
+            sel = v[dist <= ventana]
+            if len(sel) >= MIN_CLIM:
+                filas.append((radar, d, float(np.quantile(sel, 0.5)), float(np.quantile(sel, 0.9))))
+    return pd.DataFrame(filas, columns=["radar", "doy", "clim_p50", "clim_p90"])
+
+
+def _con_clim(d: pd.DataFrame, cl: pd.DataFrame) -> pd.DataFrame:
+    return d.drop(columns=["clim_p50", "clim_p90"]).merge(cl, on=["radar", "doy"], how="left")
+
+
 def evaluate(ds: pd.DataFrame, cols: list[str], log=print, solo_anos: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Validación cruzada por año y por radar. Devuelve (tabla de métricas, predicciones fuera de muestra)."""
+    """Validación cruzada por año y por radar. Devuelve (tabla de métricas, predicciones fuera de muestra).
+
+    Cada pliegue usa solo la información que habría estado disponible:
+      - dejando fuera un año, la climatología local se recalcula con los años restantes;
+      - dejando fuera un radar, la climatología local desaparece de los rasgos, porque en una ciudad sin radar
+        no existe. Es el escenario más exigente y el que corresponde al servicio.
+    """
     from scipy.stats import spearmanr
     from sklearn.metrics import roc_auc_score
 
@@ -144,9 +177,17 @@ def evaluate(ds: pd.DataFrame, cols: list[str], log=print, solo_anos: bool = Fal
                 "alertas_obs": int(a_obs.sum()), "alertas_pred": int(a_pred.sum()),
                 "acierto": tp / max(a_obs.sum(), 1), "falsa_alarma": 1 - tp / max(a_pred.sum(), 1)}
 
+    sin_clim = [c for c in cols if not c.startswith("clim_")]
+
     def fold(tr: pd.DataFrame, te: pd.DataFrame, label: str, kind: str) -> None:
-        p = _fit(tr, cols).predict(te[cols])
-        pa = _fit_alerta(tr, cols).predict(te[cols])
+        if kind == "radar":
+            c = sin_clim  # el radar excluido no tiene climatologia propia disponible
+        else:
+            c = cols
+            cl = clim_ventana(tr, ds[["radar", "doy"]])
+            tr, te = _con_clim(tr, cl), _con_clim(te, cl)
+        p = _fit(tr, c).predict(te[c])
+        pa = _fit_alerta(tr, c).predict(te[c])
         rows.append(metrics(te, p, pa, label))
         preds.append(te[["radar", "night", "season", "y"]].assign(pred=p, p_alerta=pa, split=kind))
         m = rows[-1]
@@ -170,7 +211,7 @@ def evaluate(ds: pd.DataFrame, cols: list[str], log=print, solo_anos: bool = Fal
     return pd.DataFrame(rows), pd.concat(preds, ignore_index=True)
 
 
-def importance(ds: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+def importance(ds: pd.DataFrame, cols: list[str]) -> pd.DataFrame:  # noqa: D401
     """Ganancia relativa de cada rasgo en los dos modelos, en porcentaje."""
     out = {}
     for nombre, f in (("intensidad", _fit), ("alerta", _fit_alerta)):
