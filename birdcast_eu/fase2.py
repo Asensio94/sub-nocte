@@ -97,6 +97,13 @@ def figures(ds: pd.DataFrame, met: pd.DataFrame, preds: pd.DataFrame, imp: pd.Da
 
 def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: list[str], figs: list[Path], out: Path,
                  ref: pd.DataFrame | None = None) -> None:
+    con_altura = any("hPa" in c for c in cols)
+    fuente = ("viento y temperatura en los niveles de presión de 925, 850 y 700 hectopascales, es decir a unos 750, "
+              "1.500 y 3.000 m sobre el nivel del mar, que es donde vuelan las aves, más el viento de 10 y 100 m, "
+              "temperatura, humedad, presión, precipitación y nubosidad en superficie; archivo de análisis y pronósticos "
+              "operativos de Open-Meteo, disponible desde 2021") if con_altura else (
+              "viento a 10 y 100 m, temperatura, humedad, presión, precipitación y nubosidad; reanálisis ERA5 vía "
+              "Open-Meteo, disponible desde 1940")
     an = met[met["split"].str.startswith("año")]
     ra = met[met["split"].str.startswith("radar")].copy()
     ra["pais"] = ra["split"].str.split().str[1].str[:2].map(PAIS)
@@ -121,6 +128,8 @@ def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: l
                               "auc_intensidad": "área bajo la curva (intensidad)",
                               "acierto": "paso fuerte capturado", "falsa_alarma": "alertas erróneas",
                               "alertas_obs": "noches de paso fuerte", "alertas_pred": "alertas emitidas"})
+    from .modelo import MIN_NOCHES_RADAR as min_noches
+    n_folds = len(ra)
     imp_t = imp.reset_index().rename(columns={"index": "rasgo", "intensidad": "intensidad %", "alerta": "alerta %"})
     imp_t["rasgo"] = imp_t["rasgo"].map(lambda k: NOMBRE.get(k, k))
     for c in ("intensidad %", "alerta %"):
@@ -134,10 +143,11 @@ def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: l
         ".k div{background:#f7f7f7;padding:8px 12px;border-radius:6px}.k b{display:block;font-size:20px}</style>",
         "<h1>Fase 2 · ¿predice la meteorología la migración nocturna?</h1>",
         "<p>Modelo de árboles potenciados (LightGBM) que estima la <b>densidad nocturna de aves</b> (VID, aves/km²) de "
-        "cada radar a partir de la meteorología de la noche (reanálisis ERA5 vía Open-Meteo: viento a 10 y 100 m "
-        "descompuesto en componente a favor y lateral respecto al rumbo migratorio, temperatura, humedad, presión y sus "
-        "cambios en 24 h, precipitación y nubosidad), el día del año y la climatología local. Objetivo transformado con "
-        "la raíz cúbica. Solo noches con cobertura ≥ 60 % dentro de las ventanas migratorias (15 feb-31 may, 15 ago-30 nov).</p>",
+        f"cada radar a partir de la meteorología de la noche ({fuente}), el día del año, la climatología local del radar y "
+        "su posición. El viento se descompone en componente a favor y componente lateral respecto al rumbo migratorio de la "
+        "temporada, y se añaden los cambios de presión y temperatura en 24 h, que marcan el paso de frentes. Objetivo "
+        "transformado con la raíz cúbica. Solo noches con cobertura ≥ 60 % dentro de las ventanas migratorias "
+        "(15 feb-31 may, 15 ago-30 nov).</p>",
         "<p><b>Dos validaciones honestas:</b> (1) dejar fuera un año completo y predecirlo con el resto (¿funciona en un año "
         "nuevo?); (2) dejar fuera un radar completo (¿funciona en un lugar donde no se entrenó? — es el caso de los radares "
         "españoles nuevos, que tienen pocos años).</p>",
@@ -157,8 +167,6 @@ def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: l
     ]
     if len(figs) > 3:
         parts.append(f"<h2>Ejemplos: radares españoles nuevos y Oporto</h2><img src='{figs[3].name}'>")
-    parts += [
-    ]
     if ref is not None and not ref.empty:
         rr = ref[ref["split"].str.startswith("año")]
         aa = met[met["split"].str.startswith("año")]
@@ -178,11 +186,19 @@ def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: l
         "<h2>Tablas</h2><h3>Validación</h3>", fmt.to_html(index=False),
         "<h3>Importancia de los rasgos</h3>", imp_t.to_html(index=False),
         "<h2>Limitaciones</h2><ul>"
-        "<li>Open-Meteo no sirve los niveles de presión (925/850/700 hPa) en su archivo; el viento en la capa de vuelo se "
-        "aproxima con el de 100 m. El modelo definitivo debe usar ERA5 completo (Copernicus CDS).</li>"
-        "<li>Sin la velocidad de vol2bird no se pueden separar insectos de aves por velocidad aérea; en otoño y en el sur "
+        + ("<li>El viento en la capa de vuelo procede del archivo de pronósticos operativos, que solo llega hasta 2021. "
+           "Eso reduce el histórico utilizable y deja fuera los primeros años de las series francesas, que son las "
+           "largas. La comparación con el modelo de superficie mide cuánto se gana a cambio.</li>" if con_altura else
+           "<li>El viento en la capa de vuelo (925, 850 y 700 hectopascales) no entra en esta versión: el reanálisis "
+           "ERA5 de Open-Meteo solo sirve superficie y 100 m. Con los niveles de presión el modelo debería mejorar.</li>")
+        + "<li>Sin la velocidad de vol2bird no se pueden separar insectos de aves por velocidad aérea; en otoño y en el sur "
         "parte del VID es insecto. La climatología local absorbe parte del sesgo, no todo.</li>"
-        "<li>La predicción usa el reanálisis de la propia noche, no un pronóstico: es la cota superior de lo que se "
-        "conseguirá en operación con pronósticos a 24-72 h.</li></ul>",
+        f"<li>Solo los {n_folds} radares con al menos {min_noches} noches tienen validación propia; los demás aportan al "
+        "entrenamiento pero no se validan por separado. Seis radares tienen menos de 20 noches en total.</li>"
+        "<li>Los años con pocos radares dan R² muy negativo (el modelo acierta el orden de las noches pero no el nivel "
+        "absoluto de un radar que apenas ha visto). El Spearman y el área bajo la curva son las métricas de fiar; el R² "
+        "solo tiene sentido comparado con el de la climatología, en la misma columna.</li>"
+        "<li>La predicción usa el análisis de la propia noche, no un pronóstico a varios días: es la cota superior de lo "
+        "que se conseguirá en operación.</li></ul>",
     ]
     out.write_text("\n".join(parts), encoding="utf-8", newline="\n")
