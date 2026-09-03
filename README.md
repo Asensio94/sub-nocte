@@ -66,7 +66,8 @@ python -m birdcast_eu.cli ciudades
 
 # Fase 2: meteorología por radar y modelo de pronóstico
 python -m birdcast_eu.cli meteo --start-year 2016          # superficie y 100 m (reanálisis ERA5)
-python -m birdcast_eu.cli meteo-niveles --start-year 2021  # viento a 925/850/700 hPa (altura de vuelo)
+python -m birdcast_eu.cli meteo-niveles --start-year 2021  # viento a 925/850/700 hPa (altura de vuelo),
+                                                           # solo dentro de las ventanas migratorias
 python -m birdcast_eu.cli fase2                            # conjunto, validación, modelos e informe
 python -m birdcast_eu.cli fase2 --cache --no-niveles       # reutiliza el conjunto; solo meteorología de superficie
 
