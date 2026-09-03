@@ -14,7 +14,7 @@ En Estados Unidos, BirdCast predice cada noche cuántas aves migrarán y ciudade
 reduciendo colisiones con edificios. En Europa existen los datos (Aloft, ENRAM, vol2bird) y la ciencia, pero
 **no existe ningún servicio público de pronóstico por ciudad ni ningún programa municipal ligado a la migración**.
 
-## Estado (2 septiembre 2026)
+## Estado (3 septiembre 2026)
 
 - **Fase 0 completada: los radares españoles renovados de AEMET sí ven aves.** En primavera de 2026 Madrid,
   Barcelona y Cáceres muestran tráfico nocturno concentrado hacia el N-NE (61 % al NE en Barcelona), a 8-9 m/s,
@@ -34,7 +34,27 @@ reduciendo colisiones con edificios. En Europa existen los datos (Aloft, ENRAM, 
   No hay ningún análisis publicado sobre los radares españoles renovados; esta validación es propia.
 - Comprobación de coherencia: el 10 % de noches más intensas concentra el 50-55 % del paso estacional en
   España, Portugal y Francia, el mismo valor que Horton et al. (2021) midieron en Estados Unidos (54 %).
-- Siguiente: fase 2, modelo LightGBM cuantílico con ERA5 sobre el VID nocturno.
+- **Fase 2 completada: la meteorología anticipa las noches de paso fuerte, pero con calidad muy desigual según
+  el radar.** 31.217 noches de 55 radares (2021-2026, los años con viento en la capa de vuelo), 37 variables.
+  Dos modelos: uno de intensidad (regresión sobre la raíz cúbica del VID) y otro de alerta (clasificación de la
+  noche por encima del percentil 90 local). Informe: `output/fase2.html`.
+  - *Ciudad con radar propio y con histórico* (validación dejando fuera un año entero): correlación de rangos
+    0,70 y área bajo la curva 0,74; el R² pasa de 0,19-0,41 con solo la climatología a 0,36-0,59 con el modelo.
+  - *Ciudad sin radar* (validación dejando fuera el radar completo, sin darle su climatología): correlación 0,51,
+    área bajo la curva 0,77 y **34 % de las noches de paso fuerte capturadas frente al 10 % del azar**, con 66 %
+    de falsas alarmas emitiendo tantas alertas como noches de paso fuerte hay.
+  - Por país: Portugal 0,82 de área bajo la curva y 49 % de acierto, Francia 0,79 y 36 %, España 0,74 y 27 %.
+    Los mejores resultados absolutos son los tres radares de las **Azores** (Flores 0,97 y 79 % de acierto,
+    Terceira 0,89 y 59 %, São Miguel 0,85 y 57 %): islas oceánicas donde el paso es muy episódico y depende casi
+    solo del tiempo, y además con pocas noches, así que hay que leerlos con cautela. En el continente los mejores
+    son franceses (Trappes 0,88 y 56 %, Blaisy 0,88 y 45 %, Bourges 0,87 y 45 %) y Oporto (0,80 y 40 %);
+    Portugal continental se queda en 0,75 y 33 %.
+  - **Los cuatro radares españoles renovados son el caso difícil**: área bajo la curva 0,55-0,66 y 8-21 % de
+    acierto. Baten al azar pero no sirven todavía para un aviso fiable; el perfil truncado a 6 capas y la
+    contaminación de insectos son los sospechosos.
+  - El viento a la altura a la que vuelan las aves (925, 850 y 700 hectopascales) mejora el área bajo la curva en
+    0,023 de media y en 37 de los 49 radares frente a usar solo superficie: aporta, poco y de forma consistente.
+- Siguiente: fase 3, pasar de reanálisis a pronóstico (ECMWF Open Data), umbrales por ciudad y web con alertas.
 
 ## Cómo funciona
 
