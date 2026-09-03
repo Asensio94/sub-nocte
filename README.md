@@ -91,32 +91,32 @@ percentil 90 histórico local de la temporada; «medio» = entre P70 y P90.
 python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
 
 # Fase 0: validación de los radares españoles (descarga ~10 meses de 6 radares)
-python -m birdcast_eu.cli fase0
+python -m subnocte.cli fase0
 
 # Fase 1: histórico completo de un país o de radares concretos, y climatologías
-python -m birdcast_eu.cli historico --paises es,pt,fr --start-year 2016
-python -m birdcast_eu.cli historico estjv ptprt --start-year 2019
-python -m birdcast_eu.cli climatologia
-python -m birdcast_eu.cli ciudades
+python -m subnocte.cli historico --paises es,pt,fr --start-year 2016
+python -m subnocte.cli historico estjv ptprt --start-year 2019
+python -m subnocte.cli climatologia
+python -m subnocte.cli ciudades
 
 # Fase 2: meteorología por radar y modelo de pronóstico
-python -m birdcast_eu.cli meteo --start-year 2016          # superficie y 100 m (reanálisis ERA5)
-python -m birdcast_eu.cli meteo-niveles --start-year 2021  # viento a 925/850/700 hPa (altura de vuelo),
+python -m subnocte.cli meteo --start-year 2016          # superficie y 100 m (reanálisis ERA5)
+python -m subnocte.cli meteo-niveles --start-year 2021  # viento a 925/850/700 hPa (altura de vuelo),
                                                            # solo dentro de las ventanas migratorias
-python -m birdcast_eu.cli fase2                            # conjunto, validación, modelos e informe
-python -m birdcast_eu.cli fase2 --cache --no-niveles       # reutiliza el conjunto; solo meteorología de superficie
+python -m subnocte.cli fase2                            # conjunto, validación, modelos e informe
+python -m subnocte.cli fase2 --cache --no-niveles       # reutiliza el conjunto; solo meteorología de superficie
 
 # Fase 3: previsión por ciudad
-python -m birdcast_eu.cli fase3-archivo                    # archivo meteorológico en el punto de cada ciudad
-python -m birdcast_eu.cli fase3-entrenar                   # modelos operativos, sin climatología local
-python -m birdcast_eu.cli fase3-umbrales                   # percentiles propios de cada ciudad
-python -m birdcast_eu.cli fase3 --dias 7                   # previsión de las próximas noches e informe
-python -m birdcast_eu.cli ranking                          # exposición a la luz artificial (necesita el atlas)
+python -m subnocte.cli fase3-archivo                    # archivo meteorológico en el punto de cada ciudad
+python -m subnocte.cli fase3-entrenar                   # modelos operativos, sin climatología local
+python -m subnocte.cli fase3-umbrales                   # percentiles propios de cada ciudad
+python -m subnocte.cli fase3 --dias 7                   # previsión de las próximas noches e informe
+python -m subnocte.cli ranking                          # exposición a la luz artificial (necesita el atlas)
 
 # Piezas sueltas
-python -m birdcast_eu.cli radars                       # radares del bucket y sus años
-python -m birdcast_eu.cli ingest estjv --start 2026-03-01 --end 2026-05-31
-python -m birdcast_eu.cli nightly estjv
+python -m subnocte.cli radars                       # radares del bucket y sus años
+python -m subnocte.cli ingest estjv --start 2026-03-01 --end 2026-05-31
+python -m subnocte.cli nightly estjv
 ```
 
 Informes: `output/fase0.html` (validación de radares), `output/fase1.html` (climatologías y umbrales),

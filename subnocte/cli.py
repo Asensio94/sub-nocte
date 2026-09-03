@@ -1,8 +1,8 @@
 """Línea de comandos.
 
-  python -m birdcast_eu.cli ingest estjv esgld --start 2025-11-01 --end 2026-08-31
-  python -m birdcast_eu.cli nightly estjv esgld
-  python -m birdcast_eu.cli fase0
+  python -m subnocte.cli ingest estjv esgld --start 2025-11-01 --end 2026-08-31
+  python -m subnocte.cli nightly estjv esgld
+  python -m subnocte.cli fase0
 """
 
 from __future__ import annotations

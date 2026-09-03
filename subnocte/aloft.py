@@ -29,7 +29,7 @@ NUMERIC = [
 
 RETRIES = 4          # el bucket corta conexiones al descargar en paralelo
 _session = requests.Session()
-_session.headers["User-Agent"] = "birdcast-europa/0.1 (proyecto abierto de conservación)"
+_session.headers["User-Agent"] = "sub-nocte/0.1 (proyecto abierto de conservación)"
 
 
 def list_prefixes(prefix: str) -> list[str]:
