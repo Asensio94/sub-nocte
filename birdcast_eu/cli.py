@@ -17,7 +17,7 @@ from rich import print as rprint
 from . import aloft
 from .nightly import build_nightly, radar_position
 
-app = typer.Typer(add_completion=False, help="BirdCast Europa: perfiles de radar → noches → validación")
+app = typer.Typer(add_completion=False, help="Sub Nocte: migración nocturna de aves en Europa, de los perfiles de radar al aviso por ciudad")
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "data" / "cache" / "aloft"

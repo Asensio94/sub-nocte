@@ -1,12 +1,13 @@
-# BirdCast Europa (nombre provisional)
+# Sub Nocte
+
+> *ibant obscuri sola sub nocte per umbram* — Virgilio, Eneida VI
 
 Pronóstico público de la **intensidad de migración nocturna de aves** por ciudad en Europa, con alertas
-**«luces fuera»** en las noches de pico. Réplica del [BirdCast](https://birdcast.org) de Cornell sobre los
-perfiles verticales de aves de la red europea de radares meteorológicos, publicados en abierto por
-[Aloft](https://aloftdata.eu) (licencia CC0).
+**«luces fuera»** en las noches de pico. Sigue el método del [BirdCast](https://birdcast.org) de Cornell,
+aplicado a los perfiles verticales de aves de la red europea de radares meteorológicos, publicados en abierto
+por [Aloft](https://aloftdata.eu) (licencia CC0). Proyecto independiente, sin relación con Cornell.
 
-Proyecto abierto y sin ánimo de lucro. Documento de diseño completo: [`docs/diseno.html`](docs/diseno.html)
-o el artefacto «BirdCast Europa» del 2 de septiembre de 2026.
+Proyecto abierto y sin ánimo de lucro. Documento de diseño completo: [`docs/diseno.html`](docs/diseno.html).
 
 ## Por qué
 
