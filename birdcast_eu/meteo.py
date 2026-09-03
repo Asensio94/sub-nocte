@@ -79,8 +79,11 @@ def fetch_hourly(lat: float, lon: float, start: dt.date, end: dt.date, url: str 
         except requests.RequestException as e:
             if intento == RETRIES - 1:
                 raise
-            if "hourly api request limit" in str(e).lower():
-                espera = _hasta_siguiente_hora()  # reintentar antes no sirve: la cuota se renueva en punto
+            msg = str(e).lower()
+            # la cuota horaria se renueva en punto; reintentar antes solo gasta intentos. El 429 puede ser también
+            # el límite por minuto, así que el primer reintento es corto y a partir del segundo se espera a la hora.
+            if "hourly api request limit" in msg or ("429" in msg and intento >= 1):
+                espera = _hasta_siguiente_hora()
             else:
                 espera = min(BACKOFF_S * (intento + 1), BACKOFF_MAX_S)
             log(f"  Open-Meteo: {e}; reintento en {espera} s")
