@@ -66,30 +66,77 @@ def feature_columns(ds: pd.DataFrame) -> list[str]:
     return meteo + ["doy_sin", "doy_cos", "clim_p50", "clim_p90", "lat", "lon"]
 
 
+PARAMS = dict(learning_rate=0.03, num_leaves=31, min_child_samples=40, subsample=0.8, subsample_freq=1,
+              colsample_bytree=0.8, reg_lambda=1.0, verbose=-1)
+ROUNDS = 600
+
+
 def _fit(train: pd.DataFrame, cols: list[str], seed: int = 0):
+    """Modelo de intensidad: regresión sobre la raíz cúbica del VID."""
     import lightgbm as lgb
-    params = dict(objective="regression", learning_rate=0.03, num_leaves=31, min_child_samples=40,
-                  subsample=0.8, subsample_freq=1, colsample_bytree=0.8, reg_lambda=1.0, verbose=-1, seed=seed)
-    return lgb.train(params, lgb.Dataset(train[cols], train["y"]), num_boost_round=600)
+    return lgb.train(dict(PARAMS, objective="regression", seed=seed),
+                     lgb.Dataset(train[cols], train["y"]), num_boost_round=ROUNDS)
+
+
+def _fit_alerta(train: pd.DataFrame, cols: list[str], seed: int = 0):
+    """Modelo de alerta: clasifica directamente la noche de paso fuerte (VID ≥ P90 local de la temporada).
+
+    La decisión operativa es binaria, y un clasificador entrenado sobre ese suceso separa mejor la cola que
+    una regresión de media, que encoge las predicciones hacia el centro.
+    """
+    import lightgbm as lgb
+    return lgb.train(dict(PARAMS, objective="binary", seed=seed),
+                     lgb.Dataset(train[cols], train["alerta_obs"].astype(int)), num_boost_round=ROUNDS)
+
+
+ALERT_Q = 0.9  # se alerta en el 10 % de noches con mayor predicción, la misma tasa que el P90 observado
+
+
+def alert_flags(d: pd.DataFrame, pred: np.ndarray, q: float = ALERT_Q) -> np.ndarray:
+    """Alerta = predicción en el decil superior de las predicciones de ese radar y temporada.
+
+    Un modelo de media encoge hacia el centro y casi nunca cruza el percentil 90 observado, así que un umbral
+    absoluto no sirve para decidir. El umbral se calibra sobre la distribución de predicciones, que en operación
+    se obtiene corriendo el modelo sobre diez años de reanálisis en ese punto: no hace falta radar en la ciudad.
+    Al emitir tantas alertas como noches de alerta hay, los aciertos son directamente comparables con el 10 %
+    que daría el azar.
+    """
+    out = np.zeros(len(d), dtype=bool)
+    g = d.assign(_p=pred).groupby(["radar", "season"])["_p"]
+    thr = g.transform(lambda s: s.quantile(q) if len(s) >= 20 else np.inf).to_numpy()
+    np.greater_equal(pred, thr, out=out)
+    return out
 
 
 def evaluate(ds: pd.DataFrame, cols: list[str], log=print) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Validación cruzada por año y por radar. Devuelve (tabla de métricas, predicciones fuera de muestra)."""
     from scipy.stats import spearmanr
+    from sklearn.metrics import roc_auc_score
 
-    def metrics(d: pd.DataFrame, pred: np.ndarray, label: str) -> dict:
+    def metrics(d: pd.DataFrame, pred: np.ndarray, palerta: np.ndarray, label: str) -> dict:
         obs = d["y"].to_numpy()
         clim = np.cbrt(d["clim_p50"].fillna(d["clim_p50"].median())).to_numpy()
         ss = np.sum((obs - obs.mean()) ** 2)
         r2 = 1 - np.sum((obs - pred) ** 2) / ss if ss > 0 else np.nan
         r2_clim = 1 - np.sum((obs - clim) ** 2) / ss if ss > 0 else np.nan
-        # alerta predicha: la predicción supera el P90 local; se compara con la alerta observada
-        thr = np.cbrt(d["p90_temporada"]).to_numpy()
-        a_pred, a_obs = pred >= thr, d["alerta_obs"].to_numpy()
+        a_obs = d["alerta_obs"].to_numpy()
+        a_pred = alert_flags(d, palerta)
         tp = np.sum(a_pred & a_obs)
+        hay_ambos = 0 < a_obs.sum() < len(a_obs)
         return {"split": label, "n": len(d), "spearman": spearmanr(obs, pred).correlation, "r2": r2, "r2_clim": r2_clim,
+                "auc": roc_auc_score(a_obs, palerta) if hay_ambos else np.nan,
+                "auc_intensidad": roc_auc_score(a_obs, pred) if hay_ambos else np.nan,
                 "alertas_obs": int(a_obs.sum()), "alertas_pred": int(a_pred.sum()),
                 "acierto": tp / max(a_obs.sum(), 1), "falsa_alarma": 1 - tp / max(a_pred.sum(), 1)}
+
+    def fold(tr: pd.DataFrame, te: pd.DataFrame, label: str, kind: str) -> None:
+        p = _fit(tr, cols).predict(te[cols])
+        pa = _fit_alerta(tr, cols).predict(te[cols])
+        rows.append(metrics(te, p, pa, label))
+        preds.append(te[["radar", "night", "season", "y"]].assign(pred=p, p_alerta=pa, split=kind))
+        m = rows[-1]
+        log(f"  {label}: spearman {m['spearman']:.2f}, R² {m['r2']:.2f} (clim {m['r2_clim']:.2f}), "
+            f"área bajo la curva {m['auc']:.2f}, paso fuerte capturado {m['acierto']:.0%}")
 
     rows, preds = [], []
     # 1) por año: entrenar con el resto de años
@@ -97,27 +144,29 @@ def evaluate(ds: pd.DataFrame, cols: list[str], log=print) -> tuple[pd.DataFrame
         tr, te = ds[ds["year"] != y], ds[ds["year"] == y]
         if len(te) < 100 or len(tr) < 1000:
             continue
-        p = _fit(tr, cols).predict(te[cols])
-        rows.append(metrics(te, p, f"año {y}"))
-        preds.append(te[["radar", "night", "y"]].assign(pred=p, split="año"))
-        log(f"  año {y}: spearman {rows[-1]['spearman']:.2f}, R² {rows[-1]['r2']:.2f} (clim {rows[-1]['r2_clim']:.2f}), "
-            f"acierto P90 {rows[-1]['acierto']:.0%}, falsa alarma {rows[-1]['falsa_alarma']:.0%}")
+        fold(tr, te, f"año {y}", "año")
     # 2) por radar: dejar fuera cada radar con al menos 150 noches (los españoles nuevos son el objetivo)
     for r, te in ds.groupby("radar"):
         if len(te) < 150:
             continue
-        tr = ds[ds["radar"] != r]
-        p = _fit(tr, cols).predict(te[cols])
-        rows.append(metrics(te, p, f"radar {r}"))
-        preds.append(te[["radar", "night", "y"]].assign(pred=p, split="radar"))
+        fold(ds[ds["radar"] != r], te, f"radar {r}", "radar")
     return pd.DataFrame(rows), pd.concat(preds, ignore_index=True)
 
 
-def importance(ds: pd.DataFrame, cols: list[str]) -> pd.Series:
-    m = _fit(ds, cols)
-    return pd.Series(m.feature_importance("gain"), index=cols).sort_values(ascending=False)
+def importance(ds: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    """Ganancia relativa de cada rasgo en los dos modelos, en porcentaje."""
+    out = {}
+    for nombre, f in (("intensidad", _fit), ("alerta", _fit_alerta)):
+        g = pd.Series(f(ds, cols).feature_importance("gain"), index=cols)
+        out[nombre] = g / g.sum() * 100
+    return pd.DataFrame(out).sort_values("alerta", ascending=False)
 
 
-def fit_final(ds: pd.DataFrame, cols: list[str], path: Path) -> None:
-    m = _fit(ds, cols)
-    m.save_model(str(path))
+def fit_final(ds: pd.DataFrame, cols: list[str], out_dir: Path) -> list[Path]:
+    """Entrena con todo y guarda los dos modelos listos para operar."""
+    paths = []
+    for nombre, f in (("vid", _fit), ("alerta", _fit_alerta)):
+        p = out_dir / f"modelo_{nombre}.txt"
+        f(ds, cols).save_model(str(p))
+        paths.append(p)
+    return paths

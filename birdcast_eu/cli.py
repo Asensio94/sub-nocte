@@ -247,26 +247,35 @@ def meteo(radares: list[str] = typer.Argument(None), start_year: int = 2016):
 
 
 @app.command()
-def fase2():
+def fase2(cache: bool = False):
     """Modelo meteorológico del VID nocturno: conjunto radar × noche, validación por año y por radar, informe."""
     from . import fase2 as F
     from . import modelo as M
     from .historico import load_all_nightly
 
-    n = load_all_nightly(NIGHTLY)
-    clim = pd.read_csv(ROOT / "data" / "climatologia_doy.csv")
-    ds = M.build_dataset(n, METEO, clim, log=rprint)
-    ds.to_parquet(ROOT / "data" / "fase2_dataset.parquet", index=False)
+    dsf = ROOT / "data" / "fase2_dataset.parquet"
+    if cache and dsf.exists():
+        ds = pd.read_parquet(dsf)
+        rprint(f"conjunto reutilizado de {dsf}")
+    else:
+        n = load_all_nightly(NIGHTLY)
+        clim = pd.read_csv(ROOT / "data" / "climatologia_doy.csv")
+        ds = M.build_dataset(n, METEO, clim, log=rprint)
+        ds.to_parquet(dsf, index=False)
     cols = M.feature_columns(ds)
     rprint(f"{len(ds):,} radar-noches en ventana migratoria, {ds['radar'].nunique()} radares, {len(cols)} rasgos")
     met, preds = M.evaluate(ds, cols, log=rprint)
     met.to_csv(ROOT / "data" / "fase2_validacion.csv", index=False, float_format="%.3f")
     imp = M.importance(ds, cols)
-    M.fit_final(ds, cols, ROOT / "data" / "modelo_vid.txt")
+    imp.to_csv(ROOT / "data" / "fase2_importancia.csv", float_format="%.2f")
+    M.fit_final(ds, cols, ROOT / "data")
     OUTPUT.mkdir(parents=True, exist_ok=True)
     figs = F.figures(ds, met, preds, imp, OUTPUT)
     F.write_report(ds, met, imp, cols, figs, OUTPUT / "fase2.html")
-    rprint(met[met["split"].str.startswith("radar")].round(2).to_string(index=False))
+    ra = met[met["split"].str.startswith("radar")]
+    rprint(ra.round(2).to_string(index=False))
+    rprint(f"[bold]radar fuera[/bold]: área bajo la curva mediana {ra['auc'].median():.2f}, "
+           f"paso fuerte capturado {ra['acierto'].mean():.0%} (azar 10 %)")
     rprint(f"Informe: {OUTPUT / 'fase2.html'}")
 
 

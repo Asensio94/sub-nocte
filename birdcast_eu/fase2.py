@@ -23,14 +23,18 @@ PAIS = {"es": "España", "pt": "Portugal", "fr": "Francia"}
 COLOR = {"es": "#c0392b", "pt": "#27ae60", "fr": "#2980b9"}
 
 
-def figures(ds: pd.DataFrame, met: pd.DataFrame, preds: pd.DataFrame, imp: pd.Series, out_dir: Path) -> list[Path]:
+def figures(ds: pd.DataFrame, met: pd.DataFrame, preds: pd.DataFrame, imp: pd.DataFrame, out_dir: Path) -> list[Path]:
     figs = []
-    # 1) importancia de los rasgos
+    # 1) importancia de los rasgos en los dos modelos
     p = out_dir / "fase2_importancia.png"
-    top = (imp / imp.sum() * 100).head(15)[::-1]
-    fig, ax = plt.subplots(figsize=(7, 5))
-    ax.barh([NOMBRE.get(k, k) for k in top.index], top.values, color="#555")
-    ax.set_xlabel("% de la ganancia del modelo"); ax.set_title("Qué usa el modelo para predecir el VID nocturno")
+    top = imp.head(15)[::-1]
+    y = np.arange(len(top)); h = 0.4
+    fig, ax = plt.subplots(figsize=(7.5, 5.5))
+    ax.barh(y + h / 2, top["alerta"], h, color="#2c3e50", label="modelo de alerta")
+    ax.barh(y - h / 2, top["intensidad"], h, color="#95a5a6", label="modelo de intensidad")
+    ax.set_yticks(y, [NOMBRE.get(k, k) for k in top.index])
+    ax.set_xlabel("% de la ganancia del modelo"); ax.legend(fontsize=9)
+    ax.set_title("Qué usan los modelos para anticipar la migración")
     fig.tight_layout(); fig.savefig(p, dpi=130); plt.close(fig); figs.append(p)
 
     # 2) validación radar a radar (cada radar predicho por un modelo que no lo vio)
@@ -44,8 +48,9 @@ def figures(ds: pd.DataFrame, met: pd.DataFrame, preds: pd.DataFrame, imp: pd.Se
     axes[0].axhline(r["spearman"].median(), color="k", ls="--", lw=0.8)
     axes[0].set_title("Validación dejando fuera cada radar (rojo España, verde Portugal, azul Francia)")
     w = 0.4; x = np.arange(len(r))
-    axes[1].bar(x - w / 2, r["acierto"], w, color="#2c3e50", label="aciertos en noches ≥ P90 observadas")
-    axes[1].bar(x + w / 2, r["falsa_alarma"], w, color="#e67e22", label="falsas alarmas entre las alertas emitidas")
+    axes[1].bar(x - w / 2, r["acierto"], w, color="#2c3e50", label="noches de paso fuerte capturadas por las alertas")
+    axes[1].bar(x + w / 2, r["falsa_alarma"], w, color="#e67e22", label="alertas emitidas que no eran paso fuerte")
+    axes[1].axhline(0.1, color="#c0392b", ls="--", lw=0.9, label="lo que capturaría el azar (10 %)")
     axes[1].set_xticks(x, r["radar"], rotation=90); axes[1].set_ylim(0, 1); axes[1].legend(loc="upper right", fontsize=8)
     fig.tight_layout(); fig.savefig(p, dpi=130); plt.close(fig); figs.append(p)
 
@@ -74,14 +79,20 @@ def figures(ds: pd.DataFrame, met: pd.DataFrame, preds: pd.DataFrame, imp: pd.Se
             ax.plot(s["night"], s["y"] ** 3, color="#333", lw=1, label="observado (radar)")
             ax.plot(s["night"], s["pred"].clip(lower=0) ** 3, color="#e67e22", lw=1.2, label="predicho (solo meteorología)")
             thr = ds.loc[ds["radar"] == r, "p90_temporada"].iloc[0]
-            ax.axhline(thr, color="#c0392b", ls=":", lw=0.8, label="P90 local (alerta alta)")
+            ax.axhline(thr, color="#c0392b", ls=":", lw=0.8, label="paso fuerte: P90 local observado")
+            # noches en las que el modelo de alerta habría avisado
+            corte = q[q["radar"] == r].groupby("season")["p_alerta"].quantile(0.9)
+            av = s[s["p_alerta"] >= s["season"].map(corte)]
+            for x in av["night"]:
+                ax.axvline(x, color="#f39c12", alpha=0.35, lw=3, zorder=0)
+            ax.plot([], [], color="#f39c12", alpha=0.5, lw=3, label="noche con alerta emitida")
             ax.set_title(f"{r} · {yr}", fontsize=10); ax.set_ylabel("VID (aves/km²)")
-        axes.flat[0].legend(fontsize=8, ncol=3)
+        axes.flat[0].legend(fontsize=8, ncol=4)
         fig.tight_layout(); fig.savefig(p, dpi=130); plt.close(fig); figs.append(p)
     return figs
 
 
-def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.Series, cols: list[str], figs: list[Path], out: Path) -> None:
+def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: list[str], figs: list[Path], out: Path) -> None:
     an = met[met["split"].str.startswith("año")]
     ra = met[met["split"].str.startswith("radar")].copy()
     ra["pais"] = ra["split"].str.split().str[1].str[:2].map(PAIS)
@@ -93,18 +104,23 @@ def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.Series, cols: list
         "R² mediano (año fuera) / solo climatología": f"{an['r2'].median():.2f} / {an['r2_clim'].median():.2f}",
         "Spearman mediano (radar fuera)": f"{ra['spearman'].median():.2f}",
         "Spearman mediano radares españoles (fuera)": f"{es['spearman'].median():.2f}" if len(es) else "—",
-        "Aciertos noches ≥ P90 (radar fuera, media)": f"{ra['acierto'].mean():.0%}",
-        "Falsas alarmas (radar fuera, media)": f"{ra['falsa_alarma'].mean():.0%}",
+        "Área bajo la curva mediana (radar fuera)": f"{ra['auc'].median():.2f}",
+        "Noches de paso fuerte capturadas (radar fuera)": f"{ra['acierto'].mean():.0%}",
+        "Alertas erróneas (radar fuera)": f"{ra['falsa_alarma'].mean():.0%}",
     }
     fmt = met.copy()
-    for c in ("spearman", "r2", "r2_clim"):
+    for c in ("spearman", "r2", "r2_clim", "auc", "auc_intensidad"):
         fmt[c] = fmt[c].map("{:.2f}".format)
     for c in ("acierto", "falsa_alarma"):
         fmt[c] = fmt[c].map("{:.0%}".format)
-    fmt = fmt.rename(columns={"split": "validación", "r2": "R²", "r2_clim": "R² climatología", "acierto": "aciertos P90",
-                              "falsa_alarma": "falsas alarmas", "alertas_obs": "noches ≥ P90", "alertas_pred": "alertas emitidas"})
-    imp_t = (imp / imp.sum() * 100).rename("ganancia %").reset_index().rename(columns={"index": "rasgo"})
-    imp_t["rasgo"] = imp_t["rasgo"].map(lambda k: NOMBRE.get(k, k)); imp_t["ganancia %"] = imp_t["ganancia %"].map("{:.1f}".format)
+    fmt = fmt.rename(columns={"split": "validación", "r2": "R²", "r2_clim": "R² climatología", "auc": "área bajo la curva",
+                              "auc_intensidad": "área bajo la curva (intensidad)",
+                              "acierto": "paso fuerte capturado", "falsa_alarma": "alertas erróneas",
+                              "alertas_obs": "noches de paso fuerte", "alertas_pred": "alertas emitidas"})
+    imp_t = imp.reset_index().rename(columns={"index": "rasgo", "intensidad": "intensidad %", "alerta": "alerta %"})
+    imp_t["rasgo"] = imp_t["rasgo"].map(lambda k: NOMBRE.get(k, k))
+    for c in ("intensidad %", "alerta %"):
+        imp_t[c] = imp_t[c].map("{:.1f}".format)
     parts = [
         "<!doctype html><meta charset='utf-8'><title>Fase 2 · modelo meteorológico</title>",
         "<style>body{font:15px/1.5 system-ui;max-width:1100px;margin:2em auto;padding:0 1em;color:#222}"
@@ -120,8 +136,16 @@ def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.Series, cols: list
         "la raíz cúbica. Solo noches con cobertura ≥ 60 % dentro de las ventanas migratorias (15 feb-31 may, 15 ago-30 nov).</p>",
         "<p><b>Dos validaciones honestas:</b> (1) dejar fuera un año completo y predecirlo con el resto (¿funciona en un año "
         "nuevo?); (2) dejar fuera un radar completo (¿funciona en un lugar donde no se entrenó? — es el caso de los radares "
-        "españoles nuevos, que tienen pocos años). Una alerta se considera acertada cuando la predicción supera el P90 "
-        "histórico local de la temporada y la observación también.</p>",
+        "españoles nuevos, que tienen pocos años).</p>",
+        "<p><b>Cómo se decide una alerta.</b> Se llama <i>noche de paso fuerte</i> a la que supera el percentil 90 histórico "
+        "local de su temporada, es decir una noche de cada diez. Un modelo de media encoge las predicciones hacia el centro "
+        "y casi nunca cruza ese valor absoluto, así que la alerta la decide un <b>segundo modelo</b>, entrenado para "
+        "clasificar directamente ese suceso, y el umbral se calibra sobre la distribución de sus "
+        "predicciones: se alerta en el decil superior de las noches previstas de ese radar y temporada. En operación esa "
+        "distribución se obtiene corriendo el modelo sobre diez años de reanálisis en el punto de interés, sin necesidad de "
+        "un radar en la ciudad. Como se emiten tantas alertas como noches de paso fuerte hay, el porcentaje capturado es "
+        "directamente comparable con el 10 % que daría el azar. El área bajo la curva resume la capacidad de separar esas "
+        "noches sin depender de ningún umbral (0,5 = azar).</p>",
         "<div class='k'>" + "".join(f"<div>{k}<b>{v}</b></div>" for k, v in resumen.items()) + "</div>",
         f"<h2>Qué usa el modelo</h2><img src='{figs[0].name}'>",
         f"<h2>Validación radar a radar</h2><img src='{figs[1].name}'>",
