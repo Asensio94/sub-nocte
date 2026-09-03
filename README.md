@@ -47,7 +47,8 @@ reduciendo colisiones con edificios. En Europa existen los datos (Aloft, ENRAM, 
     Los mejores resultados absolutos son los tres radares de las **Azores** (Flores 0,97 y 79 % de acierto,
     Terceira 0,89 y 59 %, São Miguel 0,85 y 57 %): islas oceánicas donde el paso es muy episódico y depende casi
     solo del tiempo, y además con pocas noches, así que hay que leerlos con cautela. En el continente los mejores
-    son franceses (Trappes 0,88 y 56 %, Blaisy 0,88 y 45 %, Bourges 0,87 y 45 %) y Oporto (0,80 y 40 %);
+    son franceses (frtre, junto a Nantes, 0,88 y 56 %; frbla, junto a Dijon, 0,88 y 45 %; frbou, Bourges, 0,87
+    y 45 %) y Oporto (0,80 y 40 %);
     Portugal continental se queda en 0,75 y 33 %.
   - **Los cuatro radares españoles renovados son el caso difícil**: área bajo la curva 0,55-0,66 y 8-21 % de
     acierto. Baten al azar pero no sirven todavía para un aviso fiable; el perfil truncado a 6 capas y la
