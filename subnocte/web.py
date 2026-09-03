@@ -123,6 +123,9 @@ def construir(prev: pd.DataFrame | None, rk: pd.DataFrame | None, informes: list
          "día siguiente. Úsese como indicación, no como dato cerrado.</div>"]
 
     if prev is not None and not prev.empty:
+        # la descarga arranca el día anterior para poder calcular tendencias de 24 h: esa noche ya ha pasado
+        prev = prev[pd.to_datetime(prev["night"]).dt.date >= hoy]
+    if prev is not None and not prev.empty:
         noches = sorted(prev["night"].unique())
         alto = prev[prev["nivel"].isin(["alto", "muy alto"])]
         p += [f"<h2>Próximas noches</h2><p class='sub'>Actualizado el {_fecha(hoy)}. "
@@ -130,6 +133,8 @@ def construir(prev: pd.DataFrame | None, rk: pd.DataFrame | None, informes: list
               "<p><b>El nivel es relativo a cada ciudad</b>, no una cantidad absoluta de aves: «muy alto» significa "
               "que esa noche entra en el 10 % más intenso del historial <i>de esa misma ciudad</i>. Así el aviso "
               "quiere decir lo mismo en Sevilla y en Bilbao, aunque por Sevilla pase mucha más ave.</p>",
+              "<p class='sub'>En pleno pico de la temporada es normal que muchas ciudades salgan altas a la vez: "
+              "el percentil se mide sobre la temporada entera, que incluye sus semanas flojas.</p>",
               calendario(prev)]
         if not alto.empty:
             lista = ", ".join(f"{r.ciudad} ({DIAS[pd.Timestamp(r.night).weekday()]} "
