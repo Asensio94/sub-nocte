@@ -1,7 +1,7 @@
-"""Fase 1: tabla radar × noche para todo el histórico de Aloft (2012-hoy) y climatologías por radar.
+"""Phase 1: radar × night table for the whole Aloft archive (2012-today) plus per-radar climatologies.
 
-El histórico completo en CSV ocupa decenas de GB; aquí se procesa radar a radar y año a año, se guarda solo la
-tabla nocturna (unos KB por radar-año) y, si se pide, se borra la caché de descargas al terminar cada año.
+The full archive as CSV runs into tens of GB; here it is processed radar by radar and year by year, only the
+nightly table is kept (a few KB per radar-year) and, on request, the download cache is purged after each year.
 """
 
 from __future__ import annotations
@@ -16,13 +16,13 @@ import pandas as pd
 from . import aloft
 from .nightly import build_nightly
 
-# Ventanas migratorias para los umbrales de alerta (Iberia y Europa occidental)
+# Migration windows used for the alert thresholds (Iberia and western Europe)
 SEASONS = {
-    "primavera": ((2, 15), (5, 31)),
-    "otoño": ((8, 15), (11, 30)),
+    "spring": ((2, 15), (5, 31)),
+    "autumn": ((8, 15), (11, 30)),
 }
 COVERAGE_MIN = 0.6
-WINDOW_DAYS = 15  # ±15 días alrededor de cada día del año para la climatología
+WINDOW_DAYS = 15  # ±15 days around each day of the year for the climatology
 
 
 def build_history(radar: str, years: list[int], cache: Path, out_dir: Path, purge: bool = True, log=print) -> pd.DataFrame:
@@ -37,29 +37,29 @@ def build_history(radar: str, years: list[int], cache: Path, out_dir: Path, purg
             continue
         try:
             df = aloft.fetch_radar(radar, dt.date(y, 1, 1), end, cache, log=lambda *_: None)
-        except Exception as e:  # red, fichero corrupto…: se anota y se sigue
+        except Exception as e:  # network, corrupt file…: noted and skipped
             log(f"  {radar} {y}: error {e}")
             continue
         if df.empty:
-            log(f"  {radar} {y}: sin datos")
+            log(f"  {radar} {y}: no data")
         else:
             try:
                 _, n = build_nightly(df, radar)
-            except Exception as e:  # un radar-año raro no debe abortar el barrido completo
-                log(f"  {radar} {y}: error al resumir ({type(e).__name__}: {e})")
+            except Exception as e:  # one odd radar-year must not abort the whole sweep
+                log(f"  {radar} {y}: error while summarising ({type(e).__name__}: {e})")
                 n = pd.DataFrame()
             if n.empty:
-                log(f"  {radar} {y}: sin noches utilizables")
+                log(f"  {radar} {y}: no usable nights")
             else:
                 frames.append(n)
                 usable = n["mtr_night"].notna().mean()
-                log(f"  {radar} {y}: {len(n)} noches, MTR mediana {n['mtr_night'].median():,.0f}"
-                    f"{'' if usable > 0.9 else f' (solo {usable:.0%} con velocidad medida)'}")
+                log(f"  {radar} {y}: {len(n)} nights, median MTR {n['mtr_night'].median():,.0f}"
+                    f"{'' if usable > 0.9 else f' (only {usable:.0%} with measured speed)'}")
         if purge:
             for sub in ("monthly", "daily"):
                 shutil.rmtree(cache / "baltrad" / sub / radar / str(y), ignore_errors=True)
     if not frames:
-        _marcar_sin_noches(out_dir, radar, years)
+        _mark_without_nights(out_dir, radar, years)
         return pd.DataFrame()
     hist = pd.concat(frames, ignore_index=True)
     hist = hist.drop_duplicates(subset=["radar", "night"], keep="last").sort_values("night").reset_index(drop=True)
@@ -67,19 +67,19 @@ def build_history(radar: str, years: list[int], cache: Path, out_dir: Path, purg
     return hist
 
 
-def _marcar_sin_noches(out_dir: Path, radar: str, years: list[int]) -> None:
-    """Anota radar-años procesados sin noches utilizables para no reintentarlos en cada verificación."""
-    marca = out_dir / "_sin_noches.csv"
-    prev = pd.read_csv(marca) if marca.exists() else pd.DataFrame(columns=["radar", "year"])
-    nuevo = pd.DataFrame({"radar": radar, "year": years})
-    pd.concat([prev, nuevo]).drop_duplicates().to_csv(marca, index=False)
+def _mark_without_nights(out_dir: Path, radar: str, years: list[int]) -> None:
+    """Record radar-years processed without usable nights so they are not retried on every verification."""
+    mark = out_dir / "_without_nights.csv"
+    prev = pd.read_csv(mark) if mark.exists() else pd.DataFrame(columns=["radar", "year"])
+    new = pd.DataFrame({"radar": radar, "year": years})
+    pd.concat([prev, new]).drop_duplicates().to_csv(mark, index=False)
 
 
-def sin_noches(out_dir: Path) -> set[tuple[str, int]]:
-    marca = out_dir / "_sin_noches.csv"
-    if not marca.exists():
+def without_nights(out_dir: Path) -> set[tuple[str, int]]:
+    mark = out_dir / "_without_nights.csv"
+    if not mark.exists():
         return set()
-    d = pd.read_csv(marca)
+    d = pd.read_csv(mark)
     return {(r.radar, int(r.year)) for r in d.itertuples()}
 
 
@@ -94,7 +94,7 @@ def load_all_nightly(nightly_dir: Path) -> pd.DataFrame:
 
 def climatology_doy(nightly: pd.DataFrame, window: int = WINDOW_DAYS, min_n: int = 20,
                     metric: str = "mtr_night") -> pd.DataFrame:
-    """Cuantiles de la métrica nocturna por radar y día del año, agrupando todos los años en ventana circular."""
+    """Quantiles of the nightly metric per radar and day of year, pooling every year in a circular window."""
     rows = []
     n = nightly[(nightly["coverage"] >= COVERAGE_MIN) & nightly[metric].notna()]
     for radar, g in n.groupby("radar"):
@@ -108,7 +108,7 @@ def climatology_doy(nightly: pd.DataFrame, window: int = WINDOW_DAYS, min_n: int
             if len(v) < min_n:
                 continue
             q = np.quantile(v, [0.5, 0.7, 0.9])
-            rows.append({"radar": radar, "metrica": metric, "doy": d, "n": len(v), "years": years,
+            rows.append({"radar": radar, "metric": metric, "doy": d, "n": len(v), "years": years,
                          "p50": q[0], "p70": q[1], "p90": q[2]})
     return pd.DataFrame(rows)
 
@@ -120,7 +120,7 @@ def season_mask(night: pd.Series, season: str) -> pd.Series:
 
 
 def thresholds(nightly: pd.DataFrame, min_nights: int = 60, metric: str = "mtr_night") -> pd.DataFrame:
-    """Umbrales de alerta por radar y temporada: P70 (medio) y P90 (alto) de la métrica nocturna histórica."""
+    """Alert thresholds per radar and season: P70 (medium) and P90 (high) of the historical nightly metric."""
     rows = []
     n = nightly[(nightly["coverage"] >= COVERAGE_MIN) & nightly[metric].notna()]
     for radar, g in n.groupby("radar"):
@@ -130,11 +130,11 @@ def thresholds(nightly: pd.DataFrame, min_nights: int = 60, metric: str = "mtr_n
                 continue
             v = s[metric]
             rows.append({
-                "radar": radar, "metrica": metric, "season": season, "nights": len(v),
+                "radar": radar, "metric": metric, "season": season, "nights": len(v),
                 "years": s["night"].dt.year.nunique(),
                 "first": s["night"].min().date(), "last": s["night"].max().date(),
                 "p50": v.median(), "p70": v.quantile(0.7), "p90": v.quantile(0.9), "max": v.max(),
-                # fracción del paso estacional que ocurre en el 10 % de noches más intensas (Horton 2021: ~54 % en EE. UU.)
+                # share of the seasonal passage happening on the 10 % busiest nights (Horton 2021: ~54 % in the US)
                 "share_top10": v.nlargest(max(1, len(v) // 10)).sum() / max(v.sum(), 1e-9),
                 "lat": s["lat"].iloc[0], "lon": s["lon"].iloc[0],
             })

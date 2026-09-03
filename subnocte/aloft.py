@@ -1,8 +1,8 @@
-"""Acceso al bucket público de Aloft (perfiles verticales de aves, VPTS CSV, licencia CC0).
+"""Access to the public Aloft bucket (bird vertical profiles, VPTS CSV, CC0).
 
-Estructura del bucket (verificada el 2 sep 2026):
-  baltrad/monthly/{radar}/{año}/{radar}_vpts_{AAAAMM}.csv.gz   meses completos
-  baltrad/daily/{radar}/{año}/{radar}_vpts_{AAAAMMDD}.csv       un fichero por día, sube en D+1/D+2
+Bucket layout (verified 2 Sep 2026):
+  baltrad/monthly/{radar}/{year}/{radar}_vpts_{YYYYMM}.csv.gz   complete months
+  baltrad/daily/{radar}/{year}/{radar}_vpts_{YYYYMMDD}.csv       one file per day, uploaded on D+1/D+2
 """
 
 from __future__ import annotations
@@ -20,20 +20,20 @@ import requests
 BUCKET = "https://aloftdata.s3-eu-west-1.amazonaws.com"
 NS = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
 
-# Columnas numéricas del formato VPTS CSV (https://github.com/aloftdata/vpts-csv)
+# Numeric columns of the VPTS CSV format (https://github.com/aloftdata/vpts-csv)
 NUMERIC = [
     "height", "u", "v", "w", "ff", "dd", "sd_vvp", "eta", "dens", "dbz", "dbz_all",
     "n", "n_dbz", "n_all", "n_dbz_all", "rcs", "sd_vvp_threshold",
     "radar_latitude", "radar_longitude", "radar_height", "radar_wavelength",
 ]
 
-RETRIES = 4          # el bucket corta conexiones al descargar en paralelo
+RETRIES = 4          # the bucket drops connections when downloading in parallel
 _session = requests.Session()
-_session.headers["User-Agent"] = "sub-nocte/0.1 (proyecto abierto de conservación)"
+_session.headers["User-Agent"] = "sub-nocte/0.1 (open conservation project)"
 
 
 def list_prefixes(prefix: str) -> list[str]:
-    """Subcarpetas inmediatas bajo un prefijo (p. ej. códigos de radar o años)."""
+    """Immediate subfolders under a prefix (e.g. radar codes or years)."""
     out: list[str] = []
     token = None
     while True:
@@ -51,7 +51,7 @@ def list_prefixes(prefix: str) -> list[str]:
 
 
 def list_keys(prefix: str) -> Iterator[tuple[str, dt.datetime, int]]:
-    """Objetos bajo un prefijo: (clave, fecha de subida, tamaño)."""
+    """Objects under a prefix: (key, upload date, size)."""
     token = None
     while True:
         params = {"list-type": "2", "prefix": prefix}
@@ -87,23 +87,23 @@ def daily_key(radar: str, day: dt.date) -> str:
 
 
 def download(key: str, cache_dir: Path) -> Path | None:
-    """Descarga un objeto a la caché local. Devuelve None si no existe en el bucket."""
+    """Download an object into the local cache. Returns None if it is not in the bucket."""
     dest = cache_dir / key
     if dest.exists() and dest.stat().st_size > 0:
         return dest
-    # el bucket corta conexiones cuando se descarga en paralelo: reintentos con espera creciente
-    for intento in range(RETRIES):
+    # the bucket drops connections on parallel downloads: retry with growing backoff
+    for attempt in range(RETRIES):
         try:
             r = _session.get(f"{BUCKET}/{key}", timeout=300)
         except requests.RequestException:
-            if intento == RETRIES - 1:
+            if attempt == RETRIES - 1:
                 raise
-            time.sleep(2 ** intento)
+            time.sleep(2 ** attempt)
             continue
         if r.status_code == 404:
             return None
-        if r.status_code >= 500 and intento < RETRIES - 1:
-            time.sleep(2 ** intento)
+        if r.status_code >= 500 and attempt < RETRIES - 1:
+            time.sleep(2 ** attempt)
             continue
         r.raise_for_status()
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -131,18 +131,18 @@ def months_between(start: dt.date, end: dt.date) -> Iterator[tuple[int, int]]:
 
 
 def fetch_radar(radar: str, start: dt.date, end: dt.date, cache_dir: Path, log=print) -> pd.DataFrame:
-    """Perfiles de un radar entre dos fechas. Usa el mensual comprimido cuando existe y
-    completa con ficheros diarios (mes en curso o meses sin resumen)."""
+    """Profiles of one radar between two dates. Uses the compressed monthly file where it exists and
+    fills in with daily files (current month, or months with no summary)."""
     frames: list[pd.DataFrame] = []
     today = dt.datetime.now(dt.timezone.utc).date()
     for y, m in months_between(start, end):
         first = dt.date(y, m, 1)
         last = (dt.date(y + (m == 12), (m % 12) + 1, 1) - dt.timedelta(days=1))
         path = None
-        if last < today:  # solo meses cerrados tienen resumen mensual
+        if last < today:  # only closed months have a monthly summary
             path = download(monthly_key(radar, y, m), cache_dir)
         if path is not None:
-            log(f"  {radar} {y}-{m:02d}: mensual ({path.stat().st_size/1e6:.1f} MB)")
+            log(f"  {radar} {y}-{m:02d}: monthly ({path.stat().st_size/1e6:.1f} MB)")
             frames.append(read_vpts(path))
             continue
         n = 0
@@ -153,7 +153,7 @@ def fetch_radar(radar: str, start: dt.date, end: dt.date, cache_dir: Path, log=p
                 frames.append(read_vpts(p))
                 n += 1
             day += dt.timedelta(days=1)
-        log(f"  {radar} {y}-{m:02d}: {n} ficheros diarios")
+        log(f"  {radar} {y}-{m:02d}: {n} daily files")
     if not frames:
         return pd.DataFrame()
     df = pd.concat(frames, ignore_index=True)

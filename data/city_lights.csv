@@ -1,4 +1,4 @@
-ciudad,pais,lat,lon,pixeles,luz_media,luz_centro,luz_max,veces_natural
+city,country,lat,lon,pixels,light_mean,light_centre,light_max,times_natural
 Madrid,ES,40.417,-3.704,477,7.608,9.265,9.828,43.724
 Barcelona,ES,41.387,2.169,485,6.278,9.559,11.560,36.081
 Valencia,ES,39.470,-0.376,467,6.074,13.528,14.650,34.906

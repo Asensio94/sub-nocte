@@ -10,7 +10,7 @@ por [Aloft](https://aloftdata.eu) (licencia CC0). Proyecto independiente, sin re
 **Web: [asensio94.github.io/sub-nocte](https://asensio94.github.io/sub-nocte/)** — previsión de las próximas
 siete noches por ciudad, actualizada cada mañana.
 
-Proyecto abierto y sin ánimo de lucro. Documento de diseño completo: [`docs/diseno.html`](docs/diseno.html).
+Proyecto abierto y sin ánimo de lucro. Documento de diseño completo: [`docs/design.html`](docs/design.html).
 
 ## Por qué
 
@@ -24,11 +24,11 @@ reduciendo colisiones con edificios. En Europa existen los datos (Aloft, ENRAM, 
   Barcelona y Cáceres muestran tráfico nocturno concentrado hacia el N-NE (61 % al NE en Barcelona), a 8-9 m/s,
   con arranque brusco a primeros de marzo tras un invierno a cero, y correlación noche a noche entre radares de
   0,4-0,5. Limitación: solo hay datos en 6 capas (unos 1.000 m sobre la antena) y hace falta el filtro de insectos
-  con viento (fase 2). Informe: `output/fase0.html`.
+  con viento (fase 2). Informe: `output/phase0.html`.
 - **Fase 1 completada: histórico 2016-2026 de España, Portugal y Francia.** 105.684 noches en 56 radares
-  (`data/nightly/`), climatologías por día del año y umbrales P70/P90 por radar y temporada (`data/umbrales.csv`),
-  y 25 de 29 ciudades candidatas con un radar utilizable entre 5 y 100 km (`data/ciudades.csv`). Las series
-  francesas de 10-11 años son la base para entrenar el modelo. Informe: `output/fase1.html`.
+  (`data/nightly/`), climatologías por día del año y umbrales P70/P90 por radar y temporada (`data/thresholds.csv`),
+  y 25 de 29 ciudades candidatas con un radar utilizable entre 5 y 100 km (`data/cities.csv`). Las series
+  francesas de 10-11 años son la base para entrenar el modelo. Informe: `output/phase1.html`.
 - **Hallazgo que cambia el diseño: la velocidad falta en gran parte del archivo.** vol2bird deja de publicar el
   ajuste de viento en Francia desde 2021 (0 % de perfiles con velocidad en 2023-2026) y casi siempre en España;
   Portugal la conserva. Sin velocidad no hay MTR, así que la métrica operativa pasa a ser el **VID nocturno**
@@ -41,7 +41,7 @@ reduciendo colisiones con edificios. En Europa existen los datos (Aloft, ENRAM, 
 - **Fase 2 completada: la meteorología anticipa las noches de paso fuerte, pero con calidad muy desigual según
   el radar.** 31.217 noches de 55 radares (2021-2026, los años con viento en la capa de vuelo), 37 variables.
   Dos modelos: uno de intensidad (regresión sobre la raíz cúbica del VID) y otro de alerta (clasificación de la
-  noche por encima del percentil 90 local). Informe: `output/fase2.html`.
+  noche por encima del percentil 90 local). Informe: `output/phase2.html`.
   - *Ciudad con radar propio y con histórico* (validación dejando fuera un año entero): correlación de rangos
     0,70 y área bajo la curva 0,74; el R² pasa de 0,19-0,41 con solo la climatología a 0,36-0,59 con el modelo.
   - *Ciudad sin radar* (validación dejando fuera el radar completo, sin darle su climatología): correlación 0,51,
@@ -65,7 +65,7 @@ reduciendo colisiones con edificios. En Europa existen los datos (Aloft, ENRAM, 
   La ventana nocturna se calcula con la elevación del sol, porque sin radar no hay perfiles que la marquen.
   Los niveles de aviso se cortan por los percentiles de las predicciones de **esa misma ciudad** sobre el archivo
   2021-hoy (moderado > mediana, alto > P75, muy alto > P90), así que «muy alto» significa lo mismo en Sevilla que
-  en Bilbao. Informes: `output/fase3.html` (previsión) y `output/ranking.html` (exposición).
+  en Bilbao. Informes: `output/phase3.html` (previsión) y `output/ranking.html` (exposición).
 - El **ranking de exposición** multiplica el brillo artificial del cielo de cada ciudad (Atlas de Falchi 2016,
   media en un disco de 10 km) por la densidad de aves prevista, al estilo de Horton et al. (2019). Aviso: el
   atlas mide brillo visto desde el suelo, no radiancia emitida hacia arriba, es de 2015 y **su licencia prohíbe
@@ -73,7 +73,7 @@ reduciendo colisiones con edificios. En Europa existen los datos (Aloft, ENRAM, 
   registro gratuito en el Earth Observation Group).
 - **Web pública y rutina diaria en marcha.** `index.html` se genera desde los mismos ficheros del repositorio
   (`python -m subnocte.cli web`) y GitHub Pages sirve la raíz de la rama, sin despliegue aparte. La rutina
-  `.github/workflows/prevision.yml` corre cada mañana a las 05:20 UTC, vuelve a pedir el pronóstico, recalcula los
+  `.github/workflows/forecast.yml` corre cada mañana a las 05:20 UTC, vuelve a pedir el pronóstico, recalcula los
   niveles, regenera la página y hace commit. La web dice en el propio sitio del aviso que el nivel es **relativo a
   cada ciudad** y no una cifra absoluta de aves, y lleva un aviso de versión técnica: ninguna de estas ciudades
   tiene radar cerca con el que comprobar la previsión al día siguiente.
@@ -100,26 +100,26 @@ percentil 90 histórico local de la temporada; «medio» = entre P70 y P90.
 python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
 
 # Fase 0: validación de los radares españoles (descarga ~10 meses de 6 radares)
-python -m subnocte.cli fase0
+python -m subnocte.cli phase0
 
 # Fase 1: histórico completo de un país o de radares concretos, y climatologías
-python -m subnocte.cli historico --paises es,pt,fr --start-year 2016
-python -m subnocte.cli historico estjv ptprt --start-year 2019
-python -m subnocte.cli climatologia
-python -m subnocte.cli ciudades
+python -m subnocte.cli history --countries es,pt,fr --start-year 2016
+python -m subnocte.cli history estjv ptprt --start-year 2019
+python -m subnocte.cli climatology
+python -m subnocte.cli cities
 
 # Fase 2: meteorología por radar y modelo de pronóstico
-python -m subnocte.cli meteo --start-year 2016          # superficie y 100 m (reanálisis ERA5)
-python -m subnocte.cli meteo-niveles --start-year 2021  # viento a 925/850/700 hPa (altura de vuelo),
+python -m subnocte.cli weather --start-year 2016          # superficie y 100 m (reanálisis ERA5)
+python -m subnocte.cli weather-levels --start-year 2021  # viento a 925/850/700 hPa (altura de vuelo),
                                                            # solo dentro de las ventanas migratorias
-python -m subnocte.cli fase2                            # conjunto, validación, modelos e informe
-python -m subnocte.cli fase2 --cache --no-niveles       # reutiliza el conjunto; solo meteorología de superficie
+python -m subnocte.cli phase2                            # conjunto, validación, modelos e informe
+python -m subnocte.cli phase2 --cache --no-levels       # reutiliza el conjunto; solo meteorología de superficie
 
 # Fase 3: previsión por ciudad
-python -m subnocte.cli fase3-archivo                    # archivo meteorológico en el punto de cada ciudad
-python -m subnocte.cli fase3-entrenar                   # modelos operativos, sin climatología local
-python -m subnocte.cli fase3-umbrales                   # percentiles propios de cada ciudad
-python -m subnocte.cli fase3 --dias 7                   # previsión de las próximas noches e informe
+python -m subnocte.cli phase3-archive                    # archivo meteorológico en el punto de cada ciudad
+python -m subnocte.cli phase3-train                   # modelos operativos, sin climatología local
+python -m subnocte.cli phase3-thresholds                   # percentiles propios de cada ciudad
+python -m subnocte.cli phase3 --days 7                   # previsión de las próximas noches e informe
 python -m subnocte.cli ranking                          # exposición a la luz artificial (necesita el atlas)
 python -m subnocte.cli web                              # regenera index.html, la web pública
 
@@ -129,20 +129,20 @@ python -m subnocte.cli ingest estjv --start 2026-03-01 --end 2026-05-31
 python -m subnocte.cli nightly estjv
 ```
 
-Informes: `output/fase0.html` (validación de radares), `output/fase1.html` (climatologías y umbrales),
-`output/fase2.html` (modelo meteorológico y validación), `output/fase3.html` (previsión por ciudad) y
+Informes (en inglés): `output/phase0.html` (validación de radares), `output/phase1.html` (climatologías y umbrales),
+`output/phase2.html` (modelo meteorológico y validación), `output/phase3.html` (previsión por ciudad) y
 `output/ranking.html` (exposición a la luz). Todos son autocontenidos: las figuras van incrustadas dentro del
 propio HTML, así que se pueden enviar o abrir desde cualquier carpeta.
 
 El atlas de luz no se versiona y no se descarga automáticamente. Para el ranking hay que bajarlo a mano una vez:
 
 ```bash
-curl -sSL -o data/luces/World_Atlas_2015.zip https://datapub.gfz-potsdam.de/download/10.5880.GFZ.1.4.2016.001/World_Atlas_2015.zip
+curl -sSL -o data/lights/World_Atlas_2015.zip https://datapub.gfz-potsdam.de/download/10.5880.GFZ.1.4.2016.001/World_Atlas_2015.zip
 ```
 
 Datos: `data/cache/` (descargas, no versionado), `data/vpts/` (perfiles en parquet, no versionado),
-`data/nightly/{radar}.parquet` (tabla nocturna, versionado), `data/umbrales.csv`, `data/climatologia_doy.csv` y
-`data/ciudades.csv` (ciudad → radar útil más cercano, entre 5 y 100 km, con nivel de confianza).
+`data/nightly/{radar}.parquet` (tabla nocturna, versionado), `data/thresholds.csv`, `data/climatology_doy.csv` y
+`data/cities.csv` (ciudad → radar útil más cercano, entre 5 y 100 km, con nivel de confianza).
 
 ## Aviso metodológico
 

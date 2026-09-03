@@ -1,0 +1,30 @@
+city,country,lat,lon,radar,dist_km,confidence,nearest_radar
+Alicante,ES,38.3452,-0.481,esmur,62.5,medium,esmur
+Almería,ES,36.834,-2.4637,esnjr,34.0,medium,esnjr
+Barcelona,ES,41.3874,2.1686,esgld,23.8,high,esgld
+Bilbao,ES,43.263,-2.935,essse,17.3,medium,essse
+Cáceres,ES,39.4753,-6.3724,essft,9.1,high,essft
+Córdoba,ES,37.8882,-4.7794,,138.3,no usable radar,esclg
+Gijón,ES,43.5322,-5.6611,essan,52.3,medium,essan
+Granada,ES,37.1773,-3.5986,,113.3,no usable radar,esmal
+Madrid,ES,40.4168,-3.7038,estjv,26.8,high,estjv
+Murcia,ES,37.9922,-1.1307,esmur,30.7,medium,esmur
+Málaga,ES,36.7213,-4.4214,esmal,24.4,medium,esmal
+Palma,ES,39.5696,2.6502,espma,24.1,medium,espma
+Salamanca,ES,40.9701,-5.6635,,144.3,no usable radar,eslid
+Santander,ES,43.4623,-3.81,essse,78.4,medium,essse
+Sevilla,ES,37.3891,-5.9845,esclg,45.3,medium,esclg
+Valencia,ES,39.4699,-0.3763,esval,34.4,medium,esval
+Valladolid,ES,41.6523,-4.7245,eslid,39.5,medium,eslid
+Vigo,ES,42.2406,-8.7207,,104.4,no usable radar,escor
+Zaragoza,ES,41.6488,-0.8891,espdg,30.0,medium,espdg
+Bordeaux,FR,44.8378,-0.5792,frbor,8.9,medium,frbor
+Lyon,FR,45.764,4.8357,frniz,45.3,medium,frniz
+Marseille,FR,43.2965,5.3698,frcol,81.7,low,frcol
+Montpellier,FR,43.6108,3.8767,frnim,54.8,medium,frnim
+Nice,FR,43.7102,7.262,frmau,67.7,medium,frmau
+Toulouse,FR,43.6047,1.4442,frtou,6.4,medium,frtou
+Coimbra,PT,40.2033,-8.4103,ptprt,72.2,medium,ptprt
+Faro,PT,37.0194,-7.9304,ptfar,31.9,medium,ptfar
+Lisboa,PT,38.7223,-9.1393,ptlis,74.9,low,ptlis
+Porto,PT,41.1579,-8.6291,ptprt,45.5,high,ptprt

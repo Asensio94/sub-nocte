@@ -1,4 +1,4 @@
-"""Elevación solar aproximada (algoritmo NOAA simplificado, error < 0,05°), vectorizado con numpy."""
+"""Approximate solar elevation (simplified NOAA algorithm, error < 0.05°), vectorised with numpy."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import pandas as pd
 
 
 def sun_elevation(lat: float, lon: float, times: pd.Series | pd.DatetimeIndex) -> np.ndarray:
-    """Elevación del sol en grados para instantes UTC."""
+    """Solar elevation in degrees for UTC instants."""
     t = pd.DatetimeIndex(times)
     if t.tz is None:
         t = t.tz_localize("UTC")

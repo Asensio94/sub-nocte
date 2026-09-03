@@ -2,23 +2,23 @@ __pycache__/
 *.pyc
 .env
 .venv/
-# Descargas de Aloft: se vuelven a bajar del bucket público
+# Aloft downloads: they can be fetched again from the public bucket
 data/cache/
-# Perfiles completos en parquet: pesados, se regeneran desde la caché
+# Full profiles in parquet: heavy, regenerated from the cache
 data/vpts/
 output/*.png
-# Perfiles instantáneos derivados: se regeneran
+# Derived instantaneous profiles: regenerated
 data/nightly/*_profiles.parquet
-# Concatenación de data/nightly: derivada
-data/noches.parquet
-data/meteo/
-data/fase2_dataset.parquet
+# Concatenation of data/nightly: derived
+data/nights.parquet
+data/weather/
+data/phase2_dataset.parquet
 output/logs/
 output/*.log
-data/fase2_dataset_superficie.parquet
-data/fase2_predicciones.parquet
-data/luces/
-data/meteo_ciudades/
-data/fase3_clima_ciudades.parquet
-data/fase3_prevision_bruta.parquet
+data/phase2_dataset_surface.parquet
+data/phase2_predictions.parquet
+data/lights/
+data/weather_cities/
+data/phase3_city_climate.parquet
+data/phase3_forecast_raw.parquet
 data/log_*.txt

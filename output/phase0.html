@@ -1,0 +1,624 @@
+<!doctype html><meta charset='utf-8'><title>Phase 0 · radar validation</title>
+<style>body{font-family:system-ui;max-width:1100px;margin:2rem auto;padding:0 1rem;color:#16202B}table{border-collapse:collapse;font-size:.85rem}th,td{padding:.35rem .6rem;border-bottom:1px solid #ddd;text-align:right}th:first-child,td:first-child,td:nth-child(2),th:nth-child(2){text-align:left}img{max-width:100%;margin:1rem 0}.note{background:#F8EBD3;border-left:3px solid #B8720C;padding:.6rem 1rem;margin:1rem 0}</style>
+<h1>Phase 0 · do the renewed Spanish radars see birds?</h1>
+<p>Generated on 2026-09-03 15:00 UTC from the public Aloft bucket. Only nights with coverage &ge; 60 % are counted.</p>
+<div class='note'>Radars: estjv = Madrid (Torrejón de Velasco); esgld = Barcelona (Gelida); esahr = Málaga (Alhaurín); essft = Cáceres (Sierra de Fuentes); ptlis = Lisbon (control, IPMA); ptprt = Porto (control, IPMA)</div>
+<div class='note'>Criterion: a radar &#x27;sees birds&#x27; if in spring the night density clearly exceeds the daytime one (ratio &gt; 2), the spring night MTR is of the order of thousands of birds/km/night, the night traffic is concentrated towards the N-NE (concentration &gt; 0.4) at more than 8 m/s, and there is night-to-night coherence between neighbouring radars.</div>
+<h2>Summary per radar and season</h2>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>radar</th>
+      <th>season</th>
+      <th>nights</th>
+      <th>mtr_median</th>
+      <th>mtr_p90</th>
+      <th>mtr_max</th>
+      <th>dens_night</th>
+      <th>dens_day</th>
+      <th>night_day_ratio</th>
+      <th>alt_mean_m</th>
+      <th>coverage</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>esahr</td>
+      <td>autumn</td>
+      <td>13</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>1.01</td>
+      <td>0.89</td>
+      <td>1.1</td>
+      <td>1566</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>esahr</td>
+      <td>spring</td>
+      <td>84</td>
+      <td>1,101</td>
+      <td>1,951</td>
+      <td>2,403</td>
+      <td>1.93</td>
+      <td>1.66</td>
+      <td>1.2</td>
+      <td>1650</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>esahr</td>
+      <td>summer</td>
+      <td>66</td>
+      <td>434</td>
+      <td>827</td>
+      <td>951</td>
+      <td>2.12</td>
+      <td>1.94</td>
+      <td>1.1</td>
+      <td>1595</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>esahr</td>
+      <td>winter</td>
+      <td>75</td>
+      <td>12,373</td>
+      <td>12,373</td>
+      <td>12,373</td>
+      <td>2.00</td>
+      <td>2.63</td>
+      <td>0.8</td>
+      <td>1594</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>esgld</td>
+      <td>autumn</td>
+      <td>11</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>1.36</td>
+      <td>2.21</td>
+      <td>0.6</td>
+      <td>960</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>esgld</td>
+      <td>spring</td>
+      <td>89</td>
+      <td>692</td>
+      <td>2,922</td>
+      <td>5,883</td>
+      <td>2.74</td>
+      <td>2.48</td>
+      <td>1.1</td>
+      <td>1128</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>esgld</td>
+      <td>summer</td>
+      <td>65</td>
+      <td>809</td>
+      <td>1,406</td>
+      <td>2,884</td>
+      <td>3.68</td>
+      <td>4.53</td>
+      <td>0.8</td>
+      <td>1125</td>
+      <td>99%</td>
+    </tr>
+    <tr>
+      <td>esgld</td>
+      <td>winter</td>
+      <td>81</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>1.58</td>
+      <td>1.79</td>
+      <td>0.9</td>
+      <td>1060</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>essft</td>
+      <td>autumn</td>
+      <td>12</td>
+      <td>439</td>
+      <td>439</td>
+      <td>439</td>
+      <td>0.34</td>
+      <td>0.33</td>
+      <td>1.0</td>
+      <td>1069</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>essft</td>
+      <td>spring</td>
+      <td>92</td>
+      <td>501</td>
+      <td>1,649</td>
+      <td>3,487</td>
+      <td>0.73</td>
+      <td>0.53</td>
+      <td>1.4</td>
+      <td>1069</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>essft</td>
+      <td>summer</td>
+      <td>51</td>
+      <td>1,856</td>
+      <td>2,473</td>
+      <td>2,727</td>
+      <td>1.78</td>
+      <td>3.31</td>
+      <td>0.5</td>
+      <td>989</td>
+      <td>99%</td>
+    </tr>
+    <tr>
+      <td>essft</td>
+      <td>winter</td>
+      <td>80</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>0.58</td>
+      <td>0.90</td>
+      <td>0.6</td>
+      <td>1133</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>estjv</td>
+      <td>autumn</td>
+      <td>13</td>
+      <td>4,474</td>
+      <td>4,474</td>
+      <td>4,474</td>
+      <td>0.99</td>
+      <td>5.27</td>
+      <td>0.2</td>
+      <td>912</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>estjv</td>
+      <td>spring</td>
+      <td>92</td>
+      <td>1,941</td>
+      <td>4,008</td>
+      <td>6,037</td>
+      <td>2.59</td>
+      <td>3.59</td>
+      <td>0.7</td>
+      <td>1037</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>estjv</td>
+      <td>summer</td>
+      <td>62</td>
+      <td>1,122</td>
+      <td>1,822</td>
+      <td>2,316</td>
+      <td>3.01</td>
+      <td>4.19</td>
+      <td>0.7</td>
+      <td>1202</td>
+      <td>99%</td>
+    </tr>
+    <tr>
+      <td>estjv</td>
+      <td>winter</td>
+      <td>80</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>0.92</td>
+      <td>6.26</td>
+      <td>0.1</td>
+      <td>1026</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>ptlis</td>
+      <td>autumn</td>
+      <td>17</td>
+      <td>2,208</td>
+      <td>7,029</td>
+      <td>8,800</td>
+      <td>0.98</td>
+      <td>0.50</td>
+      <td>2.0</td>
+      <td>616</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>ptlis</td>
+      <td>spring</td>
+      <td>89</td>
+      <td>987</td>
+      <td>2,882</td>
+      <td>7,523</td>
+      <td>0.68</td>
+      <td>0.35</td>
+      <td>2.0</td>
+      <td>886</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>ptlis</td>
+      <td>summer</td>
+      <td>91</td>
+      <td>2,134</td>
+      <td>7,115</td>
+      <td>20,102</td>
+      <td>1.69</td>
+      <td>0.72</td>
+      <td>2.4</td>
+      <td>673</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>ptlis</td>
+      <td>winter</td>
+      <td>83</td>
+      <td>761</td>
+      <td>2,055</td>
+      <td>47,658</td>
+      <td>0.42</td>
+      <td>0.34</td>
+      <td>1.2</td>
+      <td>1161</td>
+      <td>99%</td>
+    </tr>
+    <tr>
+      <td>ptprt</td>
+      <td>autumn</td>
+      <td>31</td>
+      <td>1,223</td>
+      <td>2,892</td>
+      <td>3,171</td>
+      <td>0.36</td>
+      <td>0.28</td>
+      <td>1.3</td>
+      <td>1681</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>ptprt</td>
+      <td>spring</td>
+      <td>72</td>
+      <td>1,530</td>
+      <td>3,765</td>
+      <td>12,322</td>
+      <td>0.82</td>
+      <td>0.35</td>
+      <td>2.3</td>
+      <td>1602</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>ptprt</td>
+      <td>summer</td>
+      <td>91</td>
+      <td>1,135</td>
+      <td>3,262</td>
+      <td>8,148</td>
+      <td>1.11</td>
+      <td>0.26</td>
+      <td>4.2</td>
+      <td>1500</td>
+      <td>100%</td>
+    </tr>
+    <tr>
+      <td>ptprt</td>
+      <td>winter</td>
+      <td>82</td>
+      <td>756</td>
+      <td>2,640</td>
+      <td>4,556</td>
+      <td>0.38</td>
+      <td>0.35</td>
+      <td>1.1</td>
+      <td>1856</td>
+      <td>100%</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Traffic direction and speed in spring (density-weighted)</h2>
+<p>Migration = concentrated nocturnal flow towards N-NE at 8-15 m/s. Insects = scattered, slow drift.</p>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>radar</th>
+      <th>period</th>
+      <th>layers_m</th>
+      <th>ff_mean_ms</th>
+      <th>concentration</th>
+      <th>N</th>
+      <th>NE</th>
+      <th>E</th>
+      <th>SE</th>
+      <th>S</th>
+      <th>SW</th>
+      <th>W</th>
+      <th>NW</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>estjv</td>
+      <td>night</td>
+      <td>600-1600</td>
+      <td>8.9</td>
+      <td>0.55</td>
+      <td>24 %</td>
+      <td>32 %</td>
+      <td>9 %</td>
+      <td>6 %</td>
+      <td>4 %</td>
+      <td>3 %</td>
+      <td>4 %</td>
+      <td>17 %</td>
+    </tr>
+    <tr>
+      <td>estjv</td>
+      <td>day</td>
+      <td>600-1600</td>
+      <td>5.5</td>
+      <td>0.24</td>
+      <td>16 %</td>
+      <td>21 %</td>
+      <td>13 %</td>
+      <td>7 %</td>
+      <td>7 %</td>
+      <td>10 %</td>
+      <td>9 %</td>
+      <td>15 %</td>
+    </tr>
+    <tr>
+      <td>esgld</td>
+      <td>night</td>
+      <td>600-1600</td>
+      <td>8.6</td>
+      <td>0.72</td>
+      <td>13 %</td>
+      <td>61 %</td>
+      <td>10 %</td>
+      <td>2 %</td>
+      <td>1 %</td>
+      <td>2 %</td>
+      <td>4 %</td>
+      <td>6 %</td>
+    </tr>
+    <tr>
+      <td>esgld</td>
+      <td>day</td>
+      <td>600-1600</td>
+      <td>4.9</td>
+      <td>0.36</td>
+      <td>16 %</td>
+      <td>21 %</td>
+      <td>23 %</td>
+      <td>10 %</td>
+      <td>3 %</td>
+      <td>3 %</td>
+      <td>12 %</td>
+      <td>13 %</td>
+    </tr>
+    <tr>
+      <td>esahr</td>
+      <td>night</td>
+      <td>1200-2000</td>
+      <td>7.9</td>
+      <td>0.45</td>
+      <td>24 %</td>
+      <td>26 %</td>
+      <td>9 %</td>
+      <td>6 %</td>
+      <td>4 %</td>
+      <td>4 %</td>
+      <td>10 %</td>
+      <td>16 %</td>
+    </tr>
+    <tr>
+      <td>esahr</td>
+      <td>day</td>
+      <td>1200-2000</td>
+      <td>7.1</td>
+      <td>0.37</td>
+      <td>10 %</td>
+      <td>18 %</td>
+      <td>15 %</td>
+      <td>5 %</td>
+      <td>3 %</td>
+      <td>3 %</td>
+      <td>16 %</td>
+      <td>31 %</td>
+    </tr>
+    <tr>
+      <td>essft</td>
+      <td>night</td>
+      <td>600-1600</td>
+      <td>8.7</td>
+      <td>0.69</td>
+      <td>36 %</td>
+      <td>40 %</td>
+      <td>5 %</td>
+      <td>4 %</td>
+      <td>4 %</td>
+      <td>1 %</td>
+      <td>4 %</td>
+      <td>7 %</td>
+    </tr>
+    <tr>
+      <td>essft</td>
+      <td>day</td>
+      <td>600-1600</td>
+      <td>8.0</td>
+      <td>0.43</td>
+      <td>35 %</td>
+      <td>9 %</td>
+      <td>4 %</td>
+      <td>8 %</td>
+      <td>7 %</td>
+      <td>4 %</td>
+      <td>11 %</td>
+      <td>22 %</td>
+    </tr>
+    <tr>
+      <td>ptlis</td>
+      <td>night</td>
+      <td>0-4800</td>
+      <td>8.3</td>
+      <td>0.11</td>
+      <td>25 %</td>
+      <td>14 %</td>
+      <td>5 %</td>
+      <td>15 %</td>
+      <td>16 %</td>
+      <td>9 %</td>
+      <td>6 %</td>
+      <td>11 %</td>
+    </tr>
+    <tr>
+      <td>ptlis</td>
+      <td>day</td>
+      <td>0-4800</td>
+      <td>6.6</td>
+      <td>0.20</td>
+      <td>13 %</td>
+      <td>12 %</td>
+      <td>7 %</td>
+      <td>34 %</td>
+      <td>8 %</td>
+      <td>10 %</td>
+      <td>5 %</td>
+      <td>11 %</td>
+    </tr>
+    <tr>
+      <td>ptprt</td>
+      <td>night</td>
+      <td>1000-4800</td>
+      <td>9.1</td>
+      <td>0.59</td>
+      <td>37 %</td>
+      <td>28 %</td>
+      <td>5 %</td>
+      <td>4 %</td>
+      <td>5 %</td>
+      <td>4 %</td>
+      <td>4 %</td>
+      <td>14 %</td>
+    </tr>
+    <tr>
+      <td>ptprt</td>
+      <td>day</td>
+      <td>1000-4800</td>
+      <td>11.2</td>
+      <td>0.59</td>
+      <td>46 %</td>
+      <td>10 %</td>
+      <td>3 %</td>
+      <td>3 %</td>
+      <td>3 %</td>
+      <td>5 %</td>
+      <td>11 %</td>
+      <td>19 %</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Correlation between radars (log night MTR, spring)</h2>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>radar</th>
+      <th>esahr</th>
+      <th>esgld</th>
+      <th>essft</th>
+      <th>estjv</th>
+      <th>ptlis</th>
+      <th>ptprt</th>
+    </tr>
+    <tr>
+      <th>radar</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>esahr</th>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>esgld</th>
+      <td></td>
+      <td>1.00</td>
+      <td></td>
+      <td></td>
+      <td>-0.12</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>essft</th>
+      <td></td>
+      <td></td>
+      <td>1.00</td>
+      <td></td>
+      <td>0.31</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>estjv</th>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>1.00</td>
+      <td>0.38</td>
+      <td>0.45</td>
+    </tr>
+    <tr>
+      <th>ptlis</th>
+      <td></td>
+      <td>-0.12</td>
+      <td>0.31</td>
+      <td>0.38</td>
+      <td>1.00</td>
+      <td>0.45</td>
+    </tr>
+    <tr>
+      <th>ptprt</th>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>0.45</td>
+      <td>0.45</td>
+      <td>1.00</td>
+    </tr>
+  </tbody>
+</table>
+<img src='phase0_series.png' alt='phase0_series'>
+<img src='phase0_daycycle.png' alt='phase0_daycycle'>
+<img src='phase0_nightcourse.png' alt='phase0_nightcourse'>
+<img src='phase0_profile.png' alt='phase0_profile'>
