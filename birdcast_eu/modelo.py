@@ -63,6 +63,20 @@ def build_dataset(nightly: pd.DataFrame, meteo_dir: Path, clim: pd.DataFrame, lo
     return ds
 
 
+def marcar_alertas(ds: pd.DataFrame) -> pd.DataFrame:
+    """Recalcula el umbral de paso fuerte (P90 local por radar y temporada) sobre las noches que entran al modelo.
+
+    Hay que recalcularlo cada vez que se filtra el conjunto, por ejemplo a los años con viento en altura de vuelo.
+    Con el P90 del histórico completo, el subconjunto desde 2021 deja a los radares franceses con un 0,3 % de
+    noches por encima del umbral y a algunos españoles con un 23 %, en vez del 10 % que define el suceso; con eso
+    ni la tasa de acierto ni la de falsa alarma son comparables con el 10 % que daría el azar.
+    """
+    th = ds.groupby(["radar", "season"])[TARGET].quantile(0.9).rename("p90_temporada").reset_index()
+    ds = ds.drop(columns=["p90_temporada"], errors="ignore").merge(th, on=["radar", "season"], how="left")
+    ds["alerta_obs"] = ds[TARGET] >= ds["p90_temporada"]
+    return ds
+
+
 SUPERFICIE = {"t2m", "rh2m", "pmsl", "precip", "precip_h", "cloud", "dp24", "dt24"}
 ALTURA = {"t850", "gh850", "dt850_24"}
 

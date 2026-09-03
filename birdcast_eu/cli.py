@@ -284,8 +284,10 @@ def _conjunto_fase2(cache: bool, niveles: bool):
     if niveles and "ws_850hPa" in ds:
         ds = ds[ds["ws_850hPa"].notna()].reset_index(drop=True)
         rprint("[bold]con viento en altura de vuelo[/bold] (925/850/700 hPa, desde 2021)")
+    ds = M.marcar_alertas(ds)  # el umbral de paso fuerte se recalcula sobre las noches que entran al modelo
     cols = M.feature_columns(ds, niveles=niveles)
-    rprint(f"{len(ds):,} radar-noches en ventana migratoria, {ds['radar'].nunique()} radares, {len(cols)} rasgos")
+    rprint(f"{len(ds):,} radar-noches en ventana migratoria, {ds['radar'].nunique()} radares, {len(cols)} rasgos, "
+           f"{ds['alerta_obs'].mean():.1%} de noches de paso fuerte")
     return ds, cols
 
 
