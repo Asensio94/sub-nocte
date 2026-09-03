@@ -4,7 +4,7 @@
 <p>Modelo de árboles potenciados (LightGBM) que estima la <b>densidad nocturna de aves</b> (VID, aves/km²) de cada radar a partir de la meteorología de la noche (reanálisis ERA5 vía Open-Meteo: viento a 10 y 100 m descompuesto en componente a favor y lateral respecto al rumbo migratorio, temperatura, humedad, presión y sus cambios en 24 h, precipitación y nubosidad), el día del año y la climatología local. Objetivo transformado con la raíz cúbica. Solo noches con cobertura ≥ 60 % dentro de las ventanas migratorias (15 feb-31 may, 15 ago-30 nov).</p>
 <p><b>Dos validaciones honestas:</b> (1) dejar fuera un año completo y predecirlo con el resto (¿funciona en un año nuevo?); (2) dejar fuera un radar completo (¿funciona en un lugar donde no se entrenó? — es el caso de los radares españoles nuevos, que tienen pocos años).</p>
 <p><b>Cómo se decide una alerta.</b> Se llama <i>noche de paso fuerte</i> a la que supera el percentil 90 histórico local de su temporada, es decir una noche de cada diez. Un modelo de media encoge las predicciones hacia el centro y casi nunca cruza ese valor absoluto, así que la alerta la decide un <b>segundo modelo</b>, entrenado para clasificar directamente ese suceso, y el umbral se calibra sobre la distribución de sus predicciones: se alerta en el decil superior de las noches previstas de ese radar y temporada. En operación esa distribución se obtiene corriendo el modelo sobre diez años de reanálisis en el punto de interés, sin necesidad de un radar en la ciudad. Como se emiten tantas alertas como noches de paso fuerte hay, el porcentaje capturado es directamente comparable con el 10 % que daría el azar. El área bajo la curva resume la capacidad de separar esas noches sin depender de ningún umbral (0,5 = azar).</p>
-<div class='k'><div>radar-noches<b>63,023</b></div><div>radares<b>56</b></div><div>años<b>2016-2026</b></div><div>rasgos<b>22</b></div><div>Spearman mediano (año fuera)<b>0.64</b></div><div>R² mediano (año fuera) / solo climatología<b>0.20 / 0.24</b></div><div>Spearman mediano (radar fuera)<b>0.44</b></div><div>Spearman mediano radares españoles (fuera)<b>0.42</b></div><div>Área bajo la curva mediana (radar fuera)<b>0.80</b></div><div>Noches de paso fuerte capturadas (radar fuera)<b>35%</b></div><div>Alertas erróneas (radar fuera)<b>64%</b></div></div>
+<div class='k'><div>radar-noches<b>63,023</b></div><div>radares<b>56</b></div><div>años<b>2016-2026</b></div><div>rasgos<b>22</b></div><div>Spearman mediano (año fuera)<b>0.64</b></div><div>R² mediano (año fuera) / solo climatología<b>0.20 / 0.24</b></div><div>Spearman mediano (radar fuera)<b>0.46</b></div><div>Spearman mediano radares españoles (fuera)<b>0.46</b></div><div>Área bajo la curva mediana (radar fuera)<b>0.79</b></div><div>Noches de paso fuerte capturadas (radar fuera)<b>35%</b></div><div>Alertas erróneas (radar fuera)<b>65%</b></div></div>
 <h2>Qué usa el modelo</h2><img src='fase2_importancia.png'>
 <h2>Validación radar a radar</h2><img src='fase2_radares.png'>
 <h2>Observado frente a predicho</h2><img src='fase2_dispersion.png'>
@@ -171,6 +171,19 @@
       <td>89%</td>
     </tr>
     <tr>
+      <td>radar esahr</td>
+      <td>122</td>
+      <td>0.24</td>
+      <td>-0.54</td>
+      <td>-0.01</td>
+      <td>0.62</td>
+      <td>0.64</td>
+      <td>11</td>
+      <td>13</td>
+      <td>9%</td>
+      <td>92%</td>
+    </tr>
+    <tr>
       <td>radar esalm</td>
       <td>857</td>
       <td>0.23</td>
@@ -221,6 +234,19 @@
       <td>73</td>
       <td>19%</td>
       <td>81%</td>
+    </tr>
+    <tr>
+      <td>radar esgld</td>
+      <td>125</td>
+      <td>0.48</td>
+      <td>-0.08</td>
+      <td>0.05</td>
+      <td>0.70</td>
+      <td>0.77</td>
+      <td>13</td>
+      <td>14</td>
+      <td>8%</td>
+      <td>93%</td>
     </tr>
     <tr>
       <td>radar eslid</td>
@@ -314,6 +340,19 @@
       <td>69%</td>
     </tr>
     <tr>
+      <td>radar essft</td>
+      <td>130</td>
+      <td>0.54</td>
+      <td>0.30</td>
+      <td>0.32</td>
+      <td>0.73</td>
+      <td>0.84</td>
+      <td>13</td>
+      <td>14</td>
+      <td>31%</td>
+      <td>71%</td>
+    </tr>
+    <tr>
       <td>radar essse</td>
       <td>795</td>
       <td>0.40</td>
@@ -325,6 +364,19 @@
       <td>81</td>
       <td>28%</td>
       <td>72%</td>
+    </tr>
+    <tr>
+      <td>radar estjv</td>
+      <td>128</td>
+      <td>0.48</td>
+      <td>0.17</td>
+      <td>0.17</td>
+      <td>0.62</td>
+      <td>0.61</td>
+      <td>13</td>
+      <td>14</td>
+      <td>23%</td>
+      <td>79%</td>
     </tr>
     <tr>
       <td>radar esval</td>
@@ -691,6 +743,19 @@
       <td>76%</td>
     </tr>
     <tr>
+      <td>radar ptflr</td>
+      <td>131</td>
+      <td>0.59</td>
+      <td>0.28</td>
+      <td>-0.09</td>
+      <td>0.94</td>
+      <td>0.81</td>
+      <td>14</td>
+      <td>14</td>
+      <td>64%</td>
+      <td>36%</td>
+    </tr>
+    <tr>
       <td>radar ptlis</td>
       <td>458</td>
       <td>0.46</td>
@@ -715,6 +780,19 @@
       <td>80</td>
       <td>27%</td>
       <td>72%</td>
+    </tr>
+    <tr>
+      <td>radar ptsmg</td>
+      <td>132</td>
+      <td>0.60</td>
+      <td>0.37</td>
+      <td>-0.03</td>
+      <td>0.96</td>
+      <td>0.87</td>
+      <td>14</td>
+      <td>14</td>
+      <td>71%</td>
+      <td>29%</td>
     </tr>
     <tr>
       <td>radar pttrc</td>
