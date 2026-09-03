@@ -142,6 +142,7 @@ def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: l
                               "alertas_obs": "noches de paso fuerte", "alertas_pred": "alertas emitidas"})
     from .modelo import MIN_NOCHES_RADAR as min_noches
     n_folds = len(ra)
+    n_pequenos = int((ds.groupby("radar").size() < 20).sum())
     imp_t = imp.reset_index().rename(columns={"index": "rasgo", "intensidad": "intensidad %", "alerta": "alerta %"})
     imp_t["rasgo"] = imp_t["rasgo"].map(lambda k: NOMBRE.get(k, k))
     for c in ("intensidad %", "alerta %"):
@@ -206,7 +207,29 @@ def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: l
             "para el servicio es «radar fuera»: una ciudad donde no hay radar con el que entrenar.</p>",
             comp.to_html(),
         ]
+    AZORES = {"ptflr", "ptsmg", "pttrc"}
+    ra2 = ra.copy(); ra2["radar"] = ra2["split"].str.split().str[1]
+    nuevos_es = ra2[ra2["radar"].isin(["estjv", "esgld", "essft", "esahr"])]
+    islas = ra2[ra2["radar"].isin(AZORES)]
+    cont = ra2[~ra2["radar"].isin(AZORES)]
+    def rango(d, c, pct=False):
+        f = "{:.0%}".format if pct else "{:.2f}".format
+        return f(d[c].min()) + "-" + f(d[c].max())
     parts += [
+        "<h2>Qué significa esto para el piloto</h2><ul>",
+        f"<li><b>Los cuatro radares españoles renovados son el caso difícil.</b> Madrid, Barcelona, Cáceres y Málaga "
+        f"dan un área bajo la curva de {rango(nuevos_es, 'auc')} y capturan {rango(nuevos_es, 'acierto', True)} de las "
+        "noches de paso fuerte. Baten al azar (10 %) por poco más del doble, y con una sola temporada de datos cada "
+        "aviso se apoya en muy pocas noches. No da todavía para un aviso fiable en esas ciudades.</li>"
+        f"<li><b>Los mejores resultados son de las Azores</b> (área bajo la curva {rango(islas, 'auc')}, "
+        f"{rango(islas, 'acierto', True)} de acierto): islas oceánicas donde el paso es muy episódico y depende casi "
+        "solo del tiempo. Hay que leerlos con cautela, porque son pocas noches y no representan el continente.</li>"
+        f"<li>En el continente la mediana del área bajo la curva es {cont['auc'].median():.2f} y los mejores radares "
+        f"llegan a {cont['auc'].max():.2f} con {cont.loc[cont['auc'].idxmax(), 'acierto']:.0%} de acierto. Ahí sí hay "
+        "servicio: son casi todos franceses, más Oporto.</li>"
+        "<li>La conclusión operativa es que el aviso funciona donde el radar ve bien y hay varias temporadas de "
+        "histórico. En España conviene esperar la temporada 2027 y, sobre todo, resolver el perfil truncado a seis "
+        "capas y la contaminación de insectos antes de publicar avisos.</li></ul>",
         "<h2>Tablas</h2><h3>Validación</h3>", fmt.to_html(index=False),
         "<h3>Importancia de los rasgos</h3>", imp_t.to_html(index=False),
         "<h2>Limitaciones</h2><ul>"
@@ -218,7 +241,7 @@ def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: l
         + "<li>Sin la velocidad de vol2bird no se pueden separar insectos de aves por velocidad aérea; en otoño y en el sur "
         "parte del VID es insecto. La climatología local absorbe parte del sesgo, no todo.</li>"
         f"<li>Solo los {n_folds} radares con al menos {min_noches} noches tienen validación propia; los demás aportan al "
-        "entrenamiento pero no se validan por separado. Seis radares tienen menos de 20 noches en total.</li>"
+        f"entrenamiento pero no se validan por separado ({n_pequenos} radares no llegan a 20 noches).</li>"
         "<li>La columna «R² climatología» de los pliegues por radar compara con la climatología observada de ese mismo "
         "radar, que el modelo no ha podido usar: es un punto de referencia deliberadamente generoso.</li>"
         "<li>Los años con pocos radares dan R² muy negativo (el modelo acierta el orden de las noches pero no el nivel "
