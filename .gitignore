@@ -15,3 +15,5 @@ data/meteo/
 data/fase2_dataset.parquet
 output/logs/
 output/*.log
+data/fase2_dataset_superficie.parquet
+data/fase2_predicciones.parquet
