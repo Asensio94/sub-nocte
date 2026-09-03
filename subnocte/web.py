@@ -137,10 +137,19 @@ def construir(prev: pd.DataFrame | None, rk: pd.DataFrame | None, informes: list
               "el percentil se mide sobre la temporada entera, que incluye sus semanas flojas.</p>",
               calendario(prev)]
         if not alto.empty:
-            lista = ", ".join(f"{r.ciudad} ({DIAS[pd.Timestamp(r.night).weekday()]} "
-                              f"{pd.Timestamp(r.night).day} {MESES[pd.Timestamp(r.night).month - 1]})"
-                              for r in alto.sort_values("night").itertuples(index=False))
-            p.append(f"<p><b>Noches para apagar:</b> {lista}.</p>")
+            p.append("<h3>Noches para apagar</h3><ul>")
+            for noche, g in alto.groupby("night"):
+                d = pd.Timestamp(noche)
+                muy = sorted(g[g["nivel"] == "muy alto"]["ciudad"])
+                otras = len(g) - len(muy)
+                partes = []
+                if muy:
+                    partes.append("<b>muy alto</b> en " + ", ".join(muy))
+                if otras:
+                    partes.append(f"alto en {otras} ciudad{'es' if otras > 1 else ''} más")
+                p.append(f"<li><b>{DIAS[d.weekday()]} {d.day} {MESES[d.month - 1]}</b>: "
+                         + "; ".join(partes) + ".</li>")
+            p.append("</ul>")
         else:
             p.append("<p>Ninguna ciudad supera su percentil 75 en este periodo: no hay motivo para un aviso.</p>")
     else:
