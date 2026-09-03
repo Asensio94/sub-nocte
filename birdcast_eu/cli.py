@@ -298,7 +298,7 @@ def fase2(cache: bool = False, niveles: bool = True):
     ref = None
     if niveles and any("hPa" in c for c in cols):
         rprint("[bold]referencia sin viento en altura[/bold]")
-        ref, _ = M.evaluate(ds, M.feature_columns(ds, niveles=False), log=rprint, solo_anos=True)
+        ref, _ = M.evaluate(ds, M.feature_columns(ds, niveles=False), log=rprint)
         ref.to_csv(ROOT / "data" / "fase2_validacion_superficie.csv", index=False, float_format="%.3f")
     figs = F.figures(ds, met, preds, imp, OUTPUT)
     F.write_report(ds, met, imp, cols, figs, OUTPUT / "fase2.html", ref=ref)

@@ -176,18 +176,24 @@ def write_report(ds: pd.DataFrame, met: pd.DataFrame, imp: pd.DataFrame, cols: l
     if len(figs) > 3:
         parts.append(f"<h2>Ejemplos: radares españoles nuevos y Oporto</h2><img src='{figs[3].name}'>")
     if ref is not None and not ref.empty:
-        rr = ref[ref["split"].str.startswith("año")]
-        aa = met[met["split"].str.startswith("año")]
-        comp = pd.DataFrame({
-            "con viento en altura de vuelo": [f"{aa['spearman'].median():.2f}", f"{aa['auc'].median():.2f}",
-                                              f"{aa['acierto'].mean():.0%}"],
-            "solo meteorología de superficie": [f"{rr['spearman'].median():.2f}", f"{rr['auc'].median():.2f}",
-                                                f"{rr['acierto'].mean():.0%}"],
-        }, index=["Spearman mediano", "área bajo la curva mediana", "paso fuerte capturado"])
+        filas, idx = [], []
+        for eje, etiqueta in (("año", "año fuera"), ("radar", "radar fuera")):
+            a = met[met["split"].str.startswith(eje)]
+            b = ref[ref["split"].str.startswith(eje)]
+            if a.empty or b.empty:
+                continue
+            for clave, nombre, f in (("spearman", "Spearman mediano", "{:.2f}".format),
+                                     ("auc", "área bajo la curva mediana", "{:.2f}".format),
+                                     ("acierto", "paso fuerte capturado", "{:.0%}".format)):
+                v = (lambda d: d[clave].mean() if clave == "acierto" else d[clave].median())
+                filas.append((f(v(a)), f(v(b))))
+                idx.append(f"{nombre} ({etiqueta})")
+        comp = pd.DataFrame(filas, columns=["con viento en altura de vuelo", "solo meteorología de superficie"], index=idx)
         parts += [
             "<h2>¿Cuánto aporta el viento a la altura a la que vuelan?</h2>",
-            "<p>Las mismas noches y los mismos pliegues por año, cambiando solo el conjunto de rasgos: con el viento en "
-            "925, 850 y 700 hectopascales (unos 750, 1.500 y 3.000 m) frente a solo el de 10 y 100 m.</p>",
+            "<p>Las mismas noches y los mismos pliegues, cambiando solo el conjunto de rasgos: con el viento en 925, 850 y "
+            "700 hectopascales (unos 750, 1.500 y 3.000 m sobre el mar) frente a solo el de 10 y 100 m. La fila que importa "
+            "para el servicio es «radar fuera»: una ciudad donde no hay radar con el que entrenar.</p>",
             comp.to_html(),
         ]
     parts += [
