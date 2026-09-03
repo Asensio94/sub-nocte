@@ -267,10 +267,8 @@ def meteo_niveles(radares: list[str] = typer.Argument(None), start_year: int = 2
         fetch_radar_niveles(r, float(pp.lat), float(pp.lon), years, METEO_NIVELES, log=rprint)
 
 
-@app.command()
-def fase2(cache: bool = False, niveles: bool = True):
-    """Modelo meteorológico del VID nocturno: conjunto radar × noche, validación por año y por radar, informe."""
-    from . import fase2 as F
+def _conjunto_fase2(cache: bool, niveles: bool):
+    """Carga (o construye) el conjunto radar x noche y devuelve (conjunto, rasgos)."""
     from . import modelo as M
     from .historico import load_all_nightly
 
@@ -288,6 +286,30 @@ def fase2(cache: bool = False, niveles: bool = True):
         rprint("[bold]con viento en altura de vuelo[/bold] (925/850/700 hPa, desde 2021)")
     cols = M.feature_columns(ds, niveles=niveles)
     rprint(f"{len(ds):,} radar-noches en ventana migratoria, {ds['radar'].nunique()} radares, {len(cols)} rasgos")
+    return ds, cols
+
+
+REF_CSV = ROOT / "data" / "fase2_validacion_superficie.csv"
+
+
+@app.command()
+def fase2_referencia(cache: bool = True):
+    """Referencia de la fase 2: las mismas noches con viento en altura, pero usando solo superficie."""
+    from . import modelo as M
+
+    ds, _ = _conjunto_fase2(cache, niveles=True)
+    ref, _p = M.evaluate(ds, M.feature_columns(ds, niveles=False), log=rprint)
+    ref.to_csv(REF_CSV, index=False, float_format="%.3f")
+    rprint(f"Referencia guardada en {REF_CSV}")
+
+
+@app.command()
+def fase2(cache: bool = False, niveles: bool = True, referencia_en_fichero: bool = False):
+    """Modelo meteorológico del VID nocturno: conjunto radar × noche, validación por año y por radar, informe."""
+    from . import fase2 as F
+    from . import modelo as M
+
+    ds, cols = _conjunto_fase2(cache, niveles)
     met, preds = M.evaluate(ds, cols, log=rprint)
     met.to_csv(ROOT / "data" / "fase2_validacion.csv", index=False, float_format="%.3f")
     imp = M.importance(ds, cols)
@@ -297,9 +319,13 @@ def fase2(cache: bool = False, niveles: bool = True):
     # referencia: mismas noches, solo meteorología de superficie, para medir lo que aporta la altura de vuelo
     ref = None
     if niveles and any("hPa" in c for c in cols):
-        rprint("[bold]referencia sin viento en altura[/bold]")
-        ref, _ = M.evaluate(ds, M.feature_columns(ds, niveles=False), log=rprint)
-        ref.to_csv(ROOT / "data" / "fase2_validacion_superficie.csv", index=False, float_format="%.3f")
+        if referencia_en_fichero and REF_CSV.exists():
+            ref = pd.read_csv(REF_CSV)
+            rprint(f"referencia sin altura leída de {REF_CSV}")
+        else:
+            rprint("[bold]referencia sin viento en altura[/bold]")
+            ref, _ = M.evaluate(ds, M.feature_columns(ds, niveles=False), log=rprint)
+            ref.to_csv(REF_CSV, index=False, float_format="%.3f")
     figs = F.figures(ds, met, preds, imp, OUTPUT)
     F.write_report(ds, met, imp, cols, figs, OUTPUT / "fase2.html", ref=ref)
     ra = met[met["split"].str.startswith("radar")]
