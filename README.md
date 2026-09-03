@@ -7,6 +7,9 @@ Pronóstico público de la **intensidad de migración nocturna de aves** por ciu
 aplicado a los perfiles verticales de aves de la red europea de radares meteorológicos, publicados en abierto
 por [Aloft](https://aloftdata.eu) (licencia CC0). Proyecto independiente, sin relación con Cornell.
 
+**Web: [asensio94.github.io/sub-nocte](https://asensio94.github.io/sub-nocte/)** — previsión de las próximas
+siete noches por ciudad, actualizada cada mañana.
+
 Proyecto abierto y sin ánimo de lucro. Documento de diseño completo: [`docs/diseno.html`](docs/diseno.html).
 
 ## Por qué
@@ -68,8 +71,14 @@ reduciendo colisiones con edificios. En Europa existen los datos (Aloft, ENRAM, 
   atlas mide brillo visto desde el suelo, no radiancia emitida hacia arriba, es de 2015 y **su licencia prohíbe
   redistribuir los ficheros**; para la versión pública conviene la radiancia VIIRS, de dominio público (pide un
   registro gratuito en el Earth Observation Group).
-- Siguiente: rutina diaria automática y web pública; ampliar a los radares alemanes, holandeses, belgas y checos,
-  que tienen histórico largo en el mismo archivo y son lo que más margen de mejora tiene.
+- **Web pública y rutina diaria en marcha.** `index.html` se genera desde los mismos ficheros del repositorio
+  (`python -m subnocte.cli web`) y GitHub Pages sirve la raíz de la rama, sin despliegue aparte. La rutina
+  `.github/workflows/prevision.yml` corre cada mañana a las 05:20 UTC, vuelve a pedir el pronóstico, recalcula los
+  niveles, regenera la página y hace commit. La web dice en el propio sitio del aviso que el nivel es **relativo a
+  cada ciudad** y no una cifra absoluta de aves, y lleva un aviso de versión técnica: ninguna de estas ciudades
+  tiene radar cerca con el que comprobar la previsión al día siguiente.
+- Siguiente: ampliar a los radares alemanes, holandeses, belgas y checos, que tienen histórico largo en el mismo
+  archivo y son lo que más margen de mejora tiene; avisos por Telegram; cambiar la capa de luz a VIIRS.
 
 ## Cómo funciona
 
@@ -112,6 +121,7 @@ python -m subnocte.cli fase3-entrenar                   # modelos operativos, si
 python -m subnocte.cli fase3-umbrales                   # percentiles propios de cada ciudad
 python -m subnocte.cli fase3 --dias 7                   # previsión de las próximas noches e informe
 python -m subnocte.cli ranking                          # exposición a la luz artificial (necesita el atlas)
+python -m subnocte.cli web                              # regenera index.html, la web pública
 
 # Piezas sueltas
 python -m subnocte.cli radars                       # radares del bucket y sus años
