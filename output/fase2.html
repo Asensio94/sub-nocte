@@ -5,7 +5,7 @@
 <p><b>Dos validaciones honestas:</b> (1) dejar fuera un año completo y predecirlo con el resto (¿funciona en un año nuevo?); (2) dejar fuera un radar completo (¿funciona en un lugar donde no se entrenó? — es el caso de una ciudad sin radar cerca, y también el de los radares españoles nuevos, que solo tienen una temporada).</p>
 <p><b>Cada pliegue solo ve lo que habría estado disponible.</b> La climatología local del radar se calcula con sus propias observaciones, así que dársela sin más al modelo sería filtrarle la respuesta. Al dejar fuera un año se recalcula con los años restantes (ventana móvil de ±7 días); al dejar fuera un radar <b>desaparece de los rasgos</b>, porque en una ciudad sin radar no existe. Por eso las cifras por radar son más bajas que las anuales: el modelo se queda solo con la meteorología, el calendario y la posición geográfica.</p>
 <p><b>Cómo se decide una alerta.</b> Se llama <i>noche de paso fuerte</i> a la que supera el percentil 90 histórico local de su temporada, es decir una noche de cada diez. Un modelo de media encoge las predicciones hacia el centro y casi nunca cruza ese valor absoluto, así que la alerta la decide un <b>segundo modelo</b>, entrenado para clasificar directamente ese suceso, y el umbral se calibra sobre la distribución de sus predicciones: se alerta en el decil superior de las noches previstas de ese radar y temporada. En operación esa distribución se obtiene corriendo el modelo sobre diez años de reanálisis en el punto de interés, sin necesidad de un radar en la ciudad. Como se emiten tantas alertas como noches de paso fuerte hay, el porcentaje capturado es directamente comparable con el 10 % que daría el azar. El área bajo la curva resume la capacidad de separar esas noches sin depender de ningún umbral (0,5 = azar).</p>
-<div class='k'><div>radar-noches<b>31,217</b></div><div>radares<b>55</b></div><div>años<b>2021-2026</b></div><div>rasgos<b>37</b></div><div>Spearman mediano (año fuera)<b>0.70</b></div><div>R² mediano (año fuera) / solo climatología<b>0.49 / 0.34</b></div><div>Spearman mediano (radar fuera)<b>0.51</b></div><div>Spearman mediano radares españoles (fuera)<b>0.40</b></div><div>Área bajo la curva mediana (radar fuera)<b>0.76</b></div><div>Noches de paso fuerte capturadas (radar fuera)<b>29%</b></div><div>Alertas erróneas (radar fuera)<b>76%</b></div></div>
+<div class='k'><div>radar-noches<b>31,217</b></div><div>radares<b>55</b></div><div>años<b>2021-2026</b></div><div>rasgos<b>37</b></div><div>Spearman mediano (año fuera)<b>0.70</b></div><div>R² mediano (año fuera) / solo climatología<b>0.49 / 0.34</b></div><div>Spearman mediano (radar fuera)<b>0.51</b></div><div>Spearman mediano radares españoles (fuera)<b>0.40</b></div><div>Área bajo la curva mediana (radar fuera)<b>0.77</b></div><div>Noches de paso fuerte capturadas (radar fuera)<b>34%</b></div><div>Alertas erróneas (radar fuera)<b>66%</b></div></div>
 <h2>Qué usa el modelo</h2><p>Ganancia relativa de cada rasgo entrenando con todo, es decir en el escenario con climatología local disponible.</p><img src='fase2_importancia.png'>
 <h2>Validación radar a radar</h2><img src='fase2_radares.png'>
 <h2>Observado frente a predicho</h2><img src='fase2_dispersion.png'>
@@ -28,13 +28,13 @@
     </tr>
     <tr>
       <th>área bajo la curva mediana (año fuera)</th>
-      <td>0.89</td>
-      <td>0.89</td>
+      <td>0.74</td>
+      <td>0.70</td>
     </tr>
     <tr>
       <th>paso fuerte capturado (año fuera)</th>
-      <td>24%</td>
-      <td>22%</td>
+      <td>30%</td>
+      <td>27%</td>
     </tr>
     <tr>
       <th>Spearman mediano (radar fuera)</th>
@@ -43,13 +43,13 @@
     </tr>
     <tr>
       <th>área bajo la curva mediana (radar fuera)</th>
-      <td>0.76</td>
-      <td>0.73</td>
+      <td>0.77</td>
+      <td>0.74</td>
     </tr>
     <tr>
       <th>paso fuerte capturado (radar fuera)</th>
-      <td>29%</td>
-      <td>25%</td>
+      <td>34%</td>
+      <td>31%</td>
     </tr>
   </tbody>
 </table>
@@ -77,12 +77,12 @@
       <td>0.50</td>
       <td>-0.11</td>
       <td>-0.14</td>
-      <td>0.84</td>
-      <td>0.62</td>
-      <td>587</td>
+      <td>0.61</td>
+      <td>0.52</td>
+      <td>771</td>
       <td>727</td>
       <td>26%</td>
-      <td>79%</td>
+      <td>72%</td>
     </tr>
     <tr>
       <td>año 2022</td>
@@ -90,12 +90,12 @@
       <td>0.75</td>
       <td>0.51</td>
       <td>0.41</td>
-      <td>0.90</td>
-      <td>0.73</td>
-      <td>363</td>
+      <td>0.74</td>
+      <td>0.72</td>
+      <td>518</td>
       <td>399</td>
-      <td>24%</td>
-      <td>78%</td>
+      <td>29%</td>
+      <td>62%</td>
     </tr>
     <tr>
       <td>año 2023</td>
@@ -103,12 +103,12 @@
       <td>0.68</td>
       <td>0.46</td>
       <td>0.32</td>
-      <td>0.91</td>
-      <td>0.67</td>
-      <td>291</td>
+      <td>0.76</td>
+      <td>0.66</td>
+      <td>582</td>
       <td>585</td>
-      <td>23%</td>
-      <td>89%</td>
+      <td>32%</td>
+      <td>68%</td>
     </tr>
     <tr>
       <td>año 2024</td>
@@ -116,12 +116,12 @@
       <td>0.72</td>
       <td>0.54</td>
       <td>0.35</td>
-      <td>0.78</td>
-      <td>0.66</td>
-      <td>105</td>
+      <td>0.71</td>
+      <td>0.62</td>
+      <td>462</td>
       <td>586</td>
-      <td>19%</td>
-      <td>97%</td>
+      <td>29%</td>
+      <td>77%</td>
     </tr>
     <tr>
       <td>año 2025</td>
@@ -129,12 +129,12 @@
       <td>0.76</td>
       <td>0.59</td>
       <td>0.40</td>
-      <td>0.92</td>
-      <td>0.79</td>
-      <td>175</td>
+      <td>0.74</td>
+      <td>0.71</td>
+      <td>491</td>
       <td>560</td>
-      <td>27%</td>
-      <td>91%</td>
+      <td>34%</td>
+      <td>71%</td>
     </tr>
     <tr>
       <td>año 2026</td>
@@ -142,12 +142,12 @@
       <td>0.60</td>
       <td>0.36</td>
       <td>0.19</td>
-      <td>0.89</td>
-      <td>0.68</td>
-      <td>139</td>
+      <td>0.74</td>
+      <td>0.67</td>
+      <td>341</td>
       <td>349</td>
-      <td>26%</td>
-      <td>90%</td>
+      <td>28%</td>
+      <td>73%</td>
     </tr>
     <tr>
       <td>radar esahr</td>
@@ -155,12 +155,12 @@
       <td>0.28</td>
       <td>-0.30</td>
       <td>-0.01</td>
-      <td>0.66</td>
-      <td>0.64</td>
-      <td>11</td>
+      <td>0.55</td>
+      <td>0.56</td>
       <td>13</td>
-      <td>18%</td>
-      <td>85%</td>
+      <td>13</td>
+      <td>8%</td>
+      <td>92%</td>
     </tr>
     <tr>
       <td>radar esalm</td>
@@ -168,12 +168,12 @@
       <td>0.12</td>
       <td>-1.51</td>
       <td>-2.78</td>
-      <td>0.60</td>
-      <td>0.54</td>
-      <td>83</td>
+      <td>0.69</td>
+      <td>0.58</td>
       <td>37</td>
-      <td>14%</td>
-      <td>68%</td>
+      <td>37</td>
+      <td>27%</td>
+      <td>73%</td>
     </tr>
     <tr>
       <td>radar esbad</td>
@@ -182,11 +182,11 @@
       <td>0.30</td>
       <td>-1.18</td>
       <td>0.78</td>
-      <td>0.74</td>
-      <td>79</td>
+      <td>0.77</td>
+      <td>36</td>
       <td>36</td>
       <td>25%</td>
-      <td>44%</td>
+      <td>75%</td>
     </tr>
     <tr>
       <td>radar esbar</td>
@@ -194,12 +194,12 @@
       <td>0.54</td>
       <td>-0.07</td>
       <td>-1.70</td>
+      <td>0.68</td>
       <td>0.73</td>
-      <td>0.75</td>
-      <td>85</td>
       <td>36</td>
-      <td>22%</td>
-      <td>47%</td>
+      <td>36</td>
+      <td>36%</td>
+      <td>64%</td>
     </tr>
     <tr>
       <td>radar escor</td>
@@ -207,12 +207,12 @@
       <td>0.40</td>
       <td>-8.88</td>
       <td>-17.19</td>
-      <td>0.78</td>
-      <td>0.68</td>
-      <td>72</td>
+      <td>0.75</td>
+      <td>0.73</td>
       <td>23</td>
-      <td>25%</td>
-      <td>22%</td>
+      <td>23</td>
+      <td>17%</td>
+      <td>83%</td>
     </tr>
     <tr>
       <td>radar esgld</td>
@@ -220,12 +220,12 @@
       <td>0.22</td>
       <td>-2.38</td>
       <td>0.05</td>
-      <td>0.63</td>
+      <td>0.67</td>
       <td>0.59</td>
-      <td>13</td>
       <td>14</td>
-      <td>15%</td>
-      <td>86%</td>
+      <td>14</td>
+      <td>21%</td>
+      <td>79%</td>
     </tr>
     <tr>
       <td>radar eslid</td>
@@ -233,12 +233,12 @@
       <td>0.63</td>
       <td>0.04</td>
       <td>-0.54</td>
-      <td>0.82</td>
-      <td>0.80</td>
-      <td>82</td>
+      <td>0.77</td>
+      <td>0.78</td>
       <td>37</td>
-      <td>32%</td>
-      <td>30%</td>
+      <td>37</td>
+      <td>38%</td>
+      <td>62%</td>
     </tr>
     <tr>
       <td>radar esmad</td>
@@ -246,12 +246,12 @@
       <td>0.64</td>
       <td>-0.10</td>
       <td>-1.32</td>
-      <td>0.82</td>
       <td>0.77</td>
-      <td>87</td>
+      <td>0.75</td>
       <td>37</td>
-      <td>29%</td>
-      <td>32%</td>
+      <td>37</td>
+      <td>35%</td>
+      <td>65%</td>
     </tr>
     <tr>
       <td>radar esmal</td>
@@ -259,12 +259,12 @@
       <td>0.37</td>
       <td>-0.38</td>
       <td>-2.20</td>
-      <td>0.76</td>
-      <td>0.69</td>
-      <td>89</td>
+      <td>0.81</td>
+      <td>0.71</td>
       <td>36</td>
-      <td>21%</td>
-      <td>47%</td>
+      <td>36</td>
+      <td>33%</td>
+      <td>67%</td>
     </tr>
     <tr>
       <td>radar esmur</td>
@@ -272,12 +272,12 @@
       <td>0.50</td>
       <td>-1.43</td>
       <td>-4.21</td>
-      <td>0.78</td>
-      <td>0.75</td>
-      <td>52</td>
+      <td>0.72</td>
+      <td>0.73</td>
       <td>21</td>
-      <td>25%</td>
-      <td>38%</td>
+      <td>21</td>
+      <td>29%</td>
+      <td>71%</td>
     </tr>
     <tr>
       <td>radar espma</td>
@@ -285,12 +285,12 @@
       <td>0.05</td>
       <td>-1.95</td>
       <td>-1.64</td>
-      <td>0.53</td>
-      <td>0.58</td>
-      <td>82</td>
+      <td>0.76</td>
+      <td>0.67</td>
       <td>34</td>
-      <td>9%</td>
-      <td>79%</td>
+      <td>34</td>
+      <td>32%</td>
+      <td>68%</td>
     </tr>
     <tr>
       <td>radar essan</td>
@@ -298,12 +298,12 @@
       <td>0.39</td>
       <td>-0.23</td>
       <td>-6.19</td>
-      <td>0.81</td>
-      <td>0.80</td>
-      <td>82</td>
+      <td>0.76</td>
+      <td>0.75</td>
       <td>36</td>
-      <td>29%</td>
-      <td>33%</td>
+      <td>36</td>
+      <td>19%</td>
+      <td>81%</td>
     </tr>
     <tr>
       <td>radar essev</td>
@@ -312,11 +312,11 @@
       <td>0.24</td>
       <td>-1.65</td>
       <td>0.75</td>
-      <td>0.71</td>
-      <td>82</td>
+      <td>0.73</td>
       <td>33</td>
-      <td>24%</td>
-      <td>39%</td>
+      <td>33</td>
+      <td>30%</td>
+      <td>70%</td>
     </tr>
     <tr>
       <td>radar essft</td>
@@ -324,12 +324,12 @@
       <td>0.13</td>
       <td>0.05</td>
       <td>0.32</td>
-      <td>0.60</td>
       <td>0.62</td>
-      <td>13</td>
+      <td>0.64</td>
       <td>14</td>
-      <td>15%</td>
-      <td>86%</td>
+      <td>14</td>
+      <td>21%</td>
+      <td>79%</td>
     </tr>
     <tr>
       <td>radar essse</td>
@@ -337,12 +337,12 @@
       <td>0.52</td>
       <td>0.14</td>
       <td>-1.04</td>
-      <td>0.78</td>
-      <td>0.76</td>
-      <td>75</td>
+      <td>0.71</td>
+      <td>0.74</td>
       <td>36</td>
-      <td>25%</td>
-      <td>47%</td>
+      <td>36</td>
+      <td>28%</td>
+      <td>72%</td>
     </tr>
     <tr>
       <td>radar estjv</td>
@@ -350,12 +350,12 @@
       <td>0.34</td>
       <td>-0.50</td>
       <td>0.17</td>
-      <td>0.54</td>
+      <td>0.56</td>
       <td>0.55</td>
-      <td>13</td>
       <td>14</td>
-      <td>15%</td>
-      <td>86%</td>
+      <td>14</td>
+      <td>21%</td>
+      <td>79%</td>
     </tr>
     <tr>
       <td>radar esval</td>
@@ -363,12 +363,12 @@
       <td>0.35</td>
       <td>-1.63</td>
       <td>-9.42</td>
-      <td>0.77</td>
-      <td>0.67</td>
-      <td>83</td>
+      <td>0.74</td>
+      <td>0.72</td>
       <td>34</td>
-      <td>28%</td>
-      <td>32%</td>
+      <td>34</td>
+      <td>29%</td>
+      <td>71%</td>
     </tr>
     <tr>
       <td>radar eszar</td>
@@ -376,12 +376,12 @@
       <td>0.76</td>
       <td>0.36</td>
       <td>-0.75</td>
-      <td>0.81</td>
-      <td>0.84</td>
-      <td>85</td>
+      <td>0.78</td>
+      <td>0.82</td>
       <td>36</td>
-      <td>24%</td>
-      <td>44%</td>
+      <td>36</td>
+      <td>33%</td>
+      <td>67%</td>
     </tr>
     <tr>
       <td>radar frabb</td>
@@ -389,12 +389,12 @@
       <td>0.42</td>
       <td>-0.18</td>
       <td>-0.53</td>
-      <td>0.98</td>
-      <td>0.99</td>
-      <td>3</td>
+      <td>0.79</td>
+      <td>0.81</td>
       <td>102</td>
-      <td>100%</td>
-      <td>97%</td>
+      <td>102</td>
+      <td>43%</td>
+      <td>57%</td>
     </tr>
     <tr>
       <td>radar fraja</td>
@@ -402,12 +402,12 @@
       <td>0.15</td>
       <td>-3.64</td>
       <td>0.03</td>
-      <td>0.48</td>
-      <td>0.50</td>
-      <td>64</td>
+      <td>0.58</td>
+      <td>0.53</td>
       <td>102</td>
-      <td>14%</td>
-      <td>91%</td>
+      <td>102</td>
+      <td>24%</td>
+      <td>76%</td>
     </tr>
     <tr>
       <td>radar frale</td>
@@ -415,12 +415,12 @@
       <td>0.27</td>
       <td>-1.88</td>
       <td>0.23</td>
-      <td>0.66</td>
-      <td>0.71</td>
-      <td>6</td>
+      <td>0.79</td>
+      <td>0.73</td>
       <td>89</td>
-      <td>33%</td>
-      <td>98%</td>
+      <td>89</td>
+      <td>29%</td>
+      <td>71%</td>
     </tr>
     <tr>
       <td>radar frave</td>
@@ -428,12 +428,12 @@
       <td>0.20</td>
       <td>-0.90</td>
       <td>-0.54</td>
-      <td>nan</td>
-      <td>nan</td>
-      <td>0</td>
+      <td>0.73</td>
+      <td>0.56</td>
       <td>62</td>
-      <td>0%</td>
-      <td>100%</td>
+      <td>62</td>
+      <td>40%</td>
+      <td>60%</td>
     </tr>
     <tr>
       <td>radar frbla</td>
@@ -441,12 +441,12 @@
       <td>0.69</td>
       <td>0.48</td>
       <td>-0.16</td>
-      <td>nan</td>
-      <td>nan</td>
-      <td>0</td>
+      <td>0.88</td>
+      <td>0.81</td>
       <td>100</td>
-      <td>0%</td>
-      <td>100%</td>
+      <td>100</td>
+      <td>45%</td>
+      <td>55%</td>
     </tr>
     <tr>
       <td>radar frbol</td>
@@ -454,12 +454,12 @@
       <td>0.73</td>
       <td>-0.23</td>
       <td>0.16</td>
-      <td>0.52</td>
+      <td>0.80</td>
       <td>0.84</td>
-      <td>9</td>
       <td>90</td>
-      <td>0%</td>
-      <td>100%</td>
+      <td>90</td>
+      <td>36%</td>
+      <td>64%</td>
     </tr>
     <tr>
       <td>radar frbor</td>
@@ -467,12 +467,12 @@
       <td>0.60</td>
       <td>0.41</td>
       <td>-0.58</td>
-      <td>0.66</td>
-      <td>0.93</td>
-      <td>1</td>
+      <td>0.76</td>
+      <td>0.80</td>
       <td>102</td>
-      <td>0%</td>
-      <td>100%</td>
+      <td>102</td>
+      <td>38%</td>
+      <td>62%</td>
     </tr>
     <tr>
       <td>radar frbou</td>
@@ -480,12 +480,12 @@
       <td>0.49</td>
       <td>-0.58</td>
       <td>-0.04</td>
-      <td>0.97</td>
-      <td>0.99</td>
-      <td>6</td>
+      <td>0.87</td>
+      <td>0.78</td>
       <td>97</td>
-      <td>100%</td>
-      <td>94%</td>
+      <td>97</td>
+      <td>45%</td>
+      <td>55%</td>
     </tr>
     <tr>
       <td>radar frcae</td>
@@ -493,12 +493,12 @@
       <td>0.52</td>
       <td>0.06</td>
       <td>-0.15</td>
-      <td>0.83</td>
-      <td>0.85</td>
-      <td>16</td>
+      <td>0.80</td>
+      <td>0.75</td>
       <td>98</td>
-      <td>75%</td>
-      <td>88%</td>
+      <td>98</td>
+      <td>41%</td>
+      <td>59%</td>
     </tr>
     <tr>
       <td>radar frche</td>
@@ -506,12 +506,12 @@
       <td>0.57</td>
       <td>0.38</td>
       <td>-0.85</td>
-      <td>0.95</td>
-      <td>0.95</td>
-      <td>7</td>
+      <td>0.82</td>
+      <td>0.85</td>
       <td>90</td>
-      <td>86%</td>
-      <td>93%</td>
+      <td>90</td>
+      <td>48%</td>
+      <td>52%</td>
     </tr>
     <tr>
       <td>radar frcol</td>
@@ -519,12 +519,12 @@
       <td>0.46</td>
       <td>0.23</td>
       <td>0.26</td>
-      <td>nan</td>
-      <td>nan</td>
-      <td>0</td>
+      <td>0.74</td>
+      <td>0.73</td>
       <td>98</td>
-      <td>0%</td>
-      <td>100%</td>
+      <td>98</td>
+      <td>31%</td>
+      <td>69%</td>
     </tr>
     <tr>
       <td>radar frgre</td>
@@ -532,12 +532,12 @@
       <td>0.61</td>
       <td>0.38</td>
       <td>-0.70</td>
-      <td>nan</td>
-      <td>nan</td>
-      <td>0</td>
+      <td>0.79</td>
+      <td>0.82</td>
       <td>100</td>
-      <td>0%</td>
-      <td>100%</td>
+      <td>100</td>
+      <td>37%</td>
+      <td>63%</td>
     </tr>
     <tr>
       <td>radar frlep</td>
@@ -545,12 +545,12 @@
       <td>0.50</td>
       <td>-0.32</td>
       <td>0.13</td>
-      <td>nan</td>
-      <td>nan</td>
-      <td>0</td>
+      <td>0.82</td>
+      <td>0.72</td>
       <td>94</td>
-      <td>0%</td>
-      <td>100%</td>
+      <td>94</td>
+      <td>29%</td>
+      <td>71%</td>
     </tr>
     <tr>
       <td>radar frmcl</td>
@@ -558,12 +558,12 @@
       <td>0.55</td>
       <td>-2.33</td>
       <td>-0.38</td>
-      <td>0.95</td>
+      <td>0.75</td>
       <td>0.64</td>
-      <td>3</td>
       <td>96</td>
-      <td>67%</td>
-      <td>98%</td>
+      <td>96</td>
+      <td>31%</td>
+      <td>69%</td>
     </tr>
     <tr>
       <td>radar frmom</td>
@@ -571,12 +571,12 @@
       <td>0.38</td>
       <td>0.09</td>
       <td>-1.86</td>
-      <td>0.84</td>
-      <td>0.77</td>
-      <td>1</td>
+      <td>0.68</td>
+      <td>0.64</td>
       <td>83</td>
-      <td>0%</td>
-      <td>100%</td>
+      <td>83</td>
+      <td>19%</td>
+      <td>81%</td>
     </tr>
     <tr>
       <td>radar frmtc</td>
@@ -584,12 +584,12 @@
       <td>0.50</td>
       <td>-0.29</td>
       <td>-0.19</td>
-      <td>0.70</td>
+      <td>0.71</td>
       <td>0.72</td>
-      <td>12</td>
       <td>100</td>
-      <td>33%</td>
-      <td>96%</td>
+      <td>100</td>
+      <td>24%</td>
+      <td>76%</td>
     </tr>
     <tr>
       <td>radar frnan</td>
@@ -597,12 +597,12 @@
       <td>0.56</td>
       <td>-0.10</td>
       <td>-0.11</td>
-      <td>0.55</td>
-      <td>0.97</td>
-      <td>2</td>
+      <td>0.81</td>
+      <td>0.77</td>
       <td>100</td>
-      <td>50%</td>
-      <td>99%</td>
+      <td>100</td>
+      <td>36%</td>
+      <td>64%</td>
     </tr>
     <tr>
       <td>radar frnim</td>
@@ -610,12 +610,12 @@
       <td>0.63</td>
       <td>-0.35</td>
       <td>0.22</td>
-      <td>0.70</td>
-      <td>0.89</td>
-      <td>4</td>
+      <td>0.80</td>
+      <td>0.78</td>
       <td>101</td>
-      <td>25%</td>
-      <td>99%</td>
+      <td>101</td>
+      <td>36%</td>
+      <td>64%</td>
     </tr>
     <tr>
       <td>radar frniz</td>
@@ -623,12 +623,12 @@
       <td>0.34</td>
       <td>-2.83</td>
       <td>-0.31</td>
-      <td>0.32</td>
-      <td>0.50</td>
-      <td>5</td>
+      <td>0.72</td>
+      <td>0.63</td>
       <td>102</td>
-      <td>0%</td>
-      <td>100%</td>
+      <td>102</td>
+      <td>24%</td>
+      <td>76%</td>
     </tr>
     <tr>
       <td>radar fropo</td>
@@ -636,12 +636,12 @@
       <td>0.61</td>
       <td>0.20</td>
       <td>0.17</td>
-      <td>0.67</td>
-      <td>0.73</td>
-      <td>15</td>
+      <td>0.78</td>
+      <td>0.80</td>
       <td>100</td>
-      <td>27%</td>
-      <td>96%</td>
+      <td>100</td>
+      <td>31%</td>
+      <td>69%</td>
     </tr>
     <tr>
       <td>radar frpla</td>
@@ -649,12 +649,12 @@
       <td>0.51</td>
       <td>0.09</td>
       <td>-0.09</td>
-      <td>0.83</td>
-      <td>0.92</td>
-      <td>20</td>
+      <td>0.85</td>
+      <td>0.86</td>
       <td>102</td>
-      <td>55%</td>
-      <td>89%</td>
+      <td>102</td>
+      <td>53%</td>
+      <td>47%</td>
     </tr>
     <tr>
       <td>radar frtou</td>
@@ -662,12 +662,12 @@
       <td>0.32</td>
       <td>-0.68</td>
       <td>-0.72</td>
-      <td>nan</td>
-      <td>nan</td>
-      <td>0</td>
+      <td>0.62</td>
+      <td>0.65</td>
       <td>101</td>
-      <td>0%</td>
-      <td>100%</td>
+      <td>101</td>
+      <td>20%</td>
+      <td>80%</td>
     </tr>
     <tr>
       <td>radar frtra</td>
@@ -675,12 +675,12 @@
       <td>0.58</td>
       <td>0.07</td>
       <td>-0.57</td>
-      <td>nan</td>
-      <td>nan</td>
-      <td>0</td>
+      <td>0.78</td>
+      <td>0.79</td>
       <td>71</td>
-      <td>0%</td>
-      <td>100%</td>
+      <td>71</td>
+      <td>34%</td>
+      <td>66%</td>
     </tr>
     <tr>
       <td>radar frtre</td>
@@ -689,11 +689,11 @@
       <td>0.35</td>
       <td>-0.23</td>
       <td>0.88</td>
-      <td>0.91</td>
-      <td>6</td>
+      <td>0.89</td>
       <td>80</td>
-      <td>50%</td>
-      <td>96%</td>
+      <td>80</td>
+      <td>56%</td>
+      <td>44%</td>
     </tr>
     <tr>
       <td>radar frtro</td>
@@ -701,12 +701,12 @@
       <td>0.61</td>
       <td>0.42</td>
       <td>-0.42</td>
-      <td>0.57</td>
-      <td>0.75</td>
-      <td>2</td>
+      <td>0.82</td>
+      <td>0.81</td>
       <td>101</td>
-      <td>50%</td>
-      <td>99%</td>
+      <td>101</td>
+      <td>43%</td>
+      <td>57%</td>
     </tr>
     <tr>
       <td>radar ptfar</td>
@@ -714,12 +714,12 @@
       <td>0.33</td>
       <td>-0.37</td>
       <td>-0.29</td>
-      <td>0.73</td>
-      <td>0.76</td>
-      <td>96</td>
+      <td>0.75</td>
+      <td>0.78</td>
       <td>69</td>
-      <td>28%</td>
-      <td>61%</td>
+      <td>69</td>
+      <td>25%</td>
+      <td>75%</td>
     </tr>
     <tr>
       <td>radar ptflr</td>
@@ -727,12 +727,12 @@
       <td>0.84</td>
       <td>0.11</td>
       <td>-0.09</td>
-      <td>0.92</td>
+      <td>0.97</td>
       <td>0.93</td>
       <td>14</td>
       <td>14</td>
-      <td>57%</td>
-      <td>43%</td>
+      <td>79%</td>
+      <td>21%</td>
     </tr>
     <tr>
       <td>radar ptlis</td>
@@ -742,10 +742,10 @@
       <td>0.16</td>
       <td>0.74</td>
       <td>0.74</td>
-      <td>50</td>
       <td>45</td>
-      <td>26%</td>
-      <td>71%</td>
+      <td>45</td>
+      <td>33%</td>
+      <td>67%</td>
     </tr>
     <tr>
       <td>radar ptprt</td>
@@ -755,10 +755,10 @@
       <td>0.16</td>
       <td>0.80</td>
       <td>0.81</td>
-      <td>80</td>
       <td>73</td>
-      <td>28%</td>
-      <td>70%</td>
+      <td>73</td>
+      <td>40%</td>
+      <td>60%</td>
     </tr>
     <tr>
       <td>radar ptsmg</td>
@@ -766,12 +766,12 @@
       <td>0.74</td>
       <td>0.17</td>
       <td>-0.03</td>
-      <td>0.92</td>
+      <td>0.85</td>
       <td>0.94</td>
       <td>14</td>
       <td>14</td>
-      <td>64%</td>
-      <td>36%</td>
+      <td>57%</td>
+      <td>43%</td>
     </tr>
     <tr>
       <td>radar pttrc</td>
@@ -779,12 +779,12 @@
       <td>0.82</td>
       <td>-0.15</td>
       <td>0.09</td>
-      <td>0.87</td>
-      <td>0.92</td>
-      <td>52</td>
+      <td>0.89</td>
+      <td>0.93</td>
       <td>51</td>
-      <td>54%</td>
-      <td>45%</td>
+      <td>51</td>
+      <td>59%</td>
+      <td>41%</td>
     </tr>
   </tbody>
 </table>
@@ -799,19 +799,24 @@
   </thead>
   <tbody>
     <tr>
-      <td>latitud</td>
-      <td>10.4</td>
-      <td>21.1</td>
+      <td>día del año (cos)</td>
+      <td>2.6</td>
+      <td>6.9</td>
+    </tr>
+    <tr>
+      <td>día del año (sen)</td>
+      <td>2.8</td>
+      <td>4.8</td>
+    </tr>
+    <tr>
+      <td>climatología local P50</td>
+      <td>33.2</td>
+      <td>4.8</td>
     </tr>
     <tr>
       <td>longitud</td>
       <td>8.2</td>
-      <td>11.6</td>
-    </tr>
-    <tr>
-      <td>climatología local P90</td>
-      <td>8.5</td>
-      <td>5.2</td>
+      <td>4.5</td>
     </tr>
     <tr>
       <td>t850</td>
@@ -819,34 +824,104 @@
       <td>4.5</td>
     </tr>
     <tr>
-      <td>día del año (cos)</td>
-      <td>2.6</td>
-      <td>4.5</td>
+      <td>climatología local P90</td>
+      <td>8.5</td>
+      <td>3.9</td>
     </tr>
     <tr>
-      <td>día del año (sen)</td>
-      <td>2.8</td>
-      <td>3.7</td>
-    </tr>
-    <tr>
-      <td>climatología local P50</td>
-      <td>33.2</td>
-      <td>3.1</td>
-    </tr>
-    <tr>
-      <td>temperatura 2 m</td>
-      <td>1.9</td>
-      <td>2.9</td>
+      <td>dt850_24</td>
+      <td>1.0</td>
+      <td>3.8</td>
     </tr>
     <tr>
       <td>humedad relativa</td>
       <td>1.4</td>
-      <td>2.5</td>
+      <td>3.7</td>
+    </tr>
+    <tr>
+      <td>ws_700hPa</td>
+      <td>1.2</td>
+      <td>3.4</td>
+    </tr>
+    <tr>
+      <td>latitud</td>
+      <td>10.4</td>
+      <td>3.1</td>
     </tr>
     <tr>
       <td>presión al nivel del mar</td>
       <td>1.4</td>
+      <td>3.0</td>
+    </tr>
+    <tr>
+      <td>cambio presión 24 h</td>
+      <td>1.1</td>
+      <td>2.9</td>
+    </tr>
+    <tr>
+      <td>tail_850hPa</td>
+      <td>2.0</td>
+      <td>2.9</td>
+    </tr>
+    <tr>
+      <td>fracción horas con lluvia</td>
+      <td>1.4</td>
+      <td>2.8</td>
+    </tr>
+    <tr>
+      <td>temperatura 2 m</td>
+      <td>1.9</td>
+      <td>2.8</td>
+    </tr>
+    <tr>
+      <td>tail0_700hPa</td>
+      <td>1.2</td>
+      <td>2.5</td>
+    </tr>
+    <tr>
+      <td>precipitación acumulada</td>
+      <td>2.5</td>
+      <td>2.5</td>
+    </tr>
+    <tr>
+      <td>ws_850hPa</td>
+      <td>1.2</td>
+      <td>2.4</td>
+    </tr>
+    <tr>
+      <td>nubosidad</td>
+      <td>1.1</td>
+      <td>2.4</td>
+    </tr>
+    <tr>
+      <td>cross_700hPa</td>
+      <td>0.7</td>
+      <td>2.3</td>
+    </tr>
+    <tr>
+      <td>gh850</td>
+      <td>0.8</td>
+      <td>2.3</td>
+    </tr>
+    <tr>
+      <td>ws_925hPa</td>
+      <td>1.1</td>
+      <td>2.3</td>
+    </tr>
+    <tr>
+      <td>cambio temperatura 24 h</td>
+      <td>0.6</td>
+      <td>2.3</td>
+    </tr>
+    <tr>
+      <td>tail_700hPa</td>
+      <td>1.2</td>
       <td>2.2</td>
+    </tr>
+    <tr>
+      <td>tail0_850hPa</td>
+      <td>2.2</td>
+      <td>2.0</td>
     </tr>
     <tr>
       <td>velocidad viento 10 m</td>
@@ -854,134 +929,59 @@
       <td>1.9</td>
     </tr>
     <tr>
-      <td>cross_700hPa</td>
-      <td>0.7</td>
+      <td>cross_925hPa</td>
+      <td>0.6</td>
       <td>1.9</td>
-    </tr>
-    <tr>
-      <td>dt850_24</td>
-      <td>1.0</td>
-      <td>1.8</td>
-    </tr>
-    <tr>
-      <td>tail_850hPa</td>
-      <td>2.0</td>
-      <td>1.8</td>
-    </tr>
-    <tr>
-      <td>cambio presión 24 h</td>
-      <td>1.1</td>
-      <td>1.8</td>
-    </tr>
-    <tr>
-      <td>ws_850hPa</td>
-      <td>1.2</td>
-      <td>1.7</td>
     </tr>
     <tr>
       <td>velocidad viento 100 m</td>
       <td>1.0</td>
-      <td>1.7</td>
-    </tr>
-    <tr>
-      <td>tail_700hPa</td>
-      <td>1.2</td>
-      <td>1.7</td>
-    </tr>
-    <tr>
-      <td>fracción horas con lluvia</td>
-      <td>1.4</td>
-      <td>1.6</td>
-    </tr>
-    <tr>
-      <td>cambio temperatura 24 h</td>
-      <td>0.6</td>
-      <td>1.6</td>
-    </tr>
-    <tr>
-      <td>nubosidad</td>
-      <td>1.1</td>
-      <td>1.6</td>
-    </tr>
-    <tr>
-      <td>cross_925hPa</td>
-      <td>0.6</td>
-      <td>1.5</td>
-    </tr>
-    <tr>
-      <td>tail0_700hPa</td>
-      <td>1.2</td>
-      <td>1.5</td>
+      <td>1.9</td>
     </tr>
     <tr>
       <td>cross_850hPa</td>
       <td>0.6</td>
-      <td>1.5</td>
-    </tr>
-    <tr>
-      <td>viento lateral 100 m</td>
-      <td>0.5</td>
-      <td>1.4</td>
-    </tr>
-    <tr>
-      <td>gh850</td>
-      <td>0.8</td>
-      <td>1.4</td>
-    </tr>
-    <tr>
-      <td>ws_700hPa</td>
-      <td>1.2</td>
-      <td>1.4</td>
-    </tr>
-    <tr>
-      <td>ws_925hPa</td>
-      <td>1.1</td>
-      <td>1.3</td>
-    </tr>
-    <tr>
-      <td>tail0_850hPa</td>
-      <td>2.2</td>
-      <td>1.3</td>
-    </tr>
-    <tr>
-      <td>tail0_925hPa</td>
-      <td>0.4</td>
-      <td>1.2</td>
-    </tr>
-    <tr>
-      <td>viento a favor al inicio 100 m</td>
-      <td>0.5</td>
-      <td>1.2</td>
-    </tr>
-    <tr>
-      <td>viento lateral 10 m</td>
-      <td>0.6</td>
-      <td>1.2</td>
+      <td>1.8</td>
     </tr>
     <tr>
       <td>tail_925hPa</td>
       <td>0.5</td>
-      <td>1.2</td>
+      <td>1.7</td>
+    </tr>
+    <tr>
+      <td>tail0_925hPa</td>
+      <td>0.4</td>
+      <td>1.6</td>
+    </tr>
+    <tr>
+      <td>viento lateral 100 m</td>
+      <td>0.5</td>
+      <td>1.5</td>
+    </tr>
+    <tr>
+      <td>viento lateral 10 m</td>
+      <td>0.6</td>
+      <td>1.5</td>
     </tr>
     <tr>
       <td>viento a favor al inicio 10 m</td>
       <td>0.4</td>
-      <td>1.0</td>
+      <td>1.4</td>
     </tr>
     <tr>
-      <td>viento a favor 10 m</td>
+      <td>viento a favor al inicio 100 m</td>
       <td>0.5</td>
-      <td>0.9</td>
+      <td>1.3</td>
     </tr>
     <tr>
       <td>viento a favor 100 m</td>
       <td>0.4</td>
-      <td>0.9</td>
+      <td>1.3</td>
     </tr>
     <tr>
-      <td>precipitación acumulada</td>
-      <td>2.5</td>
-      <td>0.9</td>
+      <td>viento a favor 10 m</td>
+      <td>0.5</td>
+      <td>1.3</td>
     </tr>
   </tbody>
 </table>

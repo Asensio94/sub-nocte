@@ -314,6 +314,7 @@ def fase2(cache: bool = False, niveles: bool = True, referencia_en_fichero: bool
     ds, cols = _conjunto_fase2(cache, niveles)
     met, preds = M.evaluate(ds, cols, log=rprint)
     met.to_csv(ROOT / "data" / "fase2_validacion.csv", index=False, float_format="%.3f")
+    preds.to_parquet(ROOT / "data" / "fase2_predicciones.parquet", index=False)  # para rehacer figuras sin revalidar
     imp = M.importance(ds, cols)
     imp.to_csv(ROOT / "data" / "fase2_importancia.csv", float_format="%.2f")
     M.fit_final(ds, cols, ROOT / "data")

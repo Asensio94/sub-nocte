@@ -19,6 +19,16 @@ NOMBRE = {
     "doy_cos": "día del año (cos)", "clim_p50": "climatología local P50", "clim_p90": "climatología local P90",
     "lat": "latitud", "lon": "longitud",
 }
+# altura aproximada de cada nivel de presión, para nombrar los rasgos sin jerga
+ALTURA_NIVEL = {"925hPa": "750 m", "850hPa": "1.500 m", "700hPa": "3.000 m"}
+for _n, _h in ALTURA_NIVEL.items():
+    NOMBRE[f"ws_{_n}"] = f"velocidad del viento a {_h}"
+    NOMBRE[f"tail_{_n}"] = f"viento a favor a {_h}"
+    NOMBRE[f"cross_{_n}"] = f"viento lateral a {_h}"
+    NOMBRE[f"tail0_{_n}"] = f"viento a favor al anochecer, {_h}"
+NOMBRE.update({"t850": "temperatura a 1.500 m", "dt850_24": "cambio de temperatura a 1.500 m en 24 h",
+               "gh850": "altura del nivel de 1.500 m (anticiclón o borrasca)"})
+
 PAIS = {"es": "España", "pt": "Portugal", "fr": "Francia"}
 COLOR = {"es": "#c0392b", "pt": "#27ae60", "fr": "#2980b9"}
 
