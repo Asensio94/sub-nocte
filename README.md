@@ -39,13 +39,16 @@ reduciendo colisiones con edificios. En Europa existen los datos (Aloft, ENRAM, 
 ## Cómo funciona
 
 ```
-Aloft (VPTS CSV) → limpieza (capas 200-3000 m, sd_vvp ≥ 2 m/s) → MTR por perfil → tabla radar × noche
-      → climatología y umbrales por radar → [fase 2] modelo LightGBM con ERA5 / ECMWF Open Data → alertas por ciudad
+Aloft (VPTS CSV) → limpieza (capas 200-3000 m, sd_vvp ≥ 2 m/s) → densidad y tasa de paso por perfil
+      → tabla radar × noche → climatología y umbrales locales por radar y temporada
+      → meteorología por noche (Open-Meteo: superficie 2016-hoy, altura de vuelo 2021-hoy)
+      → dos modelos LightGBM (intensidad y alerta) → alertas por ciudad
 ```
 
-Unidad central: **MTR nocturno** en aves/km/noche (tasa de tráfico de migración integrada desde el crepúsculo
-civil hasta el amanecer), la misma que usa BirdCast para sus alertas. «Alto» = noche por encima del percentil 90
-histórico local de la temporada; «medio» = entre P70 y P90.
+Unidad central: **VID nocturno** en aves/km² (densidad de aves integrada en la columna, promediada entre el
+crepúsculo civil y el amanecer). Se eligió frente al MTR (aves/km/noche, la unidad de BirdCast) porque el MTR
+necesita la velocidad de vuelo, que falta en gran parte del archivo europeo. «Alto» = noche por encima del
+percentil 90 histórico local de la temporada; «medio» = entre P70 y P90.
 
 ## Uso local
 
@@ -61,13 +64,20 @@ python -m birdcast_eu.cli historico estjv ptprt --start-year 2019
 python -m birdcast_eu.cli climatologia
 python -m birdcast_eu.cli ciudades
 
+# Fase 2: meteorología por radar y modelo de pronóstico
+python -m birdcast_eu.cli meteo --start-year 2016          # superficie y 100 m (reanálisis ERA5)
+python -m birdcast_eu.cli meteo-niveles --start-year 2021  # viento a 925/850/700 hPa (altura de vuelo)
+python -m birdcast_eu.cli fase2                            # conjunto, validación, modelos e informe
+python -m birdcast_eu.cli fase2 --cache --no-niveles       # reutiliza el conjunto; solo meteorología de superficie
+
 # Piezas sueltas
 python -m birdcast_eu.cli radars                       # radares del bucket y sus años
 python -m birdcast_eu.cli ingest estjv --start 2026-03-01 --end 2026-05-31
 python -m birdcast_eu.cli nightly estjv
 ```
 
-Informes: `output/fase0.html` (validación de radares) y `output/fase1.html` (climatologías y umbrales).
+Informes: `output/fase0.html` (validación de radares), `output/fase1.html` (climatologías y umbrales) y
+`output/fase2.html` (modelo meteorológico y validación).
 
 Datos: `data/cache/` (descargas, no versionado), `data/vpts/` (perfiles en parquet, no versionado),
 `data/nightly/{radar}.parquet` (tabla nocturna, versionado), `data/umbrales.csv`, `data/climatologia_doy.csv` y
