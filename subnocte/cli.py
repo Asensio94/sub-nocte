@@ -393,20 +393,30 @@ def _city_features(models, log=rprint) -> pd.DataFrame:
 
 
 @app.command()
-def phase3_thresholds():
+def phase3_thresholds(reuse: bool = typer.Option(True, "--reuse/--rebuild",
+                      help="reuse the saved city predictions instead of running the model over the archive again")):
     """Run the model over each city's archive and save the percentiles that define the alert levels."""
     from . import forecast as P
 
-    models = P.load_models(ROOT / "data")
-    pred = _city_features(models)
+    if reuse and CITY_CLIMATE.exists():
+        pred = pd.read_parquet(CITY_CLIMATE)
+        rprint(f"reusing {len(pred):,} archive nights from {CITY_CLIMATE.name} (--rebuild to run the model again)")
+    else:
+        models = P.load_models(ROOT / "data")
+        pred = _city_features(models)
+        if not pred.empty:
+            pred.to_parquet(CITY_CLIMATE, index=False)
     if pred.empty:
         rprint("[red]no city has a weather archive: run phase3-archive first[/red]")
         raise typer.Exit(1)
-    pred.to_parquet(CITY_CLIMATE, index=False)
     u = P.compute_thresholds(pred)
     u.to_csv(THRESHOLDS_CSV, index=False, float_format="%.4f")
-    rprint(u[["city", "season", "nights", "alert_q75", "alert_q90"]].round(3).to_string(index=False))
-    rprint(f"Thresholds for {u['city'].nunique()} cities in {THRESHOLDS_CSV}")
+    s = (u.groupby("city")
+           .agg(periods=("doy_bin", "nunique"), nights=("nights", "median"),
+                alert_q90_min=("alert_q90", "min"), alert_q90_max=("alert_q90", "max")))
+    rprint(s.round(3).to_string())
+    rprint(f"Thresholds for {u['city'].nunique()} cities x {u['doy_bin'].nunique()} ten-day periods "
+           f"in {THRESHOLDS_CSV}")
 
 
 @app.command()
@@ -479,8 +489,44 @@ def ranking(radius_km: float = 10.0):
     rprint(f"Report: {OUTPUT / 'ranking.html'}")
 
 
+@app.command()
+def scorecard(days_shown: int = 21, embed: bool = True):
+    """Check the forecasts already published against what the radars went on to measure."""
+    from . import scorecard as S
+    from .report import embed_images
+
+    fc = S.forecast_archive(ROOT, log=rprint)
+    if fc.empty:
+        rprint("[red]no forecast has been committed yet[/red]")
+        raise typer.Exit(1)
+    cities = pd.read_csv(ROOT / "data" / "cities.csv")
+    end = dt.date.today() - dt.timedelta(days=S.LAG_DAYS)
+    obs = S.observations(sorted(cities["nearest_radar"].unique()), fc["night"].min().date(), end,
+                         ROOT, log=rprint)
+    if obs.empty:
+        rprint("[red]no radar has published anything for these nights yet[/red]")
+        raise typer.Exit(1)
+    m = S.match(fc, S.add_percentile(obs, S.reference(NIGHTLY)), cities)
+    if m.empty:
+        rprint("[red]no forecast night matches an observation yet[/red]")
+        raise typer.Exit(1)
+    k = S.metrics(m)
+    OUTPUT.mkdir(exist_ok=True)
+    figs = S.figures(m, OUTPUT, nights_shown=days_shown)
+    out = OUTPUT / "scorecard.html"
+    S.write_report(m, k, figs, out)
+    if embed:
+        embed_images(out, log=rprint)
+    rprint(S.by_place(m).round(2).to_string(index=False))
+    rprint(f"[bold]{k['nights']} nights, {k['places']} places, {k['cases']:,} forecast-nights[/bold]; "
+           f"median rank correlation {k['rho_median']:+.2f} (positive in {k['rho_positive']}/"
+           f"{k['radars_scored']}); alerts right {k['precision']:.0%} against {k['busy_rate']:.0%} by chance; "
+           f"size short by x{k['under']:.1f}")
+    rprint(f"Report: {out}")
+
+
 REPORTS = ["output/phase0.html", "output/phase1.html", "output/phase2.html", "output/phase3.html",
-           "output/ranking.html", "docs/design.html"]
+           "output/ranking.html", "output/scorecard.html", "docs/design.html"]
 
 
 @app.command()

@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from .forecast import DOY_STEP, _doy_bin, _doy_centre
 from .report import embed_images
 
 LEVEL_COLOR = {"low": "#e8eaed", "moderate": "#ffd98e", "high": "#f08c1e", "very high": "#b32d1f",
@@ -60,14 +61,15 @@ def figures(fc: pd.DataFrame, thresholds: pd.DataFrame, out_dir: Path) -> list[P
     p = out_dir / "phase3_series.png"
     ex = cities[:6]
     fig, axes = plt.subplots(len(ex), 1, figsize=(9, 1.7 * len(ex)), squeeze=False, sharex=True)
-    u = thresholds.set_index(["city", "season"])
+    u = thresholds.set_index(["city", "doy_bin"])
     for ax, c in zip(axes.flat, ex):
         g = fc[fc["city"] == c].sort_values("night")
         ax.plot(g["night"], g["pred"].clip(lower=0) ** 3, color="#333", marker="o", ms=4, lw=1.4)
-        key = (c, g["season"].mode().iat[0])
-        if key in u.index:
+        bins = [int(b) for b in _doy_bin(g["night"].dt.dayofyear)]
+        if any((c, b) in u.index for b in bins):
             for q, col, txt in ((75, "#f08c1e", "high"), (90, "#b32d1f", "very high")):
-                ax.axhline(max(u.loc[key, f"pred_q{q}"], 0) ** 3, color=col, ls=":", lw=1, label=txt)
+                y = [max(u.loc[(c, b), f"pred_q{q}"], 0) ** 3 if (c, b) in u.index else np.nan for b in bins]
+                ax.plot(g["night"], y, color=col, ls=":", lw=1.2, label=txt)
             ax.legend(fontsize=7, loc="upper right", ncol=2)
         ax.set_ylabel("birds/km²", fontsize=8); ax.set_title(c, fontsize=10, loc="left")
         ax.tick_params(labelsize=8)
@@ -86,6 +88,20 @@ def figures(fc: pd.DataFrame, thresholds: pd.DataFrame, out_dir: Path) -> list[P
     ax.set_xlabel("longitude"); ax.set_ylabel("latitude"); ax.grid(alpha=0.25)
     ax.set_title("Highest alert forecast in the period")
     fig.tight_layout(); fig.savefig(p, dpi=130); plt.close(fig); figs.append(p)
+
+    # 4) how the very-high threshold moves through the year, which is what keeps the alert meaningful
+    p = out_dir / "phase3_threshold_year.png"
+    fig, ax = plt.subplots(figsize=(9, 3.6))
+    for i, c in enumerate(ex[:5]):
+        g = thresholds[thresholds["city"] == c].sort_values("doy_centre")
+        first = True
+        for _, part in g.groupby("season"):        # each season is drawn apart, not joined across the summer
+            ax.plot(part["doy_centre"], part["alert_q90"], lw=1.6, color=f"C{i}", label=c if first else None)
+            first = False
+    ax.set_xlabel("day of the year"); ax.set_ylabel("probability that fires «very high»")
+    ax.set_title("The alert threshold moves with the season")
+    ax.grid(alpha=0.25); ax.legend(fontsize=8, ncol=5)
+    fig.tight_layout(); fig.savefig(p, dpi=130); plt.close(fig); figs.append(p)
     return figs
 
 
@@ -100,6 +116,25 @@ def _forecast_table(fc: pd.DataFrame) -> str:
                   for n in fc["level"]],
     })
     return t.to_html(index=False, escape=False)
+
+
+def _threshold_table(thresholds: pd.DataFrame, fc: pd.DataFrame) -> str:
+    """Only the bins the forecast nights fall in: the full table is one row per city and ten-day period."""
+    bins = sorted({int(b) for b in _doy_bin(fc["night"].dt.dayofyear)})
+    u = thresholds[thresholds["doy_bin"].isin(bins)].copy()
+    if u.empty:
+        return "<p>No city has a threshold for these dates.</p>"
+    origin = pd.Timestamp(f"{fc['night'].dt.year.mode().iat[0]}-01-01")
+    u["period"] = [(origin + pd.Timedelta(days=int(c) - 1 - DOY_STEP // 2)).strftime("%d %b") + " – " +
+                   (origin + pd.Timedelta(days=int(c) - 1 + DOY_STEP // 2)).strftime("%d %b")
+                   for c in u["doy_centre"]]
+    return (u.assign(**{"birds/km² high": (u["pred_q75"].clip(lower=0) ** 3).map("{:.0f}".format),
+                        "birds/km² very high": (u["pred_q90"].clip(lower=0) ** 3).map("{:.0f}".format),
+                        "prob. high": u["alert_q75"].map("{:.2f}".format),
+                        "prob. very high": u["alert_q90"].map("{:.2f}".format)})
+            [["city", "period", "nights", "birds/km² high", "birds/km² very high",
+              "prob. high", "prob. very high"]]
+            .sort_values(["city", "period"]).to_html(index=False))
 
 
 def write_report(fc: pd.DataFrame, thresholds: pd.DataFrame, figs: list[Path], out: Path) -> None:
@@ -122,11 +157,17 @@ def write_report(fc: pd.DataFrame, thresholds: pd.DataFrame, figs: list[Path], o
         "out of the training: in that scenario they captured 34 % of the heavy-passage nights against the 10 % that "
         "chance would give, with a median area under the curve of 0.77.</p>",
         "<p><b>What the alert level means.</b> The model gives a continuous number, and what counts as a lot in "
-        "Sevilla is not the same as in Bilbao. For each city the model has been run over the weather archive from "
-        "2021 onwards at its own coordinates, and the levels are cut at the percentiles of <i>its</i> distribution: "
-        "<b>moderate</b> above the median, <b>high</b> above the 75th percentile and <b>very high</b> above the 90th "
-        "percentile, that is the busiest night in every ten. That way the alert means the same thing everywhere: "
-        "«tonight far more is passing than is normal here».</p>",
+        "Sevilla is not the same as in Bilbao, nor the same in Sevilla in March as in Sevilla in October. For each "
+        "city the model has been run over the weather archive from 2021 onwards at its own coordinates, and the "
+        "levels are cut at the percentiles of <i>its</i> distribution <i>around the same date</i>: <b>moderate</b> "
+        "above the median, <b>high</b> above the 75th percentile and <b>very high</b> above the 90th percentile, "
+        "that is the busiest night in every ten. The window is the 21 days either side of the night, so the "
+        "threshold climbs into the peak of the passage and falls away from it. That way the alert means the same "
+        "thing everywhere and at any date: «tonight far more is passing than is normal here at this time of "
+        "year».</p>",
+        "<p>The first verification of the published forecasts, in September 2026, is what forced this: with a "
+        "single threshold for the whole season, 65 % of the nights at the peak came out as an alert and the level "
+        "no longer told the nights apart. The moving window is the fix.</p>",
         "<div class='k'>" + "".join(f"<div>{k}<b>{v}</b></div>" for k, v in summary.items()) + "</div>",
     ]
     for f in figs:
@@ -136,16 +177,12 @@ def write_report(fc: pd.DataFrame, thresholds: pd.DataFrame, figs: list[Path], o
         _forecast_table(alerted.sort_values(["night", "city"])) if len(alerted) else
         "<p>No city goes above the 75th percentile of its own record in this period.</p>",
         "<h2>Full forecast</h2>", _forecast_table(fc.sort_values(["city", "night"])),
-        "<h2>Each city's thresholds</h2>",
-        "<p>Computed over the predictions of the 2021-today weather archive at each city's point. The birds/km² are "
-        "the cuts of the intensity model; the probability is the cut of the heavy-passage classifier, which is what "
-        "decides the alert.</p>",
-        (thresholds.assign(**{"birds/km² high": (thresholds["pred_q75"].clip(lower=0) ** 3).map("{:.0f}".format),
-                              "birds/km² very high": (thresholds["pred_q90"].clip(lower=0) ** 3).map("{:.0f}".format),
-                              "prob. high": thresholds["alert_q75"].map("{:.2f}".format),
-                              "prob. very high": thresholds["alert_q90"].map("{:.2f}".format)})
-         [["city", "season", "nights", "birds/km² high", "birds/km² very high", "prob. high", "prob. very high"]]
-         .to_html(index=False)),
+        "<h2>The thresholds in force for these nights</h2>",
+        "<p>Computed over the predictions of the 2021-today weather archive at each city's point, on the 21 days "
+        "either side of each date. The birds/km² are the cuts of the intensity model; the probability is the cut of "
+        "the heavy-passage classifier, which is what decides the alert. Other dates of the year have their own "
+        "cuts, higher in the middle of the passage and lower at its edges.</p>",
+        _threshold_table(thresholds, fc),
         "<h2>Limitations</h2><ul>"
         "<li>The forecast degrades with the days: the first night runs on an almost closed analysis and the seventh "
         "on a six-day forecast. The model was trained on analyses and short-range forecasts, so the distant nights "

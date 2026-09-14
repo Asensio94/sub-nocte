@@ -1,0 +1,54 @@
+name: scorecard
+
+# Every Monday: check the forecasts already published against what the radars went on to measure.
+# The forecast archive is the history of this repository — the daily routine commits the forecast in
+# force — so the checkout needs the full history, not the single commit Actions clones by default.
+
+on:
+  schedule:
+    - cron: "40 6 * * 1"   # Mondays 06:40 UTC, after the daily forecast has already run
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scorecard
+  cancel-in-progress: false
+
+jobs:
+  scorecard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the whole history: that is where the issued forecasts live
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Check the published forecasts against the radars
+        run: python -m subnocte.cli scorecard
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: Regenerate the website
+        run: python -m subnocte.cli web
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: Publish if anything changed
+        run: |
+          git config user.name "sub-nocte"
+          git config user.email "actions@github.com"
+          git add index.html en output/scorecard.html data/forecast_archive.parquet data/verification_nights.parquet
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "Verification up to $(date -u +%Y-%m-%d)"
+            git push
+          fi

@@ -12,10 +12,11 @@ Three pieces:
    same definition the radar nights were built with.
 2. **Operational model.** The two phase 2 models retrained without the local climatology features, which in a
    city without a radar do not exist. It is exactly the configuration validated by leaving radars out.
-3. **A threshold of each city's own.** The model gives a continuous number; to switch the alert on it takes
-   knowing what counts as a lot *there*. The model is run over the weather archive from 2021 onwards at the
-   city's point and the percentiles of its own predictions are taken. That way the alert means the same thing in
-   Sevilla and in Bilbao.
+3. **A threshold of each city's own, moving through the year.** The model gives a continuous number; to switch
+   the alert on it takes knowing what counts as a lot *there* and *then*. The model is run over the weather
+   archive from 2021 onwards at the city's point, and the percentiles are taken over the nights around the same
+   date rather than over the whole season. That way the alert means the same thing in Sevilla and in Bilbao, and
+   it still means something at the peak of the passage, when every night beats the seasonal median.
 
 Training and operation draw on the same family of data (the Open-Meteo operational model), which is what makes
 the thresholds computed over the archive valid for the forecast.
@@ -41,6 +42,9 @@ FORECAST_DAYS = 7
 
 # Percentiles of each city's own prediction distribution that separate the four alert levels.
 LEVELS = [(0.90, "very high"), (0.75, "high"), (0.50, "moderate"), (0.0, "low")]
+DOY_STEP = 10      # width of the bins the thresholds are stored in, in days
+DOY_WINDOW = 21    # half-width of the window each bin's percentiles are taken over
+MIN_NIGHTS = 60    # below this the window is too thin to cut percentiles on
 
 
 def night_windows(name: str, lat: float, lon: float, hours: pd.DatetimeIndex) -> pd.DataFrame:
@@ -115,23 +119,49 @@ def predict(f: pd.DataFrame, models: tuple) -> pd.DataFrame:
     return f.assign(pred=vid.predict(f[cols]), p_alert=alert.predict(f[cols]))
 
 
-def compute_thresholds(pred: pd.DataFrame) -> pd.DataFrame:
-    """Percentiles of each city and season's predictions, which define the alert levels.
+def _doy_bin(doy) -> np.ndarray:
+    """Index of the bin a day of the year falls in (0 for the first ten days of January)."""
+    return (np.asarray(doy) - 1) // DOY_STEP
 
-    Both are stored: the one of the intensity model, which ranks the nights, and the one of the heavy-passage
-    classifier, which is what decides the alert.
+
+def _doy_centre(b) -> np.ndarray:
+    return np.asarray(b) * DOY_STEP + DOY_STEP // 2
+
+
+def _doy_gap(a, b) -> np.ndarray:
+    """Distance in days between two days of the year, going round the end of December."""
+    d = np.abs(np.asarray(a) - np.asarray(b))
+    return np.minimum(d, 366 - d)
+
+
+def compute_thresholds(pred: pd.DataFrame) -> pd.DataFrame:
+    """Percentiles of each city's predictions, taken over a window that moves through the year.
+
+    Season-wide percentiles lose their bite at the peak of the passage: in September almost every night
+    beats the autumn median, so almost every night comes out as an alert and the level stops telling the
+    nights apart. Cutting instead on the nights around the same date keeps the alert answering the
+    question it is meant to answer, «is far more passing tonight than is normal here *at this time of
+    year*?». The window is +-21 days around the centre of each 10-day bin, so consecutive bins overlap
+    and the threshold moves smoothly instead of jumping.
+
+    Both sets are stored: the one of the intensity model, which ranks the nights, and the one of the
+    heavy-passage classifier, which is what decides the alert.
     """
     q = [p for p, _ in LEVELS if p > 0]
     rows = []
-    for (city, season), g in pred[pred["season"] != "off season"].groupby(["radar", "season"]):
-        if len(g) < 100:
-            continue
-        row = {"city": city, "season": season, "nights": len(g),
-               "pred_mean": g["pred"].mean(), "p_alert_mean": g["p_alert"].mean()}
-        for p in q:
-            row[f"pred_q{int(p * 100)}"] = g["pred"].quantile(p)
-            row[f"alert_q{int(p * 100)}"] = g["p_alert"].quantile(p)
-        rows.append(row)
+    for city, g in pred[pred["season"] != "off season"].groupby("radar"):
+        doy = g["doy"].to_numpy()
+        for b in range(366 // DOY_STEP + 1):
+            w = g[_doy_gap(doy, _doy_centre(b)) <= DOY_WINDOW]
+            if len(w) < MIN_NIGHTS:
+                continue
+            row = {"city": city, "season": w["season"].mode().iat[0], "doy_bin": b,
+                   "doy_centre": int(_doy_centre(b)), "nights": len(w),
+                   "pred_mean": w["pred"].mean(), "p_alert_mean": w["p_alert"].mean()}
+            for p in q:
+                row[f"pred_q{int(p * 100)}"] = w["pred"].quantile(p)
+                row[f"alert_q{int(p * 100)}"] = w["p_alert"].quantile(p)
+            rows.append(row)
     return pd.DataFrame(rows)
 
 
@@ -143,16 +173,19 @@ def alert_level(p_alert: float, threshold: pd.Series) -> str:
 
 
 def apply_thresholds(pred: pd.DataFrame, thresholds: pd.DataFrame) -> pd.DataFrame:
-    """Add the alert level and the night's percentile within the city's own record."""
-    u = thresholds.set_index(["city", "season"])
+    """Add the alert level and the night's percentile within the city's own record for this time of year."""
     qs = sorted(q for q, _ in LEVELS if q > 0)
+    by_city = {c: g.set_index("doy_bin") for c, g in thresholds.groupby("city")}
     rows = []
     for r in pred.itertuples(index=False):
-        key = (r.radar, r.season)
-        if key not in u.index:
+        g = by_city.get(r.radar)
+        if g is None or r.season == "off season":
             rows.append({"level": "no threshold", "percentile": np.nan})
             continue
-        row = u.loc[key]
+        b = int(_doy_bin(r.doy))
+        if b not in g.index:  # edge of the season: take the nearest bin that does have a threshold
+            b = int(min(g.index, key=lambda k: _doy_gap(_doy_centre(k), r.doy)))
+        row = g.loc[b]
         pct = 0.0
         for q in qs:
             if r.p_alert >= row[f"alert_q{int(q * 100)}"]:

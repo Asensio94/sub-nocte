@@ -63,9 +63,10 @@ reduciendo colisiones con edificios. En Europa existen los datos (Aloft, ENRAM, 
   reentrenado **sin climatología local** (la configuración validada dejando radares enteros fuera, la única
   honesta para una ciudad sin radar) se alimenta del pronóstico de Open-Meteo en las coordenadas de cada ciudad.
   La ventana nocturna se calcula con la elevación del sol, porque sin radar no hay perfiles que la marquen.
-  Los niveles de aviso se cortan por los percentiles de las predicciones de **esa misma ciudad** sobre el archivo
-  2021-hoy (moderado > mediana, alto > P75, muy alto > P90), así que «muy alto» significa lo mismo en Sevilla que
-  en Bilbao. Informes: `output/phase3.html` (previsión) y `output/ranking.html` (exposición).
+  Los niveles de aviso se cortan por los percentiles de las predicciones de **esa misma ciudad y esas mismas
+  fechas** sobre el archivo 2021-hoy, con una ventana de tres semanas a cada lado (moderado > mediana, alto > P75,
+  muy alto > P90), así que «muy alto» significa lo mismo en Sevilla que en Bilbao y sigue significando algo en
+  pleno pico de paso. Informes: `output/phase3.html` (previsión) y `output/ranking.html` (exposición).
 - El **ranking de exposición** multiplica el brillo artificial del cielo de cada ciudad (Atlas de Falchi 2016,
   media en un disco de 10 km) por la densidad de aves prevista, al estilo de Horton et al. (2019). Aviso: el
   atlas mide brillo visto desde el suelo, no radiancia emitida hacia arriba, es de 2015 y **su licencia prohíbe
@@ -77,6 +78,12 @@ reduciendo colisiones con edificios. En Europa existen los datos (Aloft, ENRAM, 
   niveles, regenera la página y hace commit. La web dice en el propio sitio del aviso que el nivel es **relativo a
   cada ciudad** y no una cifra absoluta de aves, y lleva un aviso de versión técnica: ninguna de estas ciudades
   tiene radar cerca con el que comprobar la previsión al día siguiente.
+- **Verificación pública y continua.** El workflow diario hace commit de la previsión vigente, así que el
+  historial del repositorio es un archivo de previsiones con su fecha de emisión. `scorecard` recupera cada una,
+  descarga lo que midieron después los radares y publica el resultado en `output/scorecard.html`; lo rehace el
+  workflow `.github/workflows/scorecard.yml` todos los lunes. La primera tanda (11 noches de septiembre de 2026)
+  dio: orden de las noches acertado de forma débil pero consistente, tamaño infravalorado unas tres veces, y un
+  aviso que en pleno pico se disparaba demasiado, que es lo que llevó a los umbrales móviles.
 - Siguiente: ampliar a los radares alemanes, holandeses, belgas y checos, que tienen histórico largo en el mismo
   archivo y son lo que más margen de mejora tiene; avisos por Telegram; cambiar la capa de luz a VIIRS.
 
@@ -121,6 +128,7 @@ python -m subnocte.cli phase3-train                   # modelos operativos, sin 
 python -m subnocte.cli phase3-thresholds                   # percentiles propios de cada ciudad
 python -m subnocte.cli phase3 --days 7                   # previsión de las próximas noches e informe
 python -m subnocte.cli ranking                          # exposición a la luz artificial (necesita el atlas)
+python -m subnocte.cli scorecard                        # verifica las previsiones ya publicadas
 python -m subnocte.cli web                              # regenera index.html, la web pública
 
 # Piezas sueltas
@@ -130,8 +138,8 @@ python -m subnocte.cli nightly estjv
 ```
 
 Informes (en inglés): `output/phase0.html` (validación de radares), `output/phase1.html` (climatologías y umbrales),
-`output/phase2.html` (modelo meteorológico y validación), `output/phase3.html` (previsión por ciudad) y
-`output/ranking.html` (exposición a la luz). Todos son autocontenidos: las figuras van incrustadas dentro del
+`output/phase2.html` (modelo meteorológico y validación), `output/phase3.html` (previsión por ciudad),
+`output/ranking.html` (exposición a la luz) y `output/scorecard.html` (verificación de lo ya publicado). Todos son autocontenidos: las figuras van incrustadas dentro del
 propio HTML, así que se pueden enviar o abrir desde cualquier carpeta.
 
 El atlas de luz no se versiona y no se descarga automáticamente. Para el ranking hay que bajarlo a mano una vez:

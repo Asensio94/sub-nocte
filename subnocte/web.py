@@ -98,8 +98,8 @@ COPY: dict[str, dict[str, str]] = {
                     "significa que esa noche entra en el 10 % más intenso del historial <i>de esa misma "
                     "ciudad</i>. Así el aviso quiere decir lo mismo en Sevilla y en Bilbao, aunque por "
                     "Sevilla pase mucha más ave.",
-        "peak": "En pleno pico de la temporada es normal que muchas ciudades salgan altas a la vez: el "
-                "percentil se mide sobre la temporada entera, que incluye sus semanas flojas.",
+        "peak": "En pleno pico de la migración es normal que varias ciudades salgan altas a la vez: el "
+                "percentil se mide contra las noches de esas mismas fechas en años anteriores.",
         "no_forecast": "Previsión no disponible todavía.",
         "h_switch_off": "Noches para apagar",
         "very_high_in": "<b>muy alto</b> en {cities}",
@@ -152,9 +152,11 @@ COPY: dict[str, dict[str, str]] = {
             "Así el modelo captura un <b>34 % de las noches de paso fuerte</b> frente al 10 % que daría el "
             "azar, con un 66 % de falsas alarmas. Es decir: acierta tres veces más que tirar una moneda, y se "
             "equivoca a menudo.",
-            "<b>El aviso se calibra ciudad a ciudad.</b> Se corre el modelo sobre cinco años de meteorología "
-            "en el punto exacto de la ciudad y los niveles se cortan por los percentiles de esa "
-            "distribución. Por eso el aviso no necesita radar en la ciudad y significa lo mismo en todas.",
+            "<b>El aviso se calibra ciudad a ciudad y fecha a fecha.</b> Se corre el modelo sobre cinco años "
+            "de meteorología en el punto exacto de la ciudad, y los niveles se cortan por los percentiles de "
+            "las noches de esas mismas fechas, con una ventana de tres semanas a cada lado. Así el aviso no "
+            "necesita radar en la ciudad, significa lo mismo en todas y sigue significando algo en pleno pico "
+            "de paso, cuando cualquier noche supera la mediana de la temporada.",
         ],
         "h_reports": "Informes técnicos",
         "sub_reports": "Cada fase con sus figuras, sus tablas y sus limitaciones.",
@@ -164,6 +166,7 @@ COPY: dict[str, dict[str, str]] = {
             "phase2.html": "Fase 2 — el modelo meteorológico y su validación",
             "phase3.html": "Fase 3 — previsión por ciudad",
             "ranking.html": "Ranking de exposición a la luz artificial",
+            "scorecard.html": "Verificación — ¿acertaron las previsiones ya publicadas?",
             "design.html": "Documento de diseño del proyecto",
         },
         "note_reports": "Los informes técnicos están en inglés.",
@@ -213,8 +216,8 @@ COPY: dict[str, dict[str, str]] = {
                     "means the night falls in the most intense 10 % of the record <i>for that same city</i>. "
                     "That way the alert means the same thing in Seville and in Bilbao, even though far more "
                     "birds pass over Seville.",
-        "peak": "At the peak of the season it is normal for many cities to come out high at once: the "
-                "percentile is measured over the whole season, quiet weeks included.",
+        "peak": "At the peak of the passage it is normal for several cities to come out high at once: the "
+                "percentile is measured against the nights of those same dates in earlier years.",
         "no_forecast": "Forecast not available yet.",
         "h_switch_off": "Nights to switch off",
         "very_high_in": "<b>very high</b> in {cities}",
@@ -266,9 +269,11 @@ COPY: dict[str, dict[str, str]] = {
             "blind. Done that way it captures <b>34 % of the heavy-passage nights</b> against the 10 % that "
             "chance would give, with 66 % false alarms. In other words: three times better than a coin "
             "flip, and wrong fairly often.",
-            "<b>The alert is calibrated city by city.</b> The model is run over five years of weather at the "
-            "city's exact location and the levels are cut at the percentiles of that distribution. That is "
-            "why the alert needs no radar in the city and means the same thing everywhere.",
+            "<b>The alert is calibrated city by city and date by date.</b> The model is run over five years "
+            "of weather at the city's exact location, and the levels are cut at the percentiles of the nights "
+            "around the same date, in a window of three weeks either side. That is why the alert needs no "
+            "radar in the city, means the same thing everywhere, and still means something at the peak of the "
+            "passage, when any night beats the season's median.",
         ],
         "h_reports": "Technical reports",
         "sub_reports": "Each phase with its figures, its tables and its limitations.",
@@ -278,6 +283,7 @@ COPY: dict[str, dict[str, str]] = {
             "phase2.html": "Phase 2 — the weather model and its validation",
             "phase3.html": "Phase 3 — city-level forecast",
             "ranking.html": "Artificial light exposure ranking",
+            "scorecard.html": "Verification — did the published forecasts hold up?",
             "design.html": "Project design document",
         },
         "note_reports": "The technical reports are in English.",
