@@ -175,6 +175,8 @@ desviación que miden los radares (*regression kriging*).
 - Avisos por Telegram.
 - Cambiar la capa de luz a VIIRS.
 - Consultar a AEMET por el techo de altura y a Aloft por la velocidad ausente (ver «Límites»).
+- Conseguir datos con pocas horas de retraso: propuesta a SEO/BirdLife y AEMET ([español](docs/proposal/proposal_es.md))
+  y a Aloft y OPERA ([English](docs/proposal/proposal_en.md)).
 
 ## Uso
 
