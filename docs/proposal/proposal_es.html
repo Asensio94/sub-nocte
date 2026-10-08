@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar de migración casi en tiempo real</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+/* Layout: one narrow reading column, two language editions stacked, a night-sky band for the demo */
+:root{
+  --bg:#f6f7f9; --fg:#1b2230; --muted:#5a6475; --rule:#d9dde5;
+  --night:#121a2b; --night-fg:#e8ecf4; --night-muted:#aab3c5; --amber:#a35c05; --panel:#ffffff;
+  --display:"Literata",Georgia,serif; --body:"Literata",Georgia,serif;
+  --label:"IBM Plex Sans Condensed","Arial Narrow",sans-serif; --mono:"IBM Plex Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1420; --fg:#e3e7ee; --muted:#9aa3b3; --rule:#2a3244; --night:#070b14; --amber:#f0a640; --panel:#161d2c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1420; --fg:#e3e7ee; --muted:#9aa3b3; --rule:#2a3244; --night:#070b14; --amber:#f0a640; --panel:#161d2c; color-scheme:dark}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 var(--body);padding:0 16px}
+.wrap{max-width:46rem;margin:0 auto;padding-block:2.5rem 4rem}
+nav{display:flex;gap:1rem;flex-wrap:wrap;font:600 .8rem var(--label);letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--amber);text-decoration:none}
+a:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+.eyebrow{font:600 .78rem var(--label);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:2.5rem 0 .3rem}
+h1{font:600 2.1rem/1.15 var(--display);text-wrap:balance;margin:.2rem 0 .8rem}
+h2{font:600 1.2rem/1.3 var(--display);text-wrap:balance;margin:2rem 0 .4rem}
+p,li{max-width:65ch}
+.lede{font-size:1.1rem;color:var(--muted)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin:1rem 0}
+.facts div{background:var(--panel);padding:.8rem 1rem}
+.facts b{display:block;font:600 1.5rem var(--display);font-variant-numeric:tabular-nums;color:var(--amber)}
+.facts span{font:500 .82rem/1.35 var(--label);color:var(--muted)}
+.demo{background:var(--night);color:var(--night-fg);margin:2rem -16px;padding:1.5rem 16px}
+.demo .in{max-width:46rem;margin:0 auto;display:grid;gap:.8rem}
+.demo figcaption{font:500 .85rem/1.45 var(--label);color:var(--night-muted)}
+.demo img{width:100%;display:block}
+.ask{border-left:3px solid var(--amber);padding:.2rem 0 .2rem 1rem}
+.mono{font:400 .85em var(--mono)}
+hr{border:0;border-top:1px solid var(--rule);margin:3.5rem 0 0}
+.note{font:500 .85rem/1.5 var(--label);color:var(--muted)}
+a{color:var(--amber)}
+.sign{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--rule);font:500 .95rem var(--label)}
+</style>
+<div class="wrap">
+<nav aria-label="Navegación"><a href="../../">Sub Nocte</a><a href="proposal_en.html" hreflang="en">English version</a></nav>
+<section id="es" lang="es">
+<p class="eyebrow">Propuesta de colaboración · octubre 2026</p>
+<h1>Datos de radar de migración con horas de retraso, no días</h1>
+<p class="lede">La migración nocturna sobre la península ya se puede reconstruir y predecir con radares meteorológicos. Lo que falta es recibir los datos a tiempo para que sirvan esa misma noche.</p>
+
+<h2>El problema</h2>
+<p>Los perfiles verticales de aves (VPTS) de los radares españoles, portugueses y franceses se publican en abierto a través de Aloft, pero llegan con unas 48–72 horas de retraso. Para avisar a un parque eólico, a un aeropuerto o a un programa de apagado de luces, el dato tiene que estar disponible en pocas horas. Hoy en España no hay ningún producto público que lo haga.</p>
+
+<h2>Lo que ya funciona</h2>
+<p><span class="mono">sub-nocte</span> es un proyecto abierto que combina los perfiles de radar con meteorología para predecir la intensidad de migración de cada noche, también en lugares sin radar. En una validación que deja fuera radares completos obtiene un AUC de 0,77 y recoge el 34 % de las noches intensas, frente al 10 % que se esperaría por azar.</p>
+<p>Sobre esa predicción hemos construido una herramienta de decisión para 151 zonas eólicas de la península y Baleares. En el análisis retrospectivo de 59 zonas (temporadas 2021–2026), parando solo en las noches más intensas y con viento flojo:</p>
+<div class="facts">
+<div><b>7</b><span>noches de parada por temporada y zona</span></div>
+<div><b>2 %</b><span>de la energía nocturna perdida</span></div>
+<div><b>11 %</b><span>de la migración prevista cae en esas noches</span></div>
+</div>
+<p class="note">Las noches de más paso suelen ser de viento flojo (correlación −0,19 entre potencia y densidad de aves), y por eso parar cuesta poco.</p>
+</section>
+<figure class="demo" aria-labelledby="demo-cap">
+<div class="in">
+<img src="img0.gif" alt="Animación de la densidad de aves y sus direcciones de vuelo sobre la península ibérica y Francia la noche del 24 al 25 de septiembre de 2026">
+<figcaption id="demo-cap">Recreación de la noche del 24/09/2026 a partir de 38 radares de España, Portugal y Francia, en pasos de 20 minutos. El color es la densidad de aves y las flechas, la dirección y velocidad media de vuelo. Las zonas lejanas a un radar se desvanecen porque no hay dato.</figcaption>
+<img src="img1.png" alt="Mapa de la densidad media de aves de esa misma noche">
+<figcaption>Media de la noche. Con datos casi en tiempo real, este mapa estaría listo a primera hora de la mañana siguiente y su versión prevista, la tarde anterior.</figcaption>
+</div>
+</figure>
+<section lang="es">
+<h2>Lo que pedimos</h2>
+<div class="ask">
+<p><b>A AEMET:</b> acceso a los volúmenes de reflectividad y velocidad radial de su red, o a los perfiles ya calculados, con menos de 6 horas de retraso y en el formato ODIM que ya envía a OPERA. Basta con la franja nocturna de abril a junio y de agosto a noviembre.</p>
+<p><b>A SEO/BirdLife:</b> que respalde la solicitud y nos ayude a validar los mapas con sus datos de seguimiento (conteos en pasos migratorios, anillamiento), siempre en forma agregada y sin ubicaciones sensibles.</p>
+</div>
+
+<h2>Lo que ofrecemos</h2>
+<ul>
+<li>Mapa diario de la noche anterior y previsión a 7 días, públicos y con código abierto.</li>
+<li>Recomendaciones por zona para parques eólicos, con su coste energético estimado.</li>
+<li>Verificación diaria de la predicción frente a lo que midieron los radares.</li>
+<li>Datos derivados con licencia abierta y crédito a AEMET y SEO/BirdLife.</li>
+</ul>
+
+<h2>Precedente</h2>
+<p>El 13 de mayo de 2023 los Países Bajos frenaron por primera vez en el mundo parques eólicos marinos (Borssele y Egmond aan Zee) para dejar paso a aves migratorias: durante cuatro horas las turbinas giraron a dos vueltas por minuto como máximo. La decisión se tomó con dos días de antelación gracias a un modelo de la Universidad de Ámsterdam que combina meteorología y radares de aves. España tiene una red de radares comparable y mucha más migración terrestre. Solo falta que los datos lleguen a tiempo. Fuente: <a href="https://offshorewind.biz/2023/05/17/dutch-stop-offshore-wind-turbines-to-protect-migratory-birds-in-international-first">offshoreWIND.biz, 17/05/2023</a>.</p>
+<p class="sign"><b>Pablo</b> · <a href="https://github.com/Asensio94">Asensio94</a> · Proyecto para salvar a las aves</p>
+<p class="note">Código y metodología: <a href="https://github.com/Asensio94/sub-nocte">github.com/Asensio94/sub-nocte</a>. Datos: Aloft (CC0), Open-Meteo, OpenStreetMap (ODbL).</p>
+</section>
+</div>
+</html>

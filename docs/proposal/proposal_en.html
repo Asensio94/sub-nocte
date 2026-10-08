@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Near-real-time migration radar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+/* Layout: one narrow reading column, two language editions stacked, a night-sky band for the demo */
+:root{
+  --bg:#f6f7f9; --fg:#1b2230; --muted:#5a6475; --rule:#d9dde5;
+  --night:#121a2b; --night-fg:#e8ecf4; --night-muted:#aab3c5; --amber:#a35c05; --panel:#ffffff;
+  --display:"Literata",Georgia,serif; --body:"Literata",Georgia,serif;
+  --label:"IBM Plex Sans Condensed","Arial Narrow",sans-serif; --mono:"IBM Plex Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1420; --fg:#e3e7ee; --muted:#9aa3b3; --rule:#2a3244; --night:#070b14; --amber:#f0a640; --panel:#161d2c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1420; --fg:#e3e7ee; --muted:#9aa3b3; --rule:#2a3244; --night:#070b14; --amber:#f0a640; --panel:#161d2c; color-scheme:dark}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 var(--body);padding:0 16px}
+.wrap{max-width:46rem;margin:0 auto;padding-block:2.5rem 4rem}
+nav{display:flex;gap:1rem;flex-wrap:wrap;font:600 .8rem var(--label);letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--amber);text-decoration:none}
+a:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+.eyebrow{font:600 .78rem var(--label);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:2.5rem 0 .3rem}
+h1{font:600 2.1rem/1.15 var(--display);text-wrap:balance;margin:.2rem 0 .8rem}
+h2{font:600 1.2rem/1.3 var(--display);text-wrap:balance;margin:2rem 0 .4rem}
+p,li{max-width:65ch}
+.lede{font-size:1.1rem;color:var(--muted)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin:1rem 0}
+.facts div{background:var(--panel);padding:.8rem 1rem}
+.facts b{display:block;font:600 1.5rem var(--display);font-variant-numeric:tabular-nums;color:var(--amber)}
+.facts span{font:500 .82rem/1.35 var(--label);color:var(--muted)}
+.demo{background:var(--night);color:var(--night-fg);margin:2rem -16px;padding:1.5rem 16px}
+.demo .in{max-width:46rem;margin:0 auto;display:grid;gap:.8rem}
+.demo figcaption{font:500 .85rem/1.45 var(--label);color:var(--night-muted)}
+.demo img{width:100%;display:block}
+.ask{border-left:3px solid var(--amber);padding:.2rem 0 .2rem 1rem}
+.mono{font:400 .85em var(--mono)}
+hr{border:0;border-top:1px solid var(--rule);margin:3.5rem 0 0}
+.note{font:500 .85rem/1.5 var(--label);color:var(--muted)}
+a{color:var(--amber)}
+.sign{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--rule);font:500 .95rem var(--label)}
+</style>
+<div class="wrap">
+<nav aria-label="Navigation"><a href="../../en/">Sub Nocte</a><a href="proposal_es.html" hreflang="es">Versión en español</a></nav>
+<section id="en" lang="en">
+<p class="eyebrow">Collaboration proposal · October 2026</p>
+<h1>Bird migration radar data in hours, not days</h1>
+<p class="lede">Nocturnal migration over Iberia can already be reconstructed and forecast from weather radar. What is missing is getting the data soon enough to act on it the same night.</p>
+
+<h2>The problem</h2>
+<p>Vertical profile time series (VPTS) from Spanish, Portuguese and French radars are openly published through Aloft, but arrive 48–72 hours after the fact. Curtailing a wind farm, warning an airport or switching off lights needs data within a few hours. No public product does this for Spain today.</p>
+
+<h2>What already works</h2>
+<p><span class="mono">sub-nocte</span> is an open project that combines radar profiles with weather to forecast nightly migration intensity, including at places without a radar. Leave-one-radar-out validation gives an AUC of 0.77, catching 34% of heavy nights against 10% by chance.</p>
+<p>On top of it we built a decision tool for 151 wind farm zones in mainland Iberia and the Balearics. In a hindcast over 59 zones (2021–2026 seasons), stopping only on the heaviest nights with low wind:</p>
+<div class="facts">
+<div><b>7</b><span>stop nights per season per zone</span></div>
+<div><b>2%</b><span>of night-time energy lost</span></div>
+<div><b>11%</b><span>of forecast migration falls on those nights</span></div>
+</div>
+<p class="note">Heavy-passage nights tend to be calm (correlation −0.19 between power and bird density), which is why stopping is cheap.</p>
+
+</section>
+<figure class="demo" aria-labelledby="demo-cap">
+<div class="in">
+<img src="img0.gif" alt="Animation of bird density and flight directions over Iberia and France on the night of 24 to 25 September 2026">
+<figcaption id="demo-cap">Night of 24/09/2026 reconstructed from 38 radars in Spain, Portugal and France, in 20-minute steps. Colour is bird density; arrows are mean flight direction and speed. Areas far from any radar fade out because there is no data.</figcaption>
+<img src="img1.png" alt="Map of mean bird density on the same night">
+<figcaption>Night mean. With near-real-time data this map would be ready the next morning, and its forecast version the afternoon before.</figcaption>
+</div>
+</figure>
+<section lang="en">
+<h2>What we ask</h2>
+<div class="ask">
+<p><b>Aloft:</b> a near-real-time VPTS feed (hourly or per night) for the Iberian and French radars, even if provisional and later replaced by the quality-controlled daily files.</p>
+<p><b>OPERA/EUMETNET:</b> support for national services sharing night-time volumes for biological use with low latency, starting with AEMET and IPMA.</p>
+</div>
+
+<h2>What we offer</h2>
+<ul>
+<li>A public daily map of the previous night and a 7-day forecast, fully open source.</li>
+<li>Zone-level wind farm advice with its estimated energy cost.</li>
+<li>Daily verification of the forecast against observed radar profiles, shared back with the community.</li>
+<li>Open derived data, crediting Aloft, OPERA and the national services.</li>
+</ul>
+
+<h2>Precedent</h2>
+<p>On 13 May 2023 the Netherlands became the first country to slow offshore wind farms (Borssele and Egmond aan Zee) for migrating birds: for four hours the turbines turned at no more than two revolutions per minute. The decision was taken two days ahead using a University of Amsterdam model that combines weather data and bird radars. Iberia has a comparable radar network and far more overland migration. The data just needs to arrive on time. Source: <a href="https://offshorewind.biz/2023/05/17/dutch-stop-offshore-wind-turbines-to-protect-migratory-birds-in-international-first">offshoreWIND.biz, 17 May 2023</a>.</p>
+<p class="sign"><b>Pablo</b> · <a href="https://github.com/Asensio94">Asensio94</a> · Project to save the birds</p>
+<p class="note">Code and methods: <a href="https://github.com/Asensio94/sub-nocte">github.com/Asensio94/sub-nocte</a>. Data: Aloft (CC0), Open-Meteo, OpenStreetMap (ODbL).</p>
+</section>
+</div>
+</html>
