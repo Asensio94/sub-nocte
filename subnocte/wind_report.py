@@ -126,9 +126,13 @@ def write_report(fc: pd.DataFrame, thresholds: pd.DataFrame, out: Path) -> None:
         f"<p><b>Cost of stopping.</b> The forecast wind at 100 m over the night hours, through a generic power curve "
         f"(nothing below {CUT_IN:.0f} m/s, rated power from {RATED:.0f} m/s, cut-out at {CUT_OUT:.0f} m/s), gives the "
         f"share of rated power the zone would produce. Below {CHEAP:.0%} stopping is <i>cheap</i>; from "
-        f"{EXPENSIVE:.0%} it is <i>expensive</i>. The two halves cross in a fixed table: very high → stop (only at the "
-        "peak hours if expensive); high → stop if cheap, watch otherwise; anything below → run. It is a way of ranking "
-        "nights, not an operating order.</p>",
+        f"{EXPENSIVE:.0%} it is <i>expensive</i>. The two halves cross in a fixed table: very high and cheap → stop; very "
+        "high and moderate → stop at the peak hours; very high and expensive, or high → watch; anything below → run. "
+        "It is a way of ranking nights, not an operating order.</p>",
+        "<p><b>Why so strict.</b> Over the 2021-2026 seasons, stopping from the 75th percentile would have meant 21 "
+        "nights per season and zone and 13.5 % of the night output. With this table it is about 7 nights and 2 % of "
+        "the output, which still covers about 11 % of the migration the model predicts. It comes out this cheap "
+        "because the heavy nights tend to be calm ones.</p>",
         "<div class='k'>" + "".join(f"<div>{k}<b>{v}</b></div>" for k, v in summary.items()) + "</div>",
     ]
     parts += [f"<p><img src='{f.name}'></p>" for f in figs]

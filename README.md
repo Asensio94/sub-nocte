@@ -172,9 +172,14 @@ fase 3, que funciona en cualquier punto aunque no haya radar, a los aerogenerado
   (arranque a 3 m/s, nominal a 12 m/s, corte a 25 m/s) y da la fracción de potencia que produciría la zona. Por
   debajo del 25 % parar es *barato*; desde el 50 % es *caro*.
 - **Sugerencia.** Las dos mitades se cruzan en una tabla fija:
-  - con alerta muy alta, parar (si es caro, solo en las horas punta);
-  - con alerta alta, parar si es barato y vigilar si no;
+  - con alerta muy alta (P90), parar si es barato, parar en las horas punta si el coste es moderado y vigilar si
+    es caro;
+  - con alerta alta (P75), vigilar;
   - con cualquier alerta inferior, funcionar.
+
+  Sobre las temporadas 2021–2026 esto supone unas 7 noches por temporada y zona y un 2 % de la producción
+  nocturna, para el 11 % de la migración que predice el modelo. Parar desde el P75 habría supuesto 21 noches y un
+  13,5 %. Sale tan barato porque las noches de mucho paso suelen ser noches de poco viento.
 
   Sirve para ordenar noches, no es una orden de operación.
 

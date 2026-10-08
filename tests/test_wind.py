@@ -37,7 +37,8 @@ def test_zones_need_enough_turbines(monkeypatch):
     big = pd.DataFrame({"osm_id": [f"n{i}" for i in range(12)], "lat": 42.6, "lon": -1.7,
                         "power_mw": 2.0, "rotor_m": np.nan, "hub_m": np.nan, "height_m": np.nan})
     small = big.head(W.MIN_TURBINES - 1).assign(lat=40.2, lon=-3.2)
-    z = W.zones(pd.concat([big, small]))
+    canary = big.assign(lat=28.1, lon=-15.4)  # outside the model's domain
+    z = W.zones(pd.concat([big, small, canary]))
     assert list(z["zone"]) == ["42.5N2.0W"] and z.loc[0, "turbines"] == 12
     assert z.loc[0, "power_mw"] == 24 and z.loc[0, "country"] == "ES"
 
@@ -64,6 +65,7 @@ def test_night_power_uses_only_the_night_window():
 def test_advice_table():
     assert W.stop_cost(0.1) == "cheap" and W.stop_cost(0.3) == "moderate" and W.stop_cost(0.6) == "expensive"
     assert W.advice("very high", "cheap") == "stop"
-    assert W.advice("very high", "expensive") == "stop at peak hours"
-    assert W.advice("high", "cheap") == "stop" and W.advice("high", "moderate") == "watch"
+    assert W.advice("very high", "moderate") == "stop at peak hours"
+    assert W.advice("very high", "expensive") == "watch"
+    assert W.advice("high", "cheap") == "watch" and W.advice("high", "expensive") == "watch"
     assert W.advice("moderate", "cheap") == "run" and W.advice("no threshold", "cheap") == "run"

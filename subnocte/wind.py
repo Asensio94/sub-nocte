@@ -43,6 +43,9 @@ MIN_TURBINES = 10       # fewer turbines than this in a cell do not make a zone
 MIN_HEIGHT_M = 30       # below this (tagged height or hub) it is a small domestic turbine, left out
 MIN_POWER_MW = 0.1
 MAX_POWER_MW = 20       # above this a tagged power is a unit mistake
+# The model was trained on the European radars: the Canaries and Madeira, out at sea and on another flyway,
+# are left out. The box keeps the Peninsula and the Balearics.
+LAT_RANGE, LON_RANGE = (35.8, 44.0), (-9.6, 4.5)
 
 # Generic power curve of a modern onshore turbine at hub height (wind at 100 m from the forecast):
 # nothing below the cut-in speed, cubic growth up to the rated speed, flat up to the cut-out speed.
@@ -156,7 +159,7 @@ def zone_id(clat: float, clon: float) -> str:
 
 def zones(turbines: pd.DataFrame, previous: pd.DataFrame | None = None, log=print) -> pd.DataFrame:
     """Group the turbines into cells and describe each zone. Places already looked up are reused."""
-    t = turbines.copy()
+    t = turbines[turbines["lat"].between(*LAT_RANGE) & turbines["lon"].between(*LON_RANGE)].copy()
     t["cell_lat"] = np.floor(t["lat"] / CELL_DEG) * CELL_DEG
     t["cell_lon"] = np.floor(t["lon"] / CELL_DEG) * CELL_DEG
     known = ({r.zone: (r.place, r.country) for r in previous.itertuples()}
@@ -214,9 +217,13 @@ def stop_cost(power_frac: float) -> str:
 
 
 def advice(level: str, cost: str) -> str:
-    """The decision table that crosses the two halves. It is a suggestion to rank nights, not an order."""
+    """The decision table that crosses the two halves. It is a suggestion to rank nights, not an order.
+
+    Chosen on the 2021-2026 hindcast of the first 59 zones. Stopping from the 75th percentile would have stopped
+    21 nights per season and zone and lost 13.5 % of the night output; only from the 90th percentile and on cheap
+    nights it is 7 nights and 2 % of the output, for 11 % of the predicted migration. It is that cheap because the
+    heavy nights tend to be calm ones (correlation -0.19 between night output and predicted density).
+    """
     if level == "very high":
-        return "stop" if cost != "expensive" else "stop at peak hours"
-    if level == "high":
-        return "stop" if cost == "cheap" else "watch"
-    return "run"
+        return {"cheap": "stop", "moderate": "stop at peak hours"}.get(cost, "watch")
+    return "watch" if level == "high" else "run"
