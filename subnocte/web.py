@@ -15,6 +15,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from .logo import LOGO_SVG, favicon_link
+
 LANGS = ("es", "en")
 
 COLOR = {"low": "#e9edf2", "moderate": "#ffd98e", "high": "#f08c1e", "very high": "#b32d1f"}
@@ -40,6 +42,7 @@ DAYS = {"es": ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"],
 BASE = "https://asensio94.github.io/sub-nocte/"
 REPO = "https://github.com/Asensio94/sub-nocte"
 
+FAVICON = favicon_link("#4a4fb5", "#9a9ef0")
 FONTS = ("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700"
          "&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap")
 
@@ -718,6 +721,7 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
     p = [f"<!doctype html><html lang='{lang}'><meta charset='utf-8'>",
          "<meta name='viewport' content='width=device-width,initial-scale=1'>",
          f"<title>{c['title']}</title>",
+         FAVICON,
          f"<meta name='description' content='{c['description']}'>",
          f"<link rel='alternate' hreflang='es' href='{BASE}'>",
          f"<link rel='alternate' hreflang='en' href='{BASE}en/'>",
@@ -729,7 +733,7 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
          "<header class='site-header'>",
          f"<div class='lang'><span>{'Español' if lang == 'es' else 'English'}</span> "
          f"<a href='{other_path}' hreflang='{other}'>{c['other_lang']}</a></div>",
-         "<h1>Sub <span>Nocte</span></h1>",
+         f"<h1>{LOGO_SVG}Sub <span>Nocte</span></h1>",
          "<p class='verse'>ibant obscuri sola sub nocte per umbram — Virgil, <i>Aeneid</i> VI</p>",
          f"<p class='lede'>{c['claim']}</p>",
          figures(fc, lang),
