@@ -26,3 +26,5 @@ data/wind/turbines.csv
 data/phase3_city_climate.parquet
 data/phase3_forecast_raw.parquet
 data/log_*.txt
+data/weather_era5/
+data/wind_climate_*.parquet

@@ -133,8 +133,10 @@ python -m subnocte.cli web                              # regenera index.html, l
 
 # Parques eólicos: previsión nocturna por zona eólica y coste de parar
 python -m subnocte.cli wind-zones                        # aerogeneradores de OSM, cota del terreno y zonas
-python -m subnocte.cli wind-archive                      # archivo meteorológico en el punto de cada zona
-python -m subnocte.cli wind-thresholds                   # percentiles propios de cada zona
+python -m subnocte.cli wind-era5                         # archivo ERA5 de todas las zonas (necesita ~/.cdsapirc)
+python -m subnocte.cli wind-archive                      # o el de Open-Meteo, zona a zona (cupo gratuito)
+python -m subnocte.cli wind-compare                      # ¿dan las dos fuentes las mismas noches?
+python -m subnocte.cli wind-thresholds --source era5     # percentiles propios de cada zona
 python -m subnocte.cli wind --days 7                     # previsión, coste de parar e informe
 
 # Piezas sueltas
@@ -160,8 +162,8 @@ Datos: `data/cache/` (descargas, no versionado), `data/vpts/` (perfiles en parqu
 
 ## Parques eólicos
 
-En Países Bajos los parques eólicos marinos se paran las noches de gran paso migratorio, con una previsión hecha
-a partir de los radares del KNMI. En España y Portugal no existe nada parecido. `wind` aplica la previsión de la
+En Países Bajos, desde mayo de 2023, los parques eólicos marinos se frenan las noches de gran paso migratorio con
+una previsión de la Universidad de Ámsterdam basada en meteorología y radares de aves. En España y Portugal no existe nada parecido. `wind` aplica la previsión de la
 fase 3, que funciona en cualquier punto aunque no haya radar, a los aerogeneradores en lugar de a las ciudades.
 
 - **Zonas.** Los aerogeneradores mapeados en OpenStreetMap se agrupan en celdas de 0,5°. Una celda con al menos 10
@@ -190,6 +192,14 @@ Límites que hay que tener presentes:
   murciélagos, y esta previsión no cubre ninguno de los dos grupos.
 - Los radares renovados de AEMET validan peor (AUC 0,55–0,66).
 
+**Archivo meteorológico.** Los umbrales de cada zona necesitan cinco temporadas de meteorología en su punto. Open-Meteo
+cuenta cada punto como una petición aparte y su cupo gratuito no da para 150 zonas, así que el archivo sale de
+ERA5 (Copernicus): se descarga una caja por mes que cubre todas las zonas y se lee en el punto de cada una, con las
+mismas columnas y unidades que Open-Meteo. ERA5 es un reanálisis y el modelo se entrenó con previsiones
+archivadas, así que `wind-compare` comprueba en las zonas que tienen las dos fuentes que dan las mismas noches
+intensas. Hace falta una cuenta gratuita en el Climate Data Store, aceptar la licencia de los dos conjuntos ERA5
+(niveles únicos y de presión) y el token en `~/.cdsapirc`.
+
 El siguiente paso es usar la cota de cada zona (`ground_m`, en muchos casos 800–1500 m s.n.m.) para leer la
 densidad de la banda de altura que los radares sí ven a esa cota.
 
@@ -214,5 +224,6 @@ densidad de la banda de altura que los radares sí ven a esa cota.
 Datos: Aloft / ENRAM / BALTRAD (Desmet et al. 2025, *Sci Data*), radares de AEMET, IPMA, Météo-France y demás
 servicios OPERA. Método: Dokter et al. 2011, Van Doren & Horton 2018, Horton et al. 2021, Nussbaumer et al. 2021.
 Aerogeneradores: © colaboradores de OpenStreetMap (ODbL), vía Overpass; cota del terreno: Copernicus DEM vía
-Open-Meteo.
+Open-Meteo. Archivo meteorológico de las zonas eólicas: ERA5 (Hersbach et al. 2020), Copernicus Climate Change
+Service.
 Licencia del código: MIT.

@@ -463,6 +463,9 @@ def phase3(days: int = 7, cache: bool = False):
 WIND = ROOT / "data" / "wind"
 WIND_WEATHER = ROOT / "data" / "weather_wind"
 WIND_CLIMATE = ROOT / "data" / "wind_climate.parquet"
+WIND_ERA5 = ROOT / "data" / "weather_era5"
+ERA5_CACHE = ROOT / "data" / "cache" / "era5"
+WIND_SOURCES = {"openmeteo": WIND_WEATHER, "era5": WIND_ERA5}
 
 
 def _wind_zones() -> pd.DataFrame:
@@ -509,33 +512,77 @@ def wind_archive(wanted: list[str] = typer.Argument(None), start_year: int = 202
 
 
 @app.command()
-def wind_thresholds(reuse: bool = typer.Option(True, "--reuse/--rebuild")):
-    """Run the model over each zone's archive: alert percentiles and the usual night output of the turbines."""
+def wind_era5(start_year: int = 2021, download: bool = typer.Option(True, "--download/--no-download")):
+    """Weather archive of every wind zone from ERA5 (Copernicus): one box per month instead of one request per zone."""
+    from . import era5 as E
+
+    years = list(range(start_year, dt.date.today().year + 1))
+    month_list = (E.download(years, ERA5_CACHE, log=rprint) if download
+                  else [(y, m) for y, m, _ in E.months(years)])
+    E.build(_wind_zones()[["zone", "lat", "lon"]], month_list, ERA5_CACHE, WIND_ERA5, log=rprint)
+
+
+def _wind_predictions(src: Path, zones: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Model output and night power for every zone that has an archive in `src`."""
     from . import forecast as P
     from . import wind as W
 
-    if reuse and WIND_CLIMATE.exists():
-        pred = pd.read_parquet(WIND_CLIMATE)
+    models = P.load_models(ROOT / "data")
+    parts = []
+    for r in (_wind_zones() if zones is None else zones).itertuples():
+        f = src / f"{r.zone}.parquet"
+        if not f.exists():
+            continue
+        h = pd.read_parquet(f)
+        x = P.features(r.zone, r.lat, r.lon, h)
+        if x.empty:
+            continue
+        nights = P.night_windows(r.zone, r.lat, r.lon, pd.DatetimeIndex(pd.to_datetime(h["time"], utc=True)))
+        x = P.predict(x, models).merge(W.night_power(h, nights), on=["radar", "night"], how="left")
+        parts.append(x.assign(country=r.country))
+        rprint(f"  {r.zone}: {len(x)} nights")
+    return pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
+
+
+@app.command()
+def wind_thresholds(reuse: bool = typer.Option(True, "--reuse/--rebuild"),
+                    source: str = typer.Option("era5", help="archive to calibrate on: era5 or openmeteo")):
+    """Run the model over each zone's archive: alert percentiles and the usual night output of the turbines."""
+    from . import forecast as P
+
+    climate = WIND_CLIMATE.with_name(f"wind_climate_{source}.parquet")
+    if reuse and climate.exists():
+        pred = pd.read_parquet(climate)
     else:
-        models = P.load_models(ROOT / "data")
-        parts = []
-        for r in _wind_zones().itertuples():
-            f = WIND_WEATHER / f"{r.zone}.parquet"
-            if not f.exists():
-                continue
-            h = pd.read_parquet(f)
-            x = P.features(r.zone, r.lat, r.lon, h)
-            if x.empty:
-                continue
-            nights = P.night_windows(r.zone, r.lat, r.lon, pd.DatetimeIndex(pd.to_datetime(h["time"], utc=True)))
-            x = P.predict(x, models).merge(W.night_power(h, nights), on=["radar", "night"], how="left")
-            parts.append(x.assign(country=r.country))
-            rprint(f"  {r.zone}: {len(x)} nights")
-        pred = pd.concat(parts, ignore_index=True)
-        pred.to_parquet(WIND_CLIMATE, index=False)
+        pred = _wind_predictions(WIND_SOURCES[source])
+        pred.to_parquet(climate, index=False)
     u = P.compute_thresholds(pred).rename(columns={"city": "zone"})
     u.to_csv(WIND / "thresholds.csv", index=False, float_format="%.4f")
-    rprint(f"Thresholds for {u['zone'].nunique()} zones x {u['doy_bin'].nunique()} ten-day periods")
+    rprint(f"Thresholds from {source} for {u['zone'].nunique()} zones x {u['doy_bin'].nunique()} ten-day periods")
+
+
+@app.command()
+def wind_compare():
+    """Same zones, same nights, both archives: does ERA5 give the model the nights Open-Meteo gives it?"""
+    z = _wind_zones()
+    both = z[[(WIND_WEATHER / f"{r}.parquet").exists() and (WIND_ERA5 / f"{r}.parquet").exists() for r in z.zone]]
+    key = ["radar", "night"]
+    a = _wind_predictions(WIND_WEATHER, both)[key + ["pred", "p_alert", "power_frac"]]
+    b = _wind_predictions(WIND_ERA5, both)[key + ["pred", "p_alert", "power_frac"]]
+    m = a.merge(b, on=key, suffixes=("_om", "_era5")).dropna()
+    rows = []
+    for zone, g in m.groupby("radar"):
+        top_om, top_e5 = g["pred_om"] >= g["pred_om"].quantile(0.9), g["pred_era5"] >= g["pred_era5"].quantile(0.9)
+        rows.append({"zone": zone, "nights": len(g), "r_pred": g["pred_om"].corr(g["pred_era5"]),
+                     "r_alert": g["p_alert_om"].corr(g["p_alert_era5"]),
+                     "r_power": g["power_frac_om"].corr(g["power_frac_era5"]),
+                     "p90_shift": g["pred_era5"].quantile(0.9) - g["pred_om"].quantile(0.9),
+                     "top10_shared": (top_om & top_e5).sum() / max(top_om.sum(), 1)})
+    r = pd.DataFrame(rows)
+    out = WIND / "era5_vs_openmeteo.csv"
+    r.to_csv(out, index=False, float_format="%.3f")
+    rprint(r.describe().loc[["mean", "50%", "min", "max"]].round(3).to_string())
+    rprint(f"{len(r)} zones, {len(m):,} nights compared. Per zone: {out}")
 
 
 @app.command()

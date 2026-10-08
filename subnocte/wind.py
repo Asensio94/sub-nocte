@@ -1,7 +1,8 @@
 """Wind farms: nightly migration forecast per wind zone and the cost of stopping the turbines.
 
-In the Netherlands the offshore wind farms are already stopped on the nights of heavy migration, with a
-forecast built on the KNMI radars. In Spain and Portugal there is nothing of the kind. This module points
+In the Netherlands offshore wind farms have been slowed on nights of heavy migration since May 2023, with a
+forecast from the University of Amsterdam built on weather data and bird radars. In Spain and Portugal there is
+nothing of the kind. This module points
 the phase 3 forecast, which works at any point without a radar, at the wind turbines instead of the cities,
 and adds the other half of the decision: what stopping would cost.
 
