@@ -19,6 +19,10 @@ data/phase2_dataset_surface.parquet
 data/phase2_predictions.parquet
 data/lights/
 data/weather_cities/
+data/weather_wind/
+data/wind_climate.parquet
+data/wind_forecast_raw.parquet
+data/wind/turbines.csv
 data/phase3_city_climate.parquet
 data/phase3_forecast_raw.parquet
 data/log_*.txt

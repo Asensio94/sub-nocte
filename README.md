@@ -131,6 +131,12 @@ python -m subnocte.cli ranking                          # exposición a la luz a
 python -m subnocte.cli scorecard                        # verifica las previsiones ya publicadas
 python -m subnocte.cli web                              # regenera index.html, la web pública
 
+# Parques eólicos: previsión nocturna por zona eólica y coste de parar
+python -m subnocte.cli wind-zones                        # aerogeneradores de OSM, cota del terreno y zonas
+python -m subnocte.cli wind-archive                      # archivo meteorológico en el punto de cada zona
+python -m subnocte.cli wind-thresholds                   # percentiles propios de cada zona
+python -m subnocte.cli wind --days 7                     # previsión, coste de parar e informe
+
 # Piezas sueltas
 python -m subnocte.cli radars                       # radares del bucket y sus años
 python -m subnocte.cli ingest estjv --start 2026-03-01 --end 2026-05-31
@@ -138,7 +144,7 @@ python -m subnocte.cli nightly estjv
 ```
 
 Informes (en inglés): `output/phase0.html` (validación de radares), `output/phase1.html` (climatologías y umbrales),
-`output/phase2.html` (modelo meteorológico y validación), `output/phase3.html` (previsión por ciudad),
+`output/phase2.html` (modelo meteorológico y validación), `output/phase3.html` (previsión por ciudad), `output/wind.html` (parques eólicos),
 `output/ranking.html` (exposición a la luz) y `output/scorecard.html` (verificación de lo ya publicado). Todos son autocontenidos: las figuras van incrustadas dentro del
 propio HTML, así que se pueden enviar o abrir desde cualquier carpeta.
 
@@ -151,6 +157,36 @@ curl -sSL -o data/lights/World_Atlas_2015.zip https://datapub.gfz-potsdam.de/dow
 Datos: `data/cache/` (descargas, no versionado), `data/vpts/` (perfiles en parquet, no versionado),
 `data/nightly/{radar}.parquet` (tabla nocturna, versionado), `data/thresholds.csv`, `data/climatology_doy.csv` y
 `data/cities.csv` (ciudad → radar útil más cercano, entre 5 y 100 km, con nivel de confianza).
+
+## Parques eólicos
+
+En Países Bajos los parques eólicos marinos se paran las noches de gran paso migratorio, con una previsión hecha
+a partir de los radares del KNMI. En España y Portugal no existe nada parecido. `wind` aplica la previsión de la
+fase 3, que funciona en cualquier punto aunque no haya radar, a los aerogeneradores en lugar de a las ciudades.
+
+- **Zonas.** Los aerogeneradores mapeados en OpenStreetMap se agrupan en celdas de 0,5°. Una celda con al menos 10
+  aerogeneradores es una zona eólica. Su punto de previsión es el centroide de esos aerogeneradores y sus umbrales
+  son los percentiles propios de la zona alrededor de la misma fecha, igual que en las ciudades. Se guardan en
+  `data/wind/zones.csv`, sin titulares ni nombres de parque.
+- **Coste de parar.** El viento previsto a 100 m durante las horas de noche pasa por una curva de potencia genérica
+  (arranque a 3 m/s, nominal a 12 m/s, corte a 25 m/s) y da la fracción de potencia que produciría la zona. Por
+  debajo del 25 % parar es *barato*; desde el 50 % es *caro*.
+- **Sugerencia.** Las dos mitades se cruzan en una tabla fija:
+  - con alerta muy alta, parar (si es caro, solo en las horas punta);
+  - con alerta alta, parar si es barato y vigilar si no;
+  - con cualquier alerta inferior, funcionar.
+
+  Sirve para ordenar noches, no es una orden de operación.
+
+Límites que hay que tener presentes:
+- La densidad prevista es la de toda la columna que ven los radares (de ~200 m a 3 km), no la de la altura del
+  rotor.
+- La mortalidad documentada en parques eólicos españoles es sobre todo de planeadoras diurnas (buitres) y de
+  murciélagos, y esta previsión no cubre ninguno de los dos grupos.
+- Los radares renovados de AEMET validan peor (AUC 0,55–0,66).
+
+El siguiente paso es usar la cota de cada zona (`ground_m`, en muchos casos 800–1500 m s.n.m.) para leer la
+densidad de la banda de altura que los radares sí ven a esa cota.
 
 ## Aviso metodológico
 
@@ -172,4 +208,6 @@ Datos: `data/cache/` (descargas, no versionado), `data/vpts/` (perfiles en parqu
 
 Datos: Aloft / ENRAM / BALTRAD (Desmet et al. 2025, *Sci Data*), radares de AEMET, IPMA, Météo-France y demás
 servicios OPERA. Método: Dokter et al. 2011, Van Doren & Horton 2018, Horton et al. 2021, Nussbaumer et al. 2021.
+Aerogeneradores: © colaboradores de OpenStreetMap (ODbL), vía Overpass; cota del terreno: Copernicus DEM vía
+Open-Meteo.
 Licencia del código: MIT.

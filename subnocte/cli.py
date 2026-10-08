@@ -460,6 +460,121 @@ def phase3(days: int = 7, cache: bool = False):
     rprint(f"Report: {OUTPUT / 'phase3.html'}")
 
 
+WIND = ROOT / "data" / "wind"
+WIND_WEATHER = ROOT / "data" / "weather_wind"
+WIND_CLIMATE = ROOT / "data" / "wind_climate.parquet"
+
+
+def _wind_zones() -> pd.DataFrame:
+    f = WIND / "zones.csv"
+    if not f.exists():
+        rprint("[red]no wind zones: run wind-zones first[/red]")
+        raise typer.Exit(1)
+    return pd.read_csv(f)
+
+
+@app.command()
+def wind_zones():
+    """Wind turbines of Spain and Portugal from OpenStreetMap, their ground elevation and the wind zones."""
+    from . import wind as W
+
+    WIND.mkdir(parents=True, exist_ok=True)
+    t = W.fetch_turbines(ROOT / "data" / "cache" / "osm", log=rprint)
+    t.to_csv(WIND / "turbines.csv", index=False)
+    zf = WIND / "zones.csv"
+    prev = pd.read_csv(zf) if zf.exists() else None
+    z = W.zones(t, prev, log=rprint)
+    if prev is not None and "ground_m" in prev:  # the elevation of a point does not change
+        z = z.merge(prev[["zone", "ground_m"]], on="zone", how="left")
+    if "ground_m" not in z or z["ground_m"].isna().any():
+        missing = z["ground_m"].isna() if "ground_m" in z else pd.Series(True, index=z.index)
+        z.loc[missing, "ground_m"] = W.add_elevation(z[missing], log=rprint)["ground_m"].round().values
+    z.to_csv(zf, index=False)
+    rprint(f"{len(t):,} turbines, {len(z)} zones with {z['turbines'].sum():,} of them "
+           f"({z['turbines'].sum() / len(t):.0%}) -> {zf}")
+
+
+@app.command()
+def wind_archive(wanted: list[str] = typer.Argument(None), start_year: int = 2021):
+    """Weather archive at each wind zone's point, to calibrate its thresholds (like phase3-archive)."""
+    from .forecast import fetch_archive
+
+    years = list(range(start_year, dt.date.today().year + 1))
+    z = _wind_zones()
+    for r in z.itertuples():
+        if wanted and r.zone not in wanted:
+            continue
+        rprint(f"[bold]{r.zone}[/bold] {r.place} ({r.turbines} turbines)")
+        fetch_archive(r.zone, r.lat, r.lon, years, WIND_WEATHER, log=rprint)
+
+
+@app.command()
+def wind_thresholds(reuse: bool = typer.Option(True, "--reuse/--rebuild")):
+    """Run the model over each zone's archive: alert percentiles and the usual night output of the turbines."""
+    from . import forecast as P
+    from . import wind as W
+
+    if reuse and WIND_CLIMATE.exists():
+        pred = pd.read_parquet(WIND_CLIMATE)
+    else:
+        models = P.load_models(ROOT / "data")
+        parts = []
+        for r in _wind_zones().itertuples():
+            f = WIND_WEATHER / f"{r.zone}.parquet"
+            if not f.exists():
+                continue
+            h = pd.read_parquet(f)
+            x = P.features(r.zone, r.lat, r.lon, h)
+            if x.empty:
+                continue
+            nights = P.night_windows(r.zone, r.lat, r.lon, pd.DatetimeIndex(pd.to_datetime(h["time"], utc=True)))
+            x = P.predict(x, models).merge(W.night_power(h, nights), on=["radar", "night"], how="left")
+            parts.append(x.assign(country=r.country))
+            rprint(f"  {r.zone}: {len(x)} nights")
+        pred = pd.concat(parts, ignore_index=True)
+        pred.to_parquet(WIND_CLIMATE, index=False)
+    u = P.compute_thresholds(pred).rename(columns={"city": "zone"})
+    u.to_csv(WIND / "thresholds.csv", index=False, float_format="%.4f")
+    rprint(f"Thresholds for {u['zone'].nunique()} zones x {u['doy_bin'].nunique()} ten-day periods")
+
+
+@app.command()
+def wind(days: int = 7, cache: bool = False):
+    """Forecast of the coming nights per wind zone: alert level, cost of stopping and the suggestion."""
+    from . import forecast as P
+    from . import wind as W
+    from . import wind_report as R
+
+    z = _wind_zones()
+    th = pd.read_csv(WIND / "thresholds.csv")
+    raw = ROOT / "data" / "wind_forecast_raw.parquet"
+    if cache and raw.exists():
+        fc = pd.read_parquet(raw)
+    else:
+        models = P.load_models(ROOT / "data")
+        parts = []
+        for r in z[z["zone"].isin(set(th["zone"]))].itertuples():
+            h = P.fetch_forecast(r.lat, r.lon, days, log=rprint)
+            x = P.features(r.zone, r.lat, r.lon, h)
+            if x.empty:
+                continue
+            nights = P.night_windows(r.zone, r.lat, r.lon, pd.DatetimeIndex(pd.to_datetime(h["time"], utc=True)))
+            parts.append(P.predict(x, models).merge(W.night_power(h, nights), on=["radar", "night"], how="left"))
+        fc = pd.concat(parts, ignore_index=True)
+        fc.to_parquet(raw, index=False)
+    fc = P.apply_thresholds(fc, th.rename(columns={"zone": "city"})).rename(columns={"radar": "zone"})
+    fc = fc.drop(columns=["city"]).merge(z, on="zone", how="left", suffixes=("", "_zone"))
+    fc["cost"] = fc["power_frac"].map(W.stop_cost)
+    fc["advice"] = [W.advice(l, c) for l, c in zip(fc["level"], fc["cost"])]
+    keep = ["zone", "place", "country", "lat", "lon", "turbines", "power_mw", "night", "pred", "p_alert",
+            "level", "percentile", "wind100_mean", "power_frac", "hours_producing", "cost", "advice"]
+    fc = fc[keep].sort_values(["night", "zone"])
+    fc.to_csv(WIND / "forecast.csv", index=False, float_format="%.4f")
+    R.write_report(fc, th, OUTPUT / "wind.html")
+    stop = fc[fc["advice"].str.startswith("stop")]
+    rprint(f"[bold]{len(fc)} zone-nights, {len(stop)} where stopping is suggested[/bold] -> {OUTPUT / 'wind.html'}")
+
+
 LIGHTS = ROOT / "data" / "lights"
 
 
