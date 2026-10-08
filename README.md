@@ -135,7 +135,21 @@ No hay ningún análisis publicado sobre los radares españoles renovados; esta 
   llegan al 50 % de la densidad con velocidad que exige el MTR (`ff_frac`, ver abajo). **Pendiente preguntar a
   Aloft** si el Doppler está en los volúmenes de origen y si se puede reprocesar 2021-2026.
 
-### Aviso metodológico
+### Recreación de la noche
+
+Los mapas en vivo de [BirdCast](https://birdcast.info/migration-tools/live-migration-maps/) enseñan la noche
+mientras ocurre, a partir de los volúmenes NEXRAD. En Europa los perfiles abiertos de Aloft llegan con unos dos
+días de retraso, así que `flows` hace lo mismo a toro pasado. Para la Península y Francia (unos 40 radares)
+genera un mapa animado de la noche, cada 20 minutos, con dos capas:
+
+- **Densidad de aves en vuelo:** repartida alrededor de cada radar y difuminada donde ningún radar ve.
+- **Flecha de vuelo medio:** sobre cada radar, indica hacia dónde iban las aves y a qué velocidad.
+
+El informe va en `output/flows.html` y el resumen por radar en `data/flows/AAAAMMDD.csv`. Entre radares el mapa
+es un suavizado, no una medida. El siguiente paso es usar el modelo meteorológico como fondo e interpolar solo la
+desviación que miden los radares (*regression kriging*).
+
+## Aviso metodológico
 
 - Los perfiles de Aloft **no tienen control de calidad** y llegan con 1-2 días de retraso. Sirven para entrenar y
   verificar, no para un mapa en vivo.
@@ -191,6 +205,10 @@ python -m subnocte.cli phase3 --days 7                   # previsión de las pr�
 python -m subnocte.cli ranking                          # exposición a la luz artificial (necesita el atlas)
 python -m subnocte.cli scorecard                        # verifica las previsiones ya publicadas
 python -m subnocte.cli web                              # regenera index.html, la web pública
+
+# Recreación de una noche: dónde estaban las aves, cada 20 minutos
+python -m subnocte.cli flows                             # la última noche completa (unos 3 días atrás)
+python -m subnocte.cli flows --night 2026-09-24
 
 # Piezas sueltas
 python -m subnocte.cli radars                       # radares del bucket y sus años

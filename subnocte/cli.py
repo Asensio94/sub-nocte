@@ -460,6 +460,27 @@ def phase3(days: int = 7, cache: bool = False):
     rprint(f"Report: {OUTPUT / 'phase3.html'}")
 
 
+@app.command()
+def flows(night: str = typer.Option(None, help="YYYY-MM-DD, date of the sunset; by default the latest complete one")):
+    """Replay of a night: density and flight of the migrating birds over Iberia and France, every 20 minutes."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from . import flows as F
+
+    # day D is published at about 02:00 UTC on D+2, and a night needs its own day and the next one
+    n = dt.date.fromisoformat(night) if night else dt.datetime.now(dt.timezone.utc).date() - dt.timedelta(days=3)
+    with ThreadPoolExecutor(4) as ex:  # the bucket drops connections with more parallel downloads
+        parts = list(ex.map(lambda r: F.night_profiles(r, n, CACHE), F.radars()))
+    p = pd.concat([x for x in parts if len(x)], ignore_index=True)
+    fr = F.frames(p)
+    summary = F.night_summary(fr)
+    out = ROOT / "data" / "flows"
+    out.mkdir(parents=True, exist_ok=True)
+    summary.assign(night=n).to_csv(out / f"{n:%Y%m%d}.csv", index=False, float_format="%.2f")
+    F.write_report(n, fr, summary, F.borders(ROOT / "data" / "cache" / "ne"), OUTPUT / "flows.html")
+    rprint(f"Night {n}: {len(summary)} radars, {fr['frame'].nunique()} frames -> {OUTPUT / 'flows.html'}")
+
+
 LIGHTS = ROOT / "data" / "lights"
 
 
