@@ -56,9 +56,7 @@ versión prevista, la tarde anterior.*
 
 ## Precedente
 
-En los Países Bajos, desde 2023, los parques eólicos marinos reducen su producción en las noches de migración intensa a
-partir de predicciones basadas en radar meteorológico. España tiene una red de radares comparable y mucha más migración
-terrestre. Solo falta que los datos lleguen a tiempo.
+El 13 de mayo de 2023 los Países Bajos frenaron por primera vez en el mundo parques eólicos marinos (Borssele y Egmond aan Zee) para dejar paso a aves migratorias: durante cuatro horas las turbinas giraron a dos vueltas por minuto como máximo. La decisión se tomó con dos días de antelación gracias a un modelo de la Universidad de Ámsterdam que combina meteorología y radares de aves. España tiene una red de radares comparable y mucha más migración terrestre. Solo falta que los datos lleguen a tiempo. Fuente: [offshoreWIND.biz, 17/05/2023](https://offshorewind.biz/2023/05/17/dutch-stop-offshore-wind-turbines-to-protect-migratory-birds-in-international-first).
 
 ---
 

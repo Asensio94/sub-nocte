@@ -52,8 +52,7 @@ before.*
 
 ## Precedent
 
-Since 2023 Dutch offshore wind farms have curtailed production on heavy migration nights based on weather-radar
-forecasts. Iberia has a comparable radar network and far more overland migration. The data just needs to arrive on time.
+On 13 May 2023 the Netherlands became the first country to slow offshore wind farms (Borssele and Egmond aan Zee) for migrating birds: for four hours the turbines turned at no more than two revolutions per minute. The decision was taken two days ahead using a University of Amsterdam model that combines weather data and bird radars. Iberia has a comparable radar network and far more overland migration. The data just needs to arrive on time. Source: [offshoreWIND.biz, 17 May 2023](https://offshorewind.biz/2023/05/17/dutch-stop-offshore-wind-turbines-to-protect-migratory-birds-in-international-first).
 
 ---
 
