@@ -60,5 +60,7 @@ El 13 de mayo de 2023 los Países Bajos frenaron por primera vez en el mundo par
 
 ---
 
+**Pablo** · [Asensio94](https://github.com/Asensio94) · Proyecto para salvar a las aves
+
 Código y metodología: [github.com/Asensio94/sub-nocte](https://github.com/Asensio94/sub-nocte). Datos: Aloft (CC0),
 Open-Meteo, OpenStreetMap (ODbL).

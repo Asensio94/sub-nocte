@@ -56,5 +56,7 @@ On 13 May 2023 the Netherlands became the first country to slow offshore wind fa
 
 ---
 
+**Pablo** · [Asensio94](https://github.com/Asensio94) · Project to save the birds
+
 Code and methods: [github.com/Asensio94/sub-nocte](https://github.com/Asensio94/sub-nocte). Data: Aloft (CC0),
 Open-Meteo, OpenStreetMap (ODbL).
