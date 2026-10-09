@@ -29,3 +29,21 @@ def test_summary_heading_is_the_direction_of_flight():
                        "u": [-5.0, -5.0], "v": [-5.0, -5.0], "alt": 1200.0})
     s = F.night_summary(fr).iloc[0]
     assert round(s["heading"]) == 225 and abs(s["speed"] - np.hypot(5, 5)) < 1e-9  # towards the south-west
+
+
+def test_last_night_section():
+    from subnocte import web as W
+
+    nights = pd.DataFrame({"radar": ["esa", "ptlis"], "vid": [10.0, 30.0], "u": [-3.0, -3.0], "v": [-3.0, -3.0],
+                           "night": ["2026-10-06", "2026-10-06"]})
+    es = "\n".join(W.last_night(nights, "es", ""))
+    en = "\n".join(W.last_night(nights, "en", "../"))
+    assert "latest_es.gif?v=20261006" in es and "SO ·" in es and "<b>Lisboa</b>" in es
+    assert "latest_en.gif?v=20261006" in en and "SW ·" in en and "<b>Lisbon</b>" in en
+    assert W.last_night(None, "es", "") == []
+
+
+def test_frame_title_does_not_depend_on_the_locale():
+    t = pd.Timestamp("2026-10-06 19:40", tz="Europe/Madrid")
+    assert F._stamp(t, "es") == "mar 6 oct 2026 · 19:40 (hora de Madrid)"
+    assert F._stamp(t, "en") == "Tue 6 Oct 2026 · 19:40 (Madrid time)"

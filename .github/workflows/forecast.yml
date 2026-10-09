@@ -34,6 +34,26 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
 
+      # Aloft publishes day D at about 02:00 UTC on D+2, so the latest complete night is three days back.
+      # A failure here (a radar file missing, the bucket down) must not stop the forecast from going out.
+      - name: Replay of the latest complete night
+        id: flows
+        continue-on-error: true
+        run: python -m subnocte.cli flows
+        env:
+          PYTHONIOENCODING: utf-8
+
+      # The animations (about 1 MB each, one per language) go to the `night` branch as a single commit,
+      # force-pushed every day, so they are replaced instead of piling up in the history Pages serves.
+      - name: Publish the replay on the night branch
+        if: steps.flows.outcome == 'success'
+        run: |
+          en=$(git hash-object -w output/flows_night.gif)
+          es=$(git hash-object -w output/flows_night_es.gif)
+          tree=$(printf '100644 blob %s\tlatest_en.gif\n100644 blob %s\tlatest_es.gif\n' "$en" "$es" | git mktree)
+          commit=$(git -c user.name=sub-nocte -c user.email=actions@github.com commit-tree "$tree" -m "Latest night replay")
+          git push -f origin "$commit:refs/heads/night"
+
       - name: Regenerate the website
         run: python -m subnocte.cli web
         env:
@@ -43,7 +63,7 @@ jobs:
         run: |
           git config user.name "sub-nocte"
           git config user.email "actions@github.com"
-          git add index.html en .nojekyll data/phase3_forecast.csv output/phase3.html
+          git add index.html en .nojekyll data/phase3_forecast.csv data/flows output/phase3.html
           if git diff --cached --quiet; then
             echo "no changes"
           else

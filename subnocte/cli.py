@@ -561,7 +561,9 @@ def web():
     rk = pd.read_csv(rk_csv) if rk_csv.exists() else None
     if fc is None:
         rprint("[yellow]no forecast: the site comes out without the coming-nights section[/yellow]")
-    W.build(fc, rk, [ROOT / n for n in REPORTS], ROOT, log=rprint)
+    flows = sorted((ROOT / "data" / "flows").glob("*.csv"))
+    nights = pd.read_csv(flows[-1]) if flows else None
+    W.build(fc, rk, [ROOT / n for n in REPORTS], ROOT, log=rprint, nights=nights)
 
 
 if __name__ == "__main__":

@@ -40,6 +40,9 @@ DAYS = {"es": ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"],
         "en": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]}
 
 BASE = "https://asensio94.github.io/sub-nocte/"
+# The night replay lives on its own branch, force-pushed every day with a single commit, so the 1 MB animation
+# does not pile up in the history of the branch Pages serves.
+NIGHT_URL = "https://raw.githubusercontent.com/Asensio94/sub-nocte/night/"
 REPO = "https://github.com/Asensio94/sub-nocte"
 
 FAVICON = favicon_link("#4a4fb5", "#9a9ef0")
@@ -74,6 +77,14 @@ td:first-child,th:first-child{text-align:left}
 .cal th{text-align:center}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:6px 0 0}
 .legend span i{display:inline-block;width:13px;height:13px;vertical-align:-2px;margin-right:5px}
+.night{background:#0d1b2a;color:#e8ecf4;margin:8px 0 26px;padding:18px 18px 14px}
+.night h2{color:#fff;margin-top:0}
+.night .sub,.night figcaption{color:#aab3c5}
+.night img{display:block;width:100%;max-width:560px;height:auto;margin:10px auto}
+.night .k{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px;color:#aab3c5;margin:6px 0}
+.night .k b{color:#ffd28a;font-weight:600}
+.night figure{margin:0}
+.night figcaption{font-size:14px;max-width:65ch}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:16px 0}
 .cards div{background:var(--paper);border:1px solid var(--line);box-shadow:var(--shadow);padding:14px 16px}
 .cards b{display:block;font:600 17px/1.2 var(--font-title);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
@@ -94,7 +105,7 @@ ul{padding-left:20px}li{margin:5px 0}
 .beam .lbl{font:600 12px var(--font-title);letter-spacing:.06em;text-transform:uppercase;fill:var(--ink)}
 .formula{font:14.5px/1.5 var(--font-data);background:var(--paper);border:1px solid var(--line);padding:8px 12px;display:inline-block;max-width:100%;overflow-x:auto}
 .data-note{font-size:14.5px}
-@media (max-width:640px){.lang{position:static;justify-self:start}h2{font-size:23px}.method ol.steps>li{padding-left:44px}}
+@media (max-width:560px){.lang{position:static;justify-self:start}h2{font-size:23px}.method ol.steps>li{padding-left:44px}}
 """
 
 # The whole prose of the page, in both languages. It is kept complete and literal for each language instead
@@ -111,6 +122,16 @@ COPY: dict[str, dict[str, str]] = {
         "beta": "<b>Versión técnica, no un servicio en producción.</b> El modelo está validado (ver más "
                 "abajo) pero ninguna de estas ciudades tiene un radar cerca con el que comprobar la previsión "
                 "al día siguiente. Úsese como indicación, no como dato cerrado.",
+        "h_night": "La última noche vista por los radares",
+        "sub_night": "Noche del {date}, vista por {n} radares de España, Portugal y Francia, cada 20 minutos.",
+        "night_lag": "Es la última noche completa: los perfiles de radar abiertos se publican con unos dos días de "
+                     "retraso. Con datos en pocas horas, este mapa estaría listo cada mañana "
+                     "(<a href='{prefix}docs/proposal/proposal_es.html'>propuesta</a>).",
+        "night_alt": "Animación de la densidad de aves en vuelo y de su dirección sobre la península y Francia "
+                     "la noche del {date}",
+        "night_read": "El color es la densidad de aves en vuelo; las flechas, hacia dónde y a qué velocidad iban "
+                      "sobre cada radar. Donde no llega ningún radar, el mapa se apaga.",
+        "night_kpi": ["aves/km² de media", "dirección general", "radar con más paso"],
         "h_forecast": "Próximas noches",
         "sub_forecast": "Actualizado el {date}. {nights} noches, {cities} ciudades.",
         "relative": "<b>El nivel es relativo a cada ciudad</b>, no una cantidad absoluta de aves: «muy alto» "
@@ -321,6 +342,16 @@ COPY: dict[str, dict[str, str]] = {
         "beta": "<b>Technical preview, not a production service.</b> The model is validated (see below), but "
                 "none of these cities has a radar close enough to check the forecast the next morning. Treat "
                 "it as an indication, not a settled figure.",
+        "h_night": "The latest night on the radars",
+        "sub_night": "Night of {date}, as {n} radars in Spain, Portugal and France saw it, every 20 minutes.",
+        "night_lag": "It is the latest complete night: the open radar profiles are published about two days late. "
+                     "With data within hours this map would be ready every morning "
+                     "(<a href='{prefix}docs/proposal/proposal_en.html'>proposal</a>).",
+        "night_alt": "Animation of the density of birds in flight and their heading over Iberia and France on "
+                     "the night of {date}",
+        "night_read": "Colour is the density of birds in flight; arrows show where and how fast they were heading "
+                      "over each radar. Where no radar sees, the map fades out.",
+        "night_kpi": ["birds/km² on average", "overall heading", "busiest radar"],
         "h_forecast": "The nights ahead",
         "sub_forecast": "Updated on {date}. {nights} nights, {cities} cities.",
         "relative": "<b>The level is relative to each city</b>, not an absolute number of birds: “very high” "
@@ -716,8 +747,34 @@ def ranking_table(rk: pd.DataFrame, season: str, lang: str, n: int = 12) -> str:
             f"<th>{c['col_exposure']}</th></tr>{rows}</table>")
 
 
+def last_night(nights: pd.DataFrame | None, lang: str, prefix: str) -> list[str]:
+    """The replay of the latest night with radar data: the animation from the `night` branch and three figures."""
+    from .flows import overall_flight, radar_name
+
+    if nights is None or nights.empty:
+        return []
+    c = COPY[lang]
+    night = pd.Timestamp(nights["night"].iat[0]).date()
+    heading, speed = overall_flight(nights)
+    if lang == "es":
+        heading = heading.replace("W", "O")
+    top = nights.sort_values("vid", ascending=False).iloc[0]
+    kpi = [_num(nights["vid"].mean(), lang, 1), f"{heading} · {_num(speed, lang, 1)} m/s",
+           radar_name(top["radar"], lang)]
+    date = _date(night, lang)
+    return ["<section class='night' aria-labelledby='h-night'>",
+            f"<h2 id='h-night'>{c['h_night']}</h2>",
+            f"<p class='sub'>{c['sub_night'].format(date=date, n=len(nights))}</p>",
+            "<div class='k'>" + "".join(f"<span><b>{v}</b> {k}</span>" for v, k in zip(kpi, c["night_kpi"]))
+            + "</div>",
+            f"<figure><img src='{NIGHT_URL}latest_{lang}.gif?v={night:%Y%m%d}' width='531' height='548' "
+            f"alt='{c['night_alt'].format(date=date)}'>",
+            f"<figcaption>{c['night_read']} {c['night_lag'].format(prefix=prefix)}</figcaption></figure>",
+            "</section>"]
+
+
 def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], lang: str,
-          prefix: str, today: dt.date) -> str:
+          prefix: str, today: dt.date, nights: pd.DataFrame | None = None) -> str:
     """Assemble the complete HTML of one of the two pages. `prefix` fixes the relative paths."""
     c = COPY[lang]
     other = "en" if lang == "es" else "es"
@@ -744,6 +801,7 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
          "</header>",
          "<main class='wrap'>",
          f"<div class='beta-note'>{c['beta']}</div>"]
+    p += last_night(nights, lang, prefix)
 
     if fc is not None and not fc.empty:
         nights = sorted(fc["night"].unique())
@@ -785,7 +843,7 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
 
 
 def build(fc: pd.DataFrame | None, rk: pd.DataFrame | None, reports: list[Path], out_dir: Path,
-          log=print) -> list[Path]:
+          log=print, nights: pd.DataFrame | None = None) -> list[Path]:
     """Write `index.html` (Spanish) and `en/index.html` (English) into `out_dir`.
 
     Pages serves the repository root, so the reports are linked where they already are (`output/`) instead
@@ -804,7 +862,7 @@ def build(fc: pd.DataFrame | None, rk: pd.DataFrame | None, reports: list[Path],
         dest = out_dir / "index.html" if lang == "es" else out_dir / "en" / "index.html"
         dest.parent.mkdir(parents=True, exist_ok=True)
         prefix = "" if lang == "es" else "../"
-        dest.write_text(_page(fc, rk, links, lang, prefix, today), encoding="utf-8", newline="\n")
+        dest.write_text(_page(fc, rk, links, lang, prefix, today, nights), encoding="utf-8", newline="\n")
         log(f"{dest} ({dest.stat().st_size / 1000:.0f} kB)")
         written.append(dest)
     log(f"{len(links)} reports linked")

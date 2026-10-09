@@ -43,6 +43,40 @@ GRID_DEG = 0.1
 BORDERS = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson"
 
 
+# The radar nearest town or the city it serves, as a reader would place it: (Spanish, English).
+RADAR_NAMES = {
+    "esahr": ("Málaga", "Málaga"), "esatn": ("Gran Canaria", "Gran Canaria"), "esbnv": ("Tenerife", "Tenerife"),
+    "esclg": ("Sevilla", "Seville"), "esgld": ("Barcelona", "Barcelona"), "esnjr": ("Almería", "Almería"),
+    "espdg": ("Zaragoza", "Zaragoza"), "essft": ("Cáceres", "Cáceres"), "estjv": ("Madrid", "Madrid"),
+    "frabb": ("Abbeville", "Abbeville"), "fraja": ("Ajaccio", "Ajaccio"), "frale": ("Aléria", "Aléria"),
+    "frave": ("Avesnes", "Avesnes"), "frbla": ("Dijon", "Dijon"), "frbol": ("Bollène", "Bollène"),
+    "frbor": ("Burdeos", "Bordeaux"), "frbou": ("Bourges", "Bourges"), "frcol": ("Tolón", "Toulon"),
+    "frgre": ("Brive", "Brive"), "frlep": ("Le Puy", "Le Puy"), "frmcl": ("Albi", "Albi"), "frmom": ("Pau", "Pau"),
+    "frmtc": ("Belfort", "Belfort"), "frnan": ("Nancy", "Nancy"), "frnim": ("Nimes", "Nîmes"),
+    "frniz": ("Mâcon", "Mâcon"), "fropo": ("Perpiñán", "Perpignan"), "frpla": ("Brest", "Brest"),
+    "frtou": ("Toulouse", "Toulouse"), "frtra": ("París", "Paris"), "frtre": ("Nantes", "Nantes"),
+    "frtro": ("Troyes", "Troyes"), "ptfar": ("Faro", "Faro"), "ptflr": ("Flores (Azores)", "Flores (Azores)"),
+    "ptlis": ("Lisboa", "Lisbon"), "ptprt": ("Oporto", "Porto"), "ptsmg": ("São Miguel (Azores)", "São Miguel (Azores)"),
+    "pttrc": ("Terceira (Azores)", "Terceira (Azores)"),
+}
+DAYS = {"es": ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"], "en": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]}
+MONTHS = {"es": ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"],
+          "en": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]}
+DENSITY_LABEL = {"es": "aves en vuelo por km²", "en": "birds in flight per km²"}
+LANGS = ("es", "en")
+
+
+def radar_name(code: str, lang: str = "en") -> str:
+    names = RADAR_NAMES.get(code)
+    return names[LANGS.index(lang)] if names else code
+
+
+def _stamp(local: pd.Timestamp, lang: str) -> str:
+    """Frame title in local time, without relying on the system locale."""
+    when = f"{DAYS[lang][local.weekday()]} {local.day} {MONTHS[lang][local.month - 1]} {local.year} · {local:%H:%M}"
+    return f"{when} ({'hora de Madrid' if lang == 'es' else 'Madrid time'})"
+
+
 def radars(countries=COUNTRIES) -> list[str]:
     return [r for r in A.list_radars() if r[:2] in countries]
 
@@ -146,7 +180,7 @@ def _ax(ax, rings):
     ax.set_facecolor("#0d1b2a")
 
 
-def draw(fr: pd.DataFrame, rings, title: str, out: Path, lon=None, lat=None) -> Path:
+def draw(fr: pd.DataFrame, rings, title: str, out: Path, lon=None, lat=None, lang: str = "en") -> Path:
     """One map: density field, radars, and flight arrows (ground speed, 1° of arrow = 7 m/s)."""
     import matplotlib
     matplotlib.use("Agg")
@@ -174,12 +208,12 @@ def draw(fr: pd.DataFrame, rings, title: str, out: Path, lon=None, lat=None) -> 
     ax.set_title(title, color="w", fontsize=11)
     sm = plt.cm.ScalarMappable(norm=LogNorm(VMIN, VMAX), cmap=cmap)
     cb = fig.colorbar(sm, ax=ax, fraction=0.035, pad=0.02)
-    cb.set_label("birds in flight per km²", color="w"); cb.ax.tick_params(colors="w")
+    cb.set_label(DENSITY_LABEL[lang], color="w"); cb.ax.tick_params(colors="w")
     fig.savefig(out, dpi=100, bbox_inches="tight", facecolor=fig.get_facecolor()); plt.close(fig)
     return out
 
 
-def animate(fr: pd.DataFrame, rings, out: Path, work: Path, tz: str = "Europe/Madrid") -> Path:
+def animate(fr: pd.DataFrame, rings, out: Path, work: Path, tz: str = "Europe/Madrid", lang: str = "en") -> Path:
     """Animated GIF of the night, one frame every FRAME_MIN minutes."""
     from PIL import Image
 
@@ -190,7 +224,7 @@ def animate(fr: pd.DataFrame, rings, out: Path, work: Path, tz: str = "Europe/Ma
         if len(g) < 5:  # the edges of the night, with only a few radars already dark
             continue
         local = pd.Timestamp(t).tz_convert(tz)
-        p = draw(g, rings, f"{local:%a %d %b %Y · %H:%M} (Madrid)", work / f"{local:%Y%m%d_%H%M}.png", lon, lat)
+        p = draw(g, rings, _stamp(local, lang), work / f"{local:%Y%m%d_%H%M}_{lang}.png", lon, lat, lang)
         imgs.append(Image.open(p).convert("P", palette=Image.ADAPTIVE))
     imgs[0].save(out, save_all=True, append_images=imgs[1:], duration=350, loop=0, optimize=True)
     return out
@@ -209,25 +243,32 @@ def night_summary(fr: pd.DataFrame) -> pd.DataFrame:
 COMPASS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
 
 
+def overall_flight(summary: pd.DataFrame) -> tuple[str, float]:
+    """Compass point and speed (m/s) of the night's flight over every radar, weighted by its density."""
+    d = summary.dropna(subset=["u", "v"])
+    w = d["vid"]
+    u, v = (np.average(d["u"], weights=w), np.average(d["v"], weights=w)) if w.sum() > 0 else (0.0, 0.0)
+    return COMPASS[int(((np.degrees(np.arctan2(u, v)) + 360) % 360 + 11.25) // 22.5) % 16], float(np.hypot(u, v))
+
+
 def write_report(night: dt.date, fr: pd.DataFrame, summary: pd.DataFrame, rings, out: Path) -> None:
     from .phase3 import STYLE
     from .report import embed_images
 
     work = out.parent / "flows_frames"
     gif = animate(fr, rings, out.parent / "flows_night.gif", work)
+    animate(fr, rings, out.parent / "flows_night_es.gif", work, lang="es")  # the Spanish page of the site
     whole = draw(summary.assign(frame=None), rings, f"Night of {night:%d %b %Y}: mean density and mean flight",
                  out.parent / "flows_mean.png")
     s = summary.sort_values("vid", ascending=False)
     with_dir = s.dropna(subset=["u", "v"])
-    w = with_dir["vid"]
-    u, v = (np.average(with_dir["u"], weights=w), np.average(with_dir["v"], weights=w)) if w.sum() > 0 else (0, 0)
-    heading = COMPASS[int(((np.degrees(np.arctan2(u, v)) + 360) % 360 + 11.25) // 22.5) % 16]
+    heading, speed = overall_flight(summary)
     kpi = {"radars with data": len(s), "with flight direction": len(with_dir),
            "mean density": f"{s['vid'].mean():.1f} birds/km²",
-           "busiest radar": f"{s['radar'].iat[0]} ({s['vid'].iat[0]:.0f} birds/km²)",
-           "overall heading": f"{heading} at {np.hypot(u, v):.1f} m/s"}
+           "busiest radar": f"{radar_name(s['radar'].iat[0])} ({s['vid'].iat[0]:.0f} birds/km²)",
+           "overall heading": f"{heading} at {speed:.1f} m/s"}
     rows = "".join(
-        f"<tr><td>{r.radar}</td><td>{r.vid:.1f}</td><td>{r.peak:.1f}</td>"
+        f"<tr><td>{radar_name(r.radar)} <small>{r.radar}</small></td><td>{r.vid:.1f}</td><td>{r.peak:.1f}</td>"
         f"<td>{'' if np.isnan(r.heading) else COMPASS[int((r.heading + 11.25) // 22.5) % 16]}</td>"
         f"<td>{'' if np.isnan(r.speed) else f'{r.speed:.1f}'}</td><td>{r.alt:.0f}</td></tr>" for r in s.itertuples())
     parts = [
