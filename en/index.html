@@ -116,6 +116,14 @@ td:first-child,th:first-child{text-align:left}
 .cal th{text-align:center}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:6px 0 0}
 .legend span i{display:inline-block;width:13px;height:13px;vertical-align:-2px;margin-right:5px}
+.night{background:#0d1b2a;color:#e8ecf4;margin:8px 0 26px;padding:18px 18px 14px}
+.night h2{color:#fff;margin-top:0}
+.night .sub,.night figcaption{color:#aab3c5}
+.night img{display:block;width:100%;max-width:560px;height:auto;margin:10px auto}
+.night .k{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px;color:#aab3c5;margin:6px 0}
+.night .k b{color:#ffd28a;font-weight:600}
+.night figure{margin:0}
+.night figcaption{font-size:14px;max-width:65ch}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:16px 0}
 .cards div{background:var(--paper);border:1px solid var(--line);box-shadow:var(--shadow);padding:14px 16px}
 .cards b{display:block;font:600 17px/1.2 var(--font-title);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
@@ -136,7 +144,7 @@ ul{padding-left:20px}li{margin:5px 0}
 .beam .lbl{font:600 12px var(--font-title);letter-spacing:.06em;text-transform:uppercase;fill:var(--ink)}
 .formula{font:14.5px/1.5 var(--font-data);background:var(--paper);border:1px solid var(--line);padding:8px 12px;display:inline-block;max-width:100%;overflow-x:auto}
 .data-note{font-size:14.5px}
-@media (max-width:640px){.lang{position:static;justify-self:start}h2{font-size:23px}.method ol.steps>li{padding-left:44px}}
+@media (max-width:560px){.lang{position:static;justify-self:start}h2{font-size:23px}.method ol.steps>li{padding-left:44px}}
 </style>
 <header class='site-header'>
 <div class='lang'><span>English</span> <a href='../' hreflang='es'>Español</a></div>
@@ -147,6 +155,13 @@ ul{padding-left:20px}li{margin:5px 0}
 </header>
 <main class='wrap'>
 <div class='beta-note'><b>Technical preview, not a production service.</b> The model is validated (see below), but none of these cities has a radar close enough to check the forecast the next morning. Treat it as an indication, not a settled figure.</div>
+<section class='night' aria-labelledby='h-night'>
+<h2 id='h-night'>The latest night on the radars</h2>
+<p class='sub'>Night of 6 October 2026, as 37 radars in Spain, Portugal and France saw it, every 20 minutes.</p>
+<div class='k'><span><b>4.8</b> birds/km² on average</span><span><b>SSE · 3.5 m/s</b> overall heading</span><span><b>Lisbon</b> busiest radar</span></div>
+<figure><img src='https://raw.githubusercontent.com/Asensio94/sub-nocte/night/latest_en.gif?v=20261006' width='531' height='548' alt='Animation of the density of birds in flight and their heading over Iberia and France on the night of 6 October 2026'>
+<figcaption>Colour is the density of birds in flight; arrows show where and how fast they were heading over each radar. Where no radar sees, the map fades out. It is the latest complete night: the open radar profiles are published about two days late. With data within hours this map would be ready every morning (<a href='../docs/proposal/proposal_en.html'>proposal</a>).</figcaption></figure>
+</section>
 <h2>The nights ahead</h2><p class='sub'>Updated on 9 October 2026. 7 nights, 29 cities.</p>
 <p><b>The level is relative to each city</b>, not an absolute number of birds: “very high” means the night falls in the most intense 10 % of the record <i>for that same city</i>. That way the alert means the same thing in Seville and in Bilbao, even though far more birds pass over Seville.</p>
 <p class='sub'>At the peak of the passage it is normal for several cities to come out high at once: the percentile is measured against the nights of those same dates in earlier years.</p>
