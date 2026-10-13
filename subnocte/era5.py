@@ -1,7 +1,7 @@
 """ERA5 reanalysis from the Copernicus Climate Data Store, as a quota-free archive for the wind zones.
 
 Open-Meteo counts every point as a separate request, so 150 zones over five seasons do not fit in its free
-quota. ERA5 is downloaded once per month as a box that covers every zone, and then read at each zone's point.
+quota. ERA5 is downloaded once per month as a box that covers every zone of a region (`wind.REGIONS`), and then read at each zone's point.
 The result has the same columns and units as the Open-Meteo archive (`weather.HOURLY` + `HOURLY_LEVELS`), so
 `features`, `predict` and `night_power` run on it unchanged.
 
@@ -34,7 +34,6 @@ SINGLE_VARS = ["2m_temperature", "2m_dewpoint_temperature", "surface_pressure", 
                "100m_u_component_of_wind", "100m_v_component_of_wind"]
 LEVEL_VARS = ["u_component_of_wind", "v_component_of_wind", "temperature", "geopotential"]
 LEVEL_HPA = ("700", "850", "925")
-AREA = [44.25, -9.75, 35.5, 4.75]  # N, W, S, E: the wind zones' box plus one grid cell
 DELAY_DAYS = 6                     # ERA5T reaches about five days back from today
 WORKERS = 3                        # the CDS queues each user's requests; a few in flight is enough
 RETRY_MIN, RETRIES = 15, 16        # the CDS rejects new jobs for a while when a dataset's queue is full
@@ -57,11 +56,11 @@ def months(years: list[int], today: dt.date | None = None) -> list[tuple[int, in
     return out
 
 
-def _request(y: int, ms: list[int], days: list[int], levels: bool) -> dict:
+def _request(y: int, ms: list[int], days: list[int], levels: bool, area) -> dict:
     """One CDS request: every combination of `ms` and `days` (the CDS skips dates that do not exist)."""
     q = {"product_type": ["reanalysis"], "year": [str(y)], "month": [f"{m:02d}" for m in ms],
          "day": [f"{d:02d}" for d in days], "time": [f"{h:02d}:00" for h in range(24)],
-         "area": AREA, "data_format": "netcdf", "download_format": "unarchived"}
+         "area": list(area), "data_format": "netcdf", "download_format": "unarchived"}
     if levels:
         q |= {"variable": LEVEL_VARS, "pressure_level": list(LEVEL_HPA)}
     else:
@@ -115,11 +114,11 @@ def _split(path: Path, cache_dir: Path, y: int, levels: bool) -> list[Path]:
     return out
 
 
-def download(years: list[int], cache_dir: Path, log=print) -> list[tuple[int, int]]:
-    """Fetch every missing month (both datasets) into `cache_dir`, one month per file; returns the months.
+def download(years: list[int], cache_dir: Path, area, log=print) -> list[tuple[int, int]]:
+    """Fetch every missing month (both datasets) of the box `area` (N, W, S, E) into `cache_dir`, one month per file.
 
-    A month already on disk is kept, except the latest one, which is fetched again while ERA5 is still adding
-    its last days.
+    Returns the months. A month already on disk is kept, except the latest one, which is fetched again while ERA5
+    is still adding its last days.
     """
     import cdsapi
     import requests
@@ -135,7 +134,7 @@ def download(years: list[int], cache_dir: Path, log=print) -> list[tuple[int, in
         raw = cache_dir / f"{'levels' if lv else 'single'}_{y}_{ms[0]:02d}-{ms[-1]:02d}.download"
         for attempt in range(RETRIES):
             try:
-                client.retrieve(LEVELS if lv else SINGLE, _request(y, ms, days, lv), str(raw))
+                client.retrieve(LEVELS if lv else SINGLE, _request(y, ms, days, lv, area), str(raw))
                 break
             except requests.HTTPError as e:
                 if "temporarily limited" not in str(e) or attempt == RETRIES - 1:

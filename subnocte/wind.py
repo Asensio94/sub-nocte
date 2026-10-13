@@ -8,7 +8,7 @@ and adds the other half of the decision: what stopping would cost.
 
 Three pieces:
 
-1. **Inventory.** The wind turbines of Spain and Portugal in OpenStreetMap (ODbL). They are grouped into **wind zones**, cells of `CELL_DEG` degrees with at least `MIN_TURBINES`
+1. **Inventory.** The wind turbines of a region (`REGIONS`: Spain and Portugal, France) in OpenStreetMap (ODbL). They are grouped into **wind zones**, cells of `CELL_DEG` degrees with at least `MIN_TURBINES`
    turbines. The weather model is synoptic: within a cell the forecast barely changes, and one point per cell
    keeps the archive needed for the thresholds within what Open-Meteo gives for free. Each zone carries the
    ground elevation of its point, the starting point for reading the radar band at turbine level.
@@ -28,6 +28,7 @@ from __future__ import annotations
 import json
 import re
 import time
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -44,9 +45,31 @@ MIN_TURBINES = 10       # fewer turbines than this in a cell do not make a zone
 MIN_HEIGHT_M = 30       # below this (tagged height or hub) it is a small domestic turbine, left out
 MIN_POWER_MW = 0.1
 MAX_POWER_MW = 20       # above this a tagged power is a unit mistake
-# The model was trained on the European radars: the Canaries and Madeira, out at sea and on another flyway,
-# are left out. The box keeps the Peninsula and the Balearics.
-LAT_RANGE, LON_RANGE = (35.8, 44.0), (-9.6, 4.5)
+
+
+@dataclass(frozen=True)
+class Region:
+    """A set of countries run together: one turbine query, one ERA5 box, one set of zones and one report."""
+    name: str
+    label: str
+    countries: tuple[str, ...]
+    lat: tuple[float, float]       # the box the zones must fall in: it leaves out the overseas territories
+    lon: tuple[float, float]
+    era5_area: tuple[float, ...]   # N, W, S, E: the box plus one ERA5 grid cell
+    note: str = ""                 # one sentence of local context for the report
+
+    def path(self, base: Path) -> Path:
+        """Where this region's files go under `base`. The Peninsula, the first region, keeps the paths it had."""
+        return base if self.name == "iberia" else base / self.name
+
+
+# The model was trained on the European radars: the Canaries, Madeira and the French overseas territories, out at
+# sea and on other flyways, are left out. Corsica stays in, inside the radars' network.
+REGIONS = {
+    "iberia": Region("iberia", "Spain and Portugal", ("ES", "PT"), (35.8, 44.0), (-9.6, 4.5),
+                     (44.25, -9.75, 35.5, 4.75), "In Spain and Portugal nothing like it is in place."),
+    "france": Region("france", "France", ("FR",), (41.3, 51.2), (-5.2, 9.6), (51.5, -5.5, 41.0, 9.75)),
+}
 
 # Generic power curve of a modern onshore turbine at hub height (wind at 100 m from the forecast):
 # nothing below the cut-in speed, cubic growth up to the rated speed, flat up to the cut-out speed.
@@ -54,11 +77,14 @@ CUT_IN, RATED, CUT_OUT = 3.0, 12.0, 25.0
 CHEAP = 0.25            # night output below 25 % of rated power: stopping is cheap
 EXPENSIVE = 0.50        # above 50 %: stopping is expensive
 
-QUERY = """[out:json][timeout:600];
-(area["ISO3166-1"="ES"][admin_level=2]; area["ISO3166-1"="PT"][admin_level=2];)->.a;
-(node["power"="generator"]["generator:source"="wind"](area.a);
- way["power"="generator"]["generator:source"="wind"](area.a););
-out center tags;"""
+
+
+def query(region: Region) -> str:
+    """Overpass query for every wind turbine inside the region's countries."""
+    areas = " ".join(f'area["ISO3166-1"="{c}"][admin_level=2];' for c in region.countries)
+    return (f"[out:json][timeout:900];\n({areas})->.a;\n"
+            '(node["power"="generator"]["generator:source"="wind"](area.a);\n'
+            ' way["power"="generator"]["generator:source"="wind"](area.a););\nout center tags;')
 
 
 def _number(text: str | None) -> float | None:
@@ -94,17 +120,17 @@ def parse_turbines(elements: list[dict]) -> pd.DataFrame:
     return df[~small.fillna(False)].reset_index(drop=True)
 
 
-def fetch_turbines(cache_dir: Path, log=print) -> pd.DataFrame:
-    """Wind turbines of Spain and Portugal from Overpass, in a single query; the raw answer is cached.
+def fetch_turbines(cache_dir: Path, region: Region = REGIONS["iberia"], log=print) -> pd.DataFrame:
+    """Wind turbines of a region from Overpass, in a single query; the raw answer is cached.
 
     The country of each zone comes later from the place lookup, so the query does not need to be split.
     """
-    raw = cache_dir / "turbines.json"
+    raw = region.path(cache_dir) / "turbines.json"
     if not raw.exists():
         # the public Overpass servers answer 504 when busy: alternate them, waiting longer each round
         for attempt, url in enumerate(OVERPASS * 3):
             try:
-                r = requests.post(url, data={"data": QUERY}, headers={"User-Agent": USER_AGENT}, timeout=700)
+                r = requests.post(url, data={"data": query(region)}, headers={"User-Agent": USER_AGENT}, timeout=700)
             except requests.RequestException as e:
                 log(f"  {url}: {e.__class__.__name__}")
                 continue
@@ -143,7 +169,7 @@ def add_elevation(df: pd.DataFrame, log=print) -> pd.DataFrame:
 
 
 def _place(lat: float, lon: float) -> tuple[str, str]:
-    """Province (Spain) or district (Portugal) of a point and its country code, from Nominatim."""
+    """Province (Spain), district (Portugal) or département (France) of a point and its country code, from Nominatim."""
     r = requests.get(NOMINATIM, params={"lat": lat, "lon": lon, "format": "jsonv2", "zoom": 8,
                                         "accept-language": "es"},
                      headers={"User-Agent": USER_AGENT}, timeout=60)
@@ -158,9 +184,14 @@ def zone_id(clat: float, clon: float) -> str:
     return f"{abs(clat):.1f}{'N' if clat >= 0 else 'S'}{abs(clon):.1f}{'E' if clon >= 0 else 'W'}"
 
 
-def zones(turbines: pd.DataFrame, previous: pd.DataFrame | None = None, log=print) -> pd.DataFrame:
-    """Group the turbines into cells and describe each zone. Places already looked up are reused."""
-    t = turbines[turbines["lat"].between(*LAT_RANGE) & turbines["lon"].between(*LON_RANGE)].copy()
+def zones(turbines: pd.DataFrame, previous: pd.DataFrame | None = None, region: Region = REGIONS["iberia"],
+          log=print) -> pd.DataFrame:
+    """Group the turbines into cells and describe each zone. Places already looked up are reused.
+
+    A cell on a border can hold turbines of two regions; each region keeps only its own, so the zone has the same
+    name in both but counts different turbines.
+    """
+    t = turbines[turbines["lat"].between(*region.lat) & turbines["lon"].between(*region.lon)].copy()
     t["cell_lat"] = np.floor(t["lat"] / CELL_DEG) * CELL_DEG
     t["cell_lon"] = np.floor(t["lon"] / CELL_DEG) * CELL_DEG
     known = ({r.zone: (r.place, r.country) for r in previous.itertuples()}

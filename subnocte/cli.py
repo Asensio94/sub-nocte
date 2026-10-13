@@ -462,31 +462,52 @@ def phase3(days: int = 7, cache: bool = False):
 
 WIND = ROOT / "data" / "wind"
 WIND_WEATHER = ROOT / "data" / "weather_wind"
-WIND_CLIMATE = ROOT / "data" / "wind_climate.parquet"
 WIND_ERA5 = ROOT / "data" / "weather_era5"
 ERA5_CACHE = ROOT / "data" / "cache" / "era5"
-WIND_SOURCES = {"openmeteo": WIND_WEATHER, "era5": WIND_ERA5}
+REGION = typer.Option("iberia", "--region", help="wind region: iberia (Spain and Portugal) or france")
 
 
-def _wind_zones() -> pd.DataFrame:
-    f = WIND / "zones.csv"
-    if not f.exists():
-        rprint("[red]no wind zones: run wind-zones first[/red]")
-        raise typer.Exit(1)
-    return pd.read_csv(f)
+class _Wind:
+    """Where one region's wind files live. The Peninsula keeps the paths it had; the others go in a subfolder."""
+
+    def __init__(self, name: str):
+        from .wind import REGIONS
+
+        if name not in REGIONS:
+            rprint(f"[red]unknown region {name}: {', '.join(REGIONS)}[/red]")
+            raise typer.Exit(1)
+        self.region = r = REGIONS[name]
+        self.dir = r.path(WIND)
+        self.sources = {"openmeteo": r.path(WIND_WEATHER), "era5": r.path(WIND_ERA5)}
+        self.cache = r.path(ERA5_CACHE)
+        first = r.name == "iberia"
+        self.raw = (ROOT / "data" / "wind_forecast_raw.parquet") if first else self.dir / "forecast_raw.parquet"
+        self.report = OUTPUT / ("wind.html" if first else f"wind_{r.name}.html")
+
+    def climate(self, source: str) -> Path:
+        return (ROOT / "data" / f"wind_climate_{source}.parquet" if self.region.name == "iberia"
+                else self.dir / f"climate_{source}.parquet")
+
+    def zones(self) -> pd.DataFrame:
+        f = self.dir / "zones.csv"
+        if not f.exists():
+            rprint(f"[red]no wind zones: run wind-zones --region {self.region.name} first[/red]")
+            raise typer.Exit(1)
+        return pd.read_csv(f)
 
 
 @app.command()
-def wind_zones():
-    """Wind turbines of Spain and Portugal from OpenStreetMap, their ground elevation and the wind zones."""
+def wind_zones(region: str = REGION):
+    """Wind turbines of a region from OpenStreetMap, their ground elevation and the wind zones."""
     from . import wind as W
 
-    WIND.mkdir(parents=True, exist_ok=True)
-    t = W.fetch_turbines(ROOT / "data" / "cache" / "osm", log=rprint)
-    t.to_csv(WIND / "turbines.csv", index=False)
-    zf = WIND / "zones.csv"
+    w = _Wind(region)
+    w.dir.mkdir(parents=True, exist_ok=True)
+    t = W.fetch_turbines(ROOT / "data" / "cache" / "osm", w.region, log=rprint)
+    t.to_csv(w.dir / "turbines.csv", index=False)
+    zf = w.dir / "zones.csv"
     prev = pd.read_csv(zf) if zf.exists() else None
-    z = W.zones(t, prev, log=rprint)
+    z = W.zones(t, prev, w.region, log=rprint)
     if prev is not None and "ground_m" in prev:  # the elevation of a point does not change
         z = z.merge(prev[["zone", "ground_m"]], on="zone", how="left")
     if "ground_m" not in z or z["ground_m"].isna().any():
@@ -498,39 +519,40 @@ def wind_zones():
 
 
 @app.command()
-def wind_archive(wanted: list[str] = typer.Argument(None), start_year: int = 2021):
+def wind_archive(wanted: list[str] = typer.Argument(None), start_year: int = 2021, region: str = REGION):
     """Weather archive at each wind zone's point, to calibrate its thresholds (like phase3-archive)."""
     from .forecast import fetch_archive
 
+    w = _Wind(region)
     years = list(range(start_year, dt.date.today().year + 1))
-    z = _wind_zones()
-    for r in z.itertuples():
+    for r in w.zones().itertuples():
         if wanted and r.zone not in wanted:
             continue
         rprint(f"[bold]{r.zone}[/bold] {r.place} ({r.turbines} turbines)")
-        fetch_archive(r.zone, r.lat, r.lon, years, WIND_WEATHER, log=rprint)
+        fetch_archive(r.zone, r.lat, r.lon, years, w.sources["openmeteo"], log=rprint)
 
 
 @app.command()
 def wind_era5(start_year: int = 2021, end_year: int = dt.date.today().year,
-              download: bool = typer.Option(True, "--download/--no-download")):
+              download: bool = typer.Option(True, "--download/--no-download"), region: str = REGION):
     """Weather archive of every wind zone from ERA5 (Copernicus): one box per month instead of one request per zone."""
     from . import era5 as E
 
+    w = _Wind(region)
     years = list(range(start_year, end_year + 1))
-    month_list = (E.download(years, ERA5_CACHE, log=rprint) if download
+    month_list = (E.download(years, w.cache, w.region.era5_area, log=rprint) if download
                   else [(y, m) for y, m, _ in E.months(years)])
-    E.build(_wind_zones()[["zone", "lat", "lon"]], month_list, ERA5_CACHE, WIND_ERA5, log=rprint)
+    E.build(w.zones()[["zone", "lat", "lon"]], month_list, w.cache, w.sources["era5"], log=rprint)
 
 
-def _wind_predictions(src: Path, zones: pd.DataFrame | None = None) -> pd.DataFrame:
+def _wind_predictions(src: Path, zones: pd.DataFrame) -> pd.DataFrame:
     """Model output and night power for every zone that has an archive in `src`."""
     from . import forecast as P
     from . import wind as W
 
     models = P.load_models(ROOT / "data")
     parts = []
-    for r in (_wind_zones() if zones is None else zones).itertuples():
+    for r in zones.itertuples():
         f = src / f"{r.zone}.parquet"
         if not f.exists():
             continue
@@ -547,29 +569,33 @@ def _wind_predictions(src: Path, zones: pd.DataFrame | None = None) -> pd.DataFr
 
 @app.command()
 def wind_thresholds(reuse: bool = typer.Option(True, "--reuse/--rebuild"),
-                    source: str = typer.Option("era5", help="archive to calibrate on: era5 or openmeteo")):
+                    source: str = typer.Option("era5", help="archive to calibrate on: era5 or openmeteo"),
+                    region: str = REGION):
     """Run the model over each zone's archive: alert percentiles and the usual night output of the turbines."""
     from . import forecast as P
 
-    climate = WIND_CLIMATE.with_name(f"wind_climate_{source}.parquet")
+    w = _Wind(region)
+    climate = w.climate(source)
     if reuse and climate.exists():
         pred = pd.read_parquet(climate)
     else:
-        pred = _wind_predictions(WIND_SOURCES[source])
+        pred = _wind_predictions(w.sources[source], w.zones())
         pred.to_parquet(climate, index=False)
     u = P.compute_thresholds(pred).rename(columns={"city": "zone"})
-    u.to_csv(WIND / "thresholds.csv", index=False, float_format="%.4f")
+    u.to_csv(w.dir / "thresholds.csv", index=False, float_format="%.4f")
     rprint(f"Thresholds from {source} for {u['zone'].nunique()} zones x {u['doy_bin'].nunique()} ten-day periods")
 
 
 @app.command()
-def wind_compare():
+def wind_compare(region: str = REGION):
     """Same zones, same nights, both archives: does ERA5 give the model the nights Open-Meteo gives it?"""
-    z = _wind_zones()
-    both = z[[(WIND_WEATHER / f"{r}.parquet").exists() and (WIND_ERA5 / f"{r}.parquet").exists() for r in z.zone]]
+    w = _Wind(region)
+    om, e5 = w.sources["openmeteo"], w.sources["era5"]
+    z = w.zones()
+    both = z[[(om / f"{r}.parquet").exists() and (e5 / f"{r}.parquet").exists() for r in z.zone]]
     key = ["radar", "night"]
-    a = _wind_predictions(WIND_WEATHER, both)[key + ["pred", "p_alert", "power_frac"]]
-    b = _wind_predictions(WIND_ERA5, both)[key + ["pred", "p_alert", "power_frac"]]
+    a = _wind_predictions(om, both)[key + ["pred", "p_alert", "power_frac"]]
+    b = _wind_predictions(e5, both)[key + ["pred", "p_alert", "power_frac"]]
     m = a.merge(b, on=key, suffixes=("_om", "_era5")).dropna()
     rows = []
     for zone, g in m.groupby("radar"):
@@ -580,24 +606,24 @@ def wind_compare():
                      "p90_shift": g["pred_era5"].quantile(0.9) - g["pred_om"].quantile(0.9),
                      "top10_shared": (top_om & top_e5).sum() / max(top_om.sum(), 1)})
     r = pd.DataFrame(rows)
-    out = WIND / "era5_vs_openmeteo.csv"
+    out = w.dir / "era5_vs_openmeteo.csv"
     r.to_csv(out, index=False, float_format="%.3f")
     rprint(r.describe().loc[["mean", "50%", "min", "max"]].round(3).to_string())
     rprint(f"{len(r)} zones, {len(m):,} nights compared. Per zone: {out}")
 
 
 @app.command()
-def wind(days: int = 7, cache: bool = False):
+def wind(days: int = 7, cache: bool = False, region: str = REGION):
     """Forecast of the coming nights per wind zone: alert level, cost of stopping and the suggestion."""
     from . import forecast as P
     from . import wind as W
     from . import wind_report as R
 
-    z = _wind_zones()
-    th = pd.read_csv(WIND / "thresholds.csv")
-    raw = ROOT / "data" / "wind_forecast_raw.parquet"
-    if cache and raw.exists():
-        fc = pd.read_parquet(raw)
+    w = _Wind(region)
+    z = w.zones()
+    th = pd.read_csv(w.dir / "thresholds.csv")
+    if cache and w.raw.exists():
+        fc = pd.read_parquet(w.raw)
     else:
         models = P.load_models(ROOT / "data")
         parts = []
@@ -609,7 +635,7 @@ def wind(days: int = 7, cache: bool = False):
             nights = P.night_windows(r.zone, r.lat, r.lon, pd.DatetimeIndex(pd.to_datetime(h["time"], utc=True)))
             parts.append(P.predict(x, models).merge(W.night_power(h, nights), on=["radar", "night"], how="left"))
         fc = pd.concat(parts, ignore_index=True)
-        fc.to_parquet(raw, index=False)
+        fc.to_parquet(w.raw, index=False)
     fc = P.apply_thresholds(fc, th.rename(columns={"zone": "city"})).rename(columns={"radar": "zone"})
     fc = fc.drop(columns=["city"]).merge(z, on="zone", how="left", suffixes=("", "_zone"))
     fc["cost"] = fc["power_frac"].map(W.stop_cost)
@@ -617,10 +643,10 @@ def wind(days: int = 7, cache: bool = False):
     keep = ["zone", "place", "country", "lat", "lon", "turbines", "power_mw", "night", "pred", "p_alert",
             "level", "percentile", "wind100_mean", "power_frac", "hours_producing", "cost", "advice"]
     fc = fc[keep].sort_values(["night", "zone"])
-    fc.to_csv(WIND / "forecast.csv", index=False, float_format="%.4f")
-    R.write_report(fc, th, OUTPUT / "wind.html")
+    fc.to_csv(w.dir / "forecast.csv", index=False, float_format="%.4f")
+    R.write_report(fc, th, w.report, w.region)
     stop = fc[fc["advice"].str.startswith("stop")]
-    rprint(f"[bold]{len(fc)} zone-nights, {len(stop)} where stopping is suggested[/bold] -> {OUTPUT / 'wind.html'}")
+    rprint(f"[bold]{len(fc)} zone-nights, {len(stop)} where stopping is suggested[/bold] -> {w.report}")
 
 
 LIGHTS = ROOT / "data" / "lights"

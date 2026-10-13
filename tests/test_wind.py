@@ -69,3 +69,29 @@ def test_advice_table():
     assert W.advice("very high", "expensive") == "watch"
     assert W.advice("high", "cheap") == "watch" and W.advice("high", "expensive") == "watch"
     assert W.advice("moderate", "cheap") == "run" and W.advice("no threshold", "cheap") == "run"
+
+
+def test_regions_query_their_own_countries():
+    q = W.query(W.REGIONS["france"])
+    assert 'area["ISO3166-1"="FR"]' in q and '"ES"' not in q
+    assert q.count("ISO3166-1") == 1 and W.query(W.REGIONS["iberia"]).count("ISO3166-1") == 2
+
+
+def test_france_keeps_corsica_and_leaves_the_overseas_territories_out(monkeypatch):
+    monkeypatch.setattr(W, "_place", lambda lat, lon: ("Somme", "FR"))
+    one = pd.DataFrame({"osm_id": range(10), "lat": 49.9, "lon": 2.3, "power_mw": 2.0, "rotor_m": np.nan,
+                        "hub_m": np.nan, "height_m": np.nan})
+    corsica, reunion = one.assign(lat=42.7, lon=9.4), one.assign(lat=-21.1, lon=55.5)
+    z = W.zones(pd.concat([one, corsica, reunion]), region=W.REGIONS["france"])
+    assert sorted(z["zone"]) == ["42.5N9.0E", "49.5N2.0E"]
+
+
+def test_the_first_region_keeps_its_paths(tmp_path):
+    assert W.REGIONS["iberia"].path(tmp_path) == tmp_path
+    assert W.REGIONS["france"].path(tmp_path) == tmp_path / "france"
+
+
+def test_each_era5_box_covers_its_region():
+    for r in W.REGIONS.values():
+        n, w, s, e = r.era5_area
+        assert n > r.lat[1] and s < r.lat[0] and w < r.lon[0] and e > r.lon[1]

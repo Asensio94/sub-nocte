@@ -12,7 +12,7 @@ import pandas as pd
 
 from .phase3 import COUNTRY, LEVEL_COLOR, LEVEL_ORDER, STYLE
 from .report import embed_images
-from .wind import CELL_DEG, CHEAP, CUT_IN, CUT_OUT, EXPENSIVE, MIN_TURBINES, RATED
+from .wind import CELL_DEG, CHEAP, CUT_IN, CUT_OUT, EXPENSIVE, MIN_TURBINES, RATED, REGIONS, Region
 
 ADVICE_ORDER = ["run", "watch", "stop at peak hours", "stop"]
 ADVICE_COLOR = {"run": "#e8eaed", "watch": "#ffd98e", "stop at peak hours": "#f08c1e", "stop": "#b32d1f"}
@@ -22,7 +22,7 @@ def _zone_label(r) -> str:
     return f"{r.place or r.zone} ({r.turbines})"
 
 
-def figures(fc: pd.DataFrame, out_dir: Path) -> list[Path]:
+def figures(fc: pd.DataFrame, out_dir: Path, region: Region = REGIONS["iberia"]) -> list[Path]:
     figs = []
     nights = sorted(fc["night"].unique())
     weight = {a: i for i, a in enumerate(ADVICE_ORDER)}
@@ -37,7 +37,8 @@ def figures(fc: pd.DataFrame, out_dir: Path) -> list[Path]:
         g = worst[worst["w"] == weight[a]]
         ax.scatter(g["lon"], g["lat"], s=g["turbines"] * 0.9 + 8, c=ADVICE_COLOR[a], edgecolors="#555",
                    linewidths=0.5, label=a, alpha=0.9)
-    ax.set_xlim(-10, 4.5); ax.set_ylim(35.8, 44); ax.set_aspect(1 / np.cos(np.radians(40)))
+    ax.set_xlim(region.lon[0] - 0.4, region.lon[1]); ax.set_ylim(*region.lat)
+    ax.set_aspect(1 / np.cos(np.radians(np.mean(region.lat))))
     ax.set_title("Wind zones: strongest suggestion over the forecast nights\n(circle size = turbines in OSM)")
     ax.legend(loc="lower right", fontsize=9, frameon=False)
     ax.grid(alpha=0.3)
@@ -99,9 +100,9 @@ def _table(fc: pd.DataFrame) -> str:
     return "".join(rows) + "</table>"
 
 
-def write_report(fc: pd.DataFrame, thresholds: pd.DataFrame, out: Path) -> None:
+def write_report(fc: pd.DataFrame, thresholds: pd.DataFrame, out: Path, region: Region = REGIONS["iberia"]) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
-    figs = figures(fc, out.parent)
+    figs = figures(fc, out.parent, region)
     nights = sorted(fc["night"].unique())
     stop = fc[fc["advice"].isin(["stop", "stop at peak hours"])]
     summary = {
@@ -112,27 +113,31 @@ def write_report(fc: pd.DataFrame, thresholds: pd.DataFrame, out: Path) -> None:
         "of them cheap to stop": int((fc["level"].isin(["high", "very high"]) & (fc["cost"] == "cheap")).sum()),
         "zone-nights where stopping is suggested": len(stop),
     }
+    km_lat = 111 * CELL_DEG
+    km_lon = km_lat * np.cos(np.radians(np.mean(region.lat)))
     parts = [
-        "<!doctype html><meta charset='utf-8'><title>Wind farms · nightly migration forecast</title>", STYLE,
-        "<h1>Wind farms · nightly migration forecast</h1>",
+        f"<!doctype html><meta charset='utf-8'><title>Wind farms · {region.label} · nightly migration forecast</title>",
+        STYLE,
+        f"<h1>Wind farms · {region.label} · nightly migration forecast</h1>",
         "<p>In the Netherlands the offshore wind farms are stopped on the nights of heavy migration, with a forecast "
-        "built on the weather radars. In Spain and Portugal nothing like it is in place. This page points the "
+        f"built on the weather radars. {region.note + ' ' if region.note else ''}This page points the "
         "per-city forecast of phase 3, which works at any point without a radar, at the <b>wind turbines</b>, and "
         "adds the other half of the decision: <b>what stopping would cost</b> that night.</p>",
         f"<p><b>Zones.</b> The turbines mapped in OpenStreetMap are grouped into cells of {CELL_DEG}° "
-        f"(about 55 × 42 km); a cell with at least {MIN_TURBINES} turbines is a wind zone, with its forecast point at "
-        "the centroid of its turbines. The alert level is cut, as for the cities, on the percentiles of the zone's own "
-        "record around the same date: <b>high</b> is above its 75th percentile and <b>very high</b> above its 90th.</p>",
+        f"(about {km_lat:.0f} × {km_lon:.0f} km); a cell with at least {MIN_TURBINES} turbines is a wind zone, "
+        "with its forecast point at the centroid of its turbines. The alert level is cut, as for the cities, on the "
+        "percentiles of the zone's own record around the same date: <b>high</b> is above its 75th percentile and "
+        "<b>very high</b> above its 90th.</p>",
         f"<p><b>Cost of stopping.</b> The forecast wind at 100 m over the night hours, through a generic power curve "
         f"(nothing below {CUT_IN:.0f} m/s, rated power from {RATED:.0f} m/s, cut-out at {CUT_OUT:.0f} m/s), gives the "
         f"share of rated power the zone would produce. Below {CHEAP:.0%} stopping is <i>cheap</i>; from "
         f"{EXPENSIVE:.0%} it is <i>expensive</i>. The two halves cross in a fixed table: very high and cheap → stop; very "
         "high and moderate → stop at the peak hours; very high and expensive, or high → watch; anything below → run. "
         "It is a way of ranking nights, not an operating order.</p>",
-        "<p><b>Why so strict.</b> Over the 2021-2026 seasons, stopping from the 75th percentile would have meant 21 "
-        "nights per season and zone and 13.5 % of the night output. With this table it is about 7 nights and 2 % of "
-        "the output, which still covers about 11 % of the migration the model predicts. It comes out this cheap "
-        "because the heavy nights tend to be calm ones.</p>",
+        "<p><b>Why so strict.</b> Over the 2021-2026 seasons on the Peninsula, where the table was chosen, stopping "
+        "from the 75th percentile would have meant 21 nights per season and zone and 13.5 % of the night output. "
+        "With this table it is about 7 nights and 2 % of the output, which still covers about 11 % of the migration "
+        "the model predicts. It comes out this cheap because the heavy nights tend to be calm ones.</p>",
         "<div class='k'>" + "".join(f"<div>{k}<b>{v}</b></div>" for k, v in summary.items()) + "</div>",
     ]
     parts += [f"<p><img src='{f.name}'></p>" for f in figs]
