@@ -512,11 +512,12 @@ def wind_archive(wanted: list[str] = typer.Argument(None), start_year: int = 202
 
 
 @app.command()
-def wind_era5(start_year: int = 2021, download: bool = typer.Option(True, "--download/--no-download")):
+def wind_era5(start_year: int = 2021, end_year: int = dt.date.today().year,
+              download: bool = typer.Option(True, "--download/--no-download")):
     """Weather archive of every wind zone from ERA5 (Copernicus): one box per month instead of one request per zone."""
     from . import era5 as E
 
-    years = list(range(start_year, dt.date.today().year + 1))
+    years = list(range(start_year, end_year + 1))
     month_list = (E.download(years, ERA5_CACHE, log=rprint) if download
                   else [(y, m) for y, m, _ in E.months(years)])
     E.build(_wind_zones()[["zone", "lat", "lon"]], month_list, ERA5_CACHE, WIND_ERA5, log=rprint)

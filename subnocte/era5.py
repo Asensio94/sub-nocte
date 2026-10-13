@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import calendar
 import datetime as dt
+import shutil
+import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -35,6 +37,9 @@ LEVEL_HPA = ("700", "850", "925")
 AREA = [44.25, -9.75, 35.5, 4.75]  # N, W, S, E: the wind zones' box plus one grid cell
 DELAY_DAYS = 6                     # ERA5T reaches about five days back from today
 WORKERS = 3                        # the CDS queues each user's requests; a few in flight is enough
+RETRY_MIN, RETRIES = 15, 16        # the CDS rejects new jobs for a while when a dataset's queue is full
+# the CDS refuses requests above its cost limit: three months of single levels or two of pressure levels is too many
+MONTHS_PER_REQUEST = {False: 2, True: 1}
 G = 9.80665
 
 
@@ -52,8 +57,9 @@ def months(years: list[int], today: dt.date | None = None) -> list[tuple[int, in
     return out
 
 
-def _request(y: int, m: int, days: list[int], levels: bool) -> dict:
-    q = {"product_type": ["reanalysis"], "year": [str(y)], "month": [f"{m:02d}"],
+def _request(y: int, ms: list[int], days: list[int], levels: bool) -> dict:
+    """One CDS request: every combination of `ms` and `days` (the CDS skips dates that do not exist)."""
+    q = {"product_type": ["reanalysis"], "year": [str(y)], "month": [f"{m:02d}" for m in ms],
          "day": [f"{d:02d}" for d in days], "time": [f"{h:02d}:00" for h in range(24)],
          "area": AREA, "data_format": "netcdf", "download_format": "unarchived"}
     if levels:
@@ -67,29 +73,78 @@ def _target(cache_dir: Path, y: int, m: int, levels: bool) -> Path:
     return cache_dir / f"{'levels' if levels else 'single'}_{y}{m:02d}.nc"
 
 
+def _jobs(todo: list[tuple[int, int, list[int]]], cache_dir: Path) -> list[tuple[int, list[int], list[int], bool]]:
+    """Group the missing months of each year, window and dataset into requests of `MONTHS_PER_REQUEST` months.
+
+    The CDS queue, not the volume, sets the pace: every request waits its turn, so fewer and larger requests
+    arrive sooner, up to the CDS cost limit. A month still being completed by ERA5 goes on its own,
+    because its days are not the full calendar.
+    """
+    jobs = []
+    for y in sorted({y for y, _, _ in todo}):  # year by year, so the first years are complete early
+        for lv in (False, True):
+            for (m0, _), (m1, _) in WINDOWS:
+                run = []
+                for yy, m, days in todo:
+                    if yy != y or not m0 <= m <= m1:
+                        continue
+                    full = len(days) == calendar.monthrange(y, m)[1]
+                    if full and _target(cache_dir, y, m, lv).exists():
+                        continue
+                    if full:
+                        run.append(m)
+                    else:
+                        jobs.append((y, [m], days, lv))
+                k = MONTHS_PER_REQUEST[lv]
+                for i in range(0, len(run), k):
+                    jobs.append((y, run[i:i + k], list(range(1, 32)), lv))
+    return jobs
+
+
+def _split(path: Path, cache_dir: Path, y: int, levels: bool) -> list[Path]:
+    """Write one plain netCDF per month out of a multi-month download."""
+    ds = _open(path)
+    out = []
+    for m in sorted(set(pd.DatetimeIndex(ds["time"].values).month)):
+        dest = _target(cache_dir, y, m, levels)
+        part = ds.sel(time=ds["time"].dt.month == m)
+        tmp = dest.with_suffix(".tmp")
+        part.to_netcdf(tmp)
+        tmp.replace(dest)
+        out.append(dest)
+    return out
+
+
 def download(years: list[int], cache_dir: Path, log=print) -> list[tuple[int, int]]:
-    """Fetch every missing month (both datasets) into `cache_dir`; returns the months that are complete.
+    """Fetch every missing month (both datasets) into `cache_dir`, one month per file; returns the months.
 
     A month already on disk is kept, except the latest one, which is fetched again while ERA5 is still adding
     its last days.
     """
     import cdsapi
+    import requests
 
     cache_dir.mkdir(parents=True, exist_ok=True)
     todo = months(years)
-    full = {(y, m) for y, m, days in todo if len(days) == calendar.monthrange(y, m)[1]}
-    jobs = [(y, m, days, lv) for y, m, days in todo for lv in (False, True)
-            if not _target(cache_dir, y, m, lv).exists() or (y, m) not in full]
+    jobs = _jobs(todo, cache_dir)
     log(f"ERA5: {len(todo)} months, {len(jobs)} requests to make")
     client = cdsapi.Client(quiet=True, progress=False)
 
     def fetch(job):
-        y, m, days, lv = job
-        dest = _target(cache_dir, y, m, lv)
-        tmp = dest.with_suffix(".part")
-        client.retrieve(LEVELS if lv else SINGLE, _request(y, m, days, lv), str(tmp))
-        tmp.replace(dest)  # only a finished file gets the final name
-        log(f"  {dest.name}: {dest.stat().st_size / 1e6:.0f} MB")
+        y, ms, days, lv = job
+        raw = cache_dir / f"{'levels' if lv else 'single'}_{y}_{ms[0]:02d}-{ms[-1]:02d}.download"
+        for attempt in range(RETRIES):
+            try:
+                client.retrieve(LEVELS if lv else SINGLE, _request(y, ms, days, lv), str(raw))
+                break
+            except requests.HTTPError as e:
+                if "temporarily limited" not in str(e) or attempt == RETRIES - 1:
+                    raise
+                log(f"  {raw.stem}: CDS queue full, retrying in {RETRY_MIN} min")
+                time.sleep(RETRY_MIN * 60)
+        done = _split(raw, cache_dir, y, lv)  # only finished months get their final name
+        raw.unlink()
+        log(f"  {raw.stem}: " + ", ".join(f"{p.name} {p.stat().st_size / 1e6:.0f} MB" for p in done))
 
     with ThreadPoolExecutor(WORKERS) as ex:
         for _ in ex.map(fetch, jobs):
@@ -105,9 +160,15 @@ def _open(path: Path):
         out = path.with_suffix("")
         with zipfile.ZipFile(path) as z:
             z.extractall(out)
-        ds = xr.merge([xr.open_dataset(f).load() for f in sorted(out.glob("*.nc"))], compat="override")
+        parts = []
+        for f in sorted(out.glob("*.nc")):
+            with xr.open_dataset(f) as d:
+                parts.append(d.load())
+        shutil.rmtree(out)
+        ds = xr.merge(parts, compat="override")
     else:
-        ds = xr.open_dataset(path).load()
+        with xr.open_dataset(path) as d:  # closed at once: Windows cannot delete a file that is still open
+            ds = d.load()
     ds = ds.rename({k: v for k, v in {"valid_time": "time", "pressure_level": "level"}.items() if k in ds.dims})
     return ds.drop_vars([c for c in ("number", "expver") if c in ds.coords or c in ds.data_vars])
 
