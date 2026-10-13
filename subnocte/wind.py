@@ -57,6 +57,7 @@ class Region:
     lon: tuple[float, float]
     era5_area: tuple[float, ...]   # N, W, S, E: the box plus one ERA5 grid cell
     note: str = ""                 # one sentence of local context for the report
+    lang: str = "es"               # language of the place names
 
     def path(self, base: Path) -> Path:
         """Where this region's files go under `base`. The Peninsula, the first region, keeps the paths it had."""
@@ -68,7 +69,7 @@ class Region:
 REGIONS = {
     "iberia": Region("iberia", "Spain and Portugal", ("ES", "PT"), (35.8, 44.0), (-9.6, 4.5),
                      (44.25, -9.75, 35.5, 4.75), "In Spain and Portugal nothing like it is in place."),
-    "france": Region("france", "France", ("FR",), (41.3, 51.2), (-5.2, 9.6), (51.5, -5.5, 41.0, 9.75)),
+    "france": Region("france", "France", ("FR",), (41.3, 51.2), (-5.2, 9.6), (51.5, -5.5, 41.0, 9.75), lang="fr"),
 }
 
 # Generic power curve of a modern onshore turbine at hub height (wind at 100 m from the forecast):
@@ -168,10 +169,10 @@ def add_elevation(df: pd.DataFrame, log=print) -> pd.DataFrame:
     return df.assign(ground_m=out)
 
 
-def _place(lat: float, lon: float) -> tuple[str, str]:
+def _place(lat: float, lon: float, lang: str = "es") -> tuple[str, str]:
     """Province (Spain), district (Portugal) or département (France) of a point and its country code, from Nominatim."""
     r = requests.get(NOMINATIM, params={"lat": lat, "lon": lon, "format": "jsonv2", "zoom": 8,
-                                        "accept-language": "es"},
+                                        "accept-language": lang},
                      headers={"User-Agent": USER_AGENT}, timeout=60)
     time.sleep(1.1)  # Nominatim usage policy: one request per second
     a = r.json().get("address", {}) if r.ok else {}
@@ -213,7 +214,9 @@ def zones(turbines: pd.DataFrame, previous: pd.DataFrame | None = None, region: 
     places, countries = [], []
     for r in z.itertuples():
         if r.zone not in known:
-            known[r.zone] = _place(r.lat, r.lon)
+            # at sea Nominatim finds no address: those are the offshore farms
+            place, country = _place(r.lat, r.lon, region.lang)
+            known[r.zone] = (place or "offshore", country or region.countries[0])
             log(f"  {r.zone}: {known[r.zone][0]} ({r.turbines} turbines)")
         places.append(known[r.zone][0]); countries.append(known[r.zone][1])
     return z.assign(place=places, country=countries)

@@ -33,7 +33,7 @@ def test_power_curve():
 
 
 def test_zones_need_enough_turbines(monkeypatch):
-    monkeypatch.setattr(W, "_place", lambda lat, lon: ("Navarra", "ES"))
+    monkeypatch.setattr(W, "_place", lambda lat, lon, lang: ("Navarra", "ES"))
     big = pd.DataFrame({"osm_id": [f"n{i}" for i in range(12)], "lat": 42.6, "lon": -1.7,
                         "power_mw": 2.0, "rotor_m": np.nan, "hub_m": np.nan, "height_m": np.nan})
     small = big.head(W.MIN_TURBINES - 1).assign(lat=40.2, lon=-3.2)
@@ -44,7 +44,7 @@ def test_zones_need_enough_turbines(monkeypatch):
 
 
 def test_places_already_known_are_not_looked_up(monkeypatch):
-    def fail(lat, lon):
+    def fail(lat, lon, lang):
         raise AssertionError("looked up again")
     monkeypatch.setattr(W, "_place", fail)
     t = pd.DataFrame({"osm_id": range(10), "lat": 42.6, "lon": -1.7, "power_mw": 2.0, "rotor_m": np.nan,
@@ -78,12 +78,13 @@ def test_regions_query_their_own_countries():
 
 
 def test_france_keeps_corsica_and_leaves_the_overseas_territories_out(monkeypatch):
-    monkeypatch.setattr(W, "_place", lambda lat, lon: ("Somme", "FR"))
+    monkeypatch.setattr(W, "_place", lambda lat, lon, lang: ("Somme", "FR") if lon < 3 else ("", ""))
     one = pd.DataFrame({"osm_id": range(10), "lat": 49.9, "lon": 2.3, "power_mw": 2.0, "rotor_m": np.nan,
                         "hub_m": np.nan, "height_m": np.nan})
     corsica, reunion = one.assign(lat=42.7, lon=9.4), one.assign(lat=-21.1, lon=55.5)
     z = W.zones(pd.concat([one, corsica, reunion]), region=W.REGIONS["france"])
     assert sorted(z["zone"]) == ["42.5N9.0E", "49.5N2.0E"]
+    assert set(z["place"]) == {"Somme", "offshore"} and set(z["country"]) == {"FR"}  # no address found: at sea
 
 
 def test_the_first_region_keeps_its_paths(tmp_path):
