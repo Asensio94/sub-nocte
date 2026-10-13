@@ -590,7 +590,8 @@ SIBLINGS = [("observatorio-alegaciones", "Observatorio de alegaciones"), ("vigia
             ("centinela-natura", "Centinela Natura"), ("vigilancia-humedales", "Vigilancia de humedales"),
             ("sub-nocte", "Sub Nocte"), ("riesgo-tendidos-aves", "Riesgo de tendidos para aves"),
             ("grafo-promotores", "Grafo de promotores"), ("cartera-cotizadas", "Cartera de las cotizadas"),
-            ("cuaderno-campo", "Cuaderno de campo"), ("caudal-ecologico", "Caudal ecológico")]
+            ("cuaderno-campo", "Cuaderno de campo"), ("caudal-ecologico", "Caudal ecológico"),
+            ("estado-iba", "Estado de las IBA")]
 NIGHTLY_DIR = Path(__file__).resolve().parents[1] / "data" / "nightly"
 
 
