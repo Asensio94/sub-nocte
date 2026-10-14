@@ -55,8 +55,11 @@ jobs:
           git push -f origin "$commit:refs/heads/night"
 
       - name: Forecast for the wind zones
-        # the wind forecast is an add-on: if it fails, the city forecast and the website are still published
+        # the wind forecast is an add-on: if it fails, the city forecast and the website are still published.
+        # It makes one Open-Meteo call per zone, and once the shared runner's hourly quota runs out each retry
+        # waits for the next hour, so without a limit it can hold the website back for hours.
         continue-on-error: true
+        timeout-minutes: 15
         run: python -m subnocte.cli wind --days 7
         env:
           PYTHONIOENCODING: utf-8
