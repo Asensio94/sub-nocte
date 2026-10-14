@@ -649,6 +649,27 @@ def wind(days: int = 7, cache: bool = False, region: str = REGION):
     rprint(f"[bold]{len(fc)} zone-nights, {len(stop)} where stopping is suggested[/bold] -> {w.report}")
 
 
+@app.command()
+def flows(night: str = typer.Option(None, help="YYYY-MM-DD, date of the sunset; by default the latest complete one")):
+    """Replay of a night: density and flight of the migrating birds over Iberia and France, every 20 minutes."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from . import flows as F
+
+    # day D is published at about 02:00 UTC on D+2, and a night needs its own day and the next one
+    n = dt.date.fromisoformat(night) if night else dt.datetime.now(dt.timezone.utc).date() - dt.timedelta(days=3)
+    with ThreadPoolExecutor(4) as ex:  # the bucket drops connections with more parallel downloads
+        parts = list(ex.map(lambda r: F.night_profiles(r, n, CACHE), F.radars()))
+    p = pd.concat([x for x in parts if len(x)], ignore_index=True)
+    fr = F.frames(p)
+    summary = F.night_summary(fr)
+    out = ROOT / "data" / "flows"
+    out.mkdir(parents=True, exist_ok=True)
+    summary.assign(night=n).to_csv(out / f"{n:%Y%m%d}.csv", index=False, float_format="%.2f")
+    F.write_report(n, fr, summary, F.borders(ROOT / "data" / "cache" / "ne"), OUTPUT / "flows.html")
+    rprint(f"Night {n}: {len(summary)} radars, {fr['frame'].nunique()} frames -> {OUTPUT / 'flows.html'}")
+
+
 LIGHTS = ROOT / "data" / "lights"
 
 
@@ -702,6 +723,7 @@ def scorecard(days_shown: int = 21, embed: bool = True):
     k = S.metrics(m)
     OUTPUT.mkdir(exist_ok=True)
     figs = S.figures(m, OUTPUT, nights_shown=days_shown)
+    S.nights(m).to_csv(OUTPUT / "scorecard_nights.csv", index=False, float_format="%.4f", date_format="%Y-%m-%d")
     out = OUTPUT / "scorecard.html"
     S.write_report(m, k, figs, out)
     if embed:
@@ -715,7 +737,8 @@ def scorecard(days_shown: int = 21, embed: bool = True):
 
 
 REPORTS = ["output/phase0.html", "output/phase1.html", "output/phase2.html", "output/phase3.html",
-           "output/ranking.html", "output/scorecard.html", "output/wind.html", "docs/design.html"]
+           "output/ranking.html", "output/scorecard.html", "output/wind.html", "docs/design.html",
+           "docs/proposal/proposal_es.html", "docs/proposal/proposal_en.html"]
 
 
 @app.command()
@@ -730,7 +753,9 @@ def web():
         rprint("[yellow]no forecast: the site comes out without the coming-nights section[/yellow]")
     wind_csv = WIND / "forecast.csv"
     wf = pd.read_csv(wind_csv, parse_dates=["night"]) if wind_csv.exists() else None
-    W.build(fc, rk, [ROOT / n for n in REPORTS], ROOT, log=rprint, wf=wf)
+    flows = sorted((ROOT / "data" / "flows").glob("*.csv"))
+    nights = pd.read_csv(flows[-1]) if flows else None
+    W.build(fc, rk, [ROOT / n for n in REPORTS], ROOT, log=rprint, nights=nights, wf=wf)
 
 
 if __name__ == "__main__":

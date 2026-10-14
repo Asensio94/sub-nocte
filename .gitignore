@@ -7,6 +7,8 @@ data/cache/
 # Full profiles in parquet: heavy, regenerated from the cache
 data/vpts/
 output/*.png
+output/*.gif
+output/flows_frames/
 # Derived instantaneous profiles: regenerated
 data/nightly/*_profiles.parquet
 # Concatenation of data/nightly: derived
