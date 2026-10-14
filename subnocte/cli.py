@@ -715,7 +715,7 @@ def scorecard(days_shown: int = 21, embed: bool = True):
 
 
 REPORTS = ["output/phase0.html", "output/phase1.html", "output/phase2.html", "output/phase3.html",
-           "output/ranking.html", "output/scorecard.html", "docs/design.html"]
+           "output/ranking.html", "output/scorecard.html", "output/wind.html", "docs/design.html"]
 
 
 @app.command()
@@ -728,7 +728,9 @@ def web():
     rk = pd.read_csv(rk_csv) if rk_csv.exists() else None
     if fc is None:
         rprint("[yellow]no forecast: the site comes out without the coming-nights section[/yellow]")
-    W.build(fc, rk, [ROOT / n for n in REPORTS], ROOT, log=rprint)
+    wind_csv = WIND / "forecast.csv"
+    wf = pd.read_csv(wind_csv, parse_dates=["night"]) if wind_csv.exists() else None
+    W.build(fc, rk, [ROOT / n for n in REPORTS], ROOT, log=rprint, wf=wf)
 
 
 if __name__ == "__main__":

@@ -106,6 +106,33 @@ COPY: dict[str, dict[str, str]] = {
         "high_in_one": "alto en 1 ciudad más",
         "high_in_many": "alto en {n} ciudades más",
         "no_alert": "Ninguna ciudad supera su percentil 75 en este periodo: no hay motivo para un aviso.",
+        "h_wind": "Parques eólicos",
+        "sub_wind": "Actualizado el {date}. {zones} zonas eólicas de España y Portugal, {turbines} aerogeneradores.",
+        "wind_intro": "Las mismas noches de paso fuerte, vistas desde un parque eólico. En los Países Bajos los "
+                      "parques marinos ya se paran en las noches de migración intensa con una previsión como "
+                      "esta; en España y Portugal no hay nada parecido. Para cada zona de unos 25 km se cruzan "
+                      "dos cosas: <b>cuánto paso se espera</b> (el mismo modelo de las ciudades, calibrado con "
+                      "cinco años de meteorología ERA5 en el punto de la zona) y <b>cuánto cuesta parar</b> "
+                      "(la producción que tendrían esa noche los aerogeneradores con el viento previsto a "
+                      "100 m).",
+        "wind_rule": "<b>Solo se sugiere parar cuando el paso es muy alto y parar sale barato</b>, es decir, en "
+                     "noches de poco viento. Probado sobre 2021-2026, esa regla habría parado 7 noches por "
+                     "temporada y zona, con un 2 % de la producción nocturna, y habría cubierto el 11 % de la "
+                     "migración prevista. Parar desde el percentil 75 habría costado el 13,5 %.",
+        "col_night": "noche",
+        "col_very_high": "zonas en muy alto",
+        "col_stop": "parar",
+        "col_peak": "parar en horas punta",
+        "col_where": "dónde (mayor potencia)",
+        "mw": "{n} {zones} · {mw} MW",
+        "zone": ("zona", "zonas"),
+        "no_wind_stop": "Ninguna zona cumple la regla de parada en estas noches.",
+        "wind_more": "Mapa, tabla por zona y método completo: <a href='{href}'>informe de parques eólicos</a> "
+                     "(en inglés).",
+        "wind_not": "Es una sugerencia para ordenar las noches, no una orden de parada ni un sustituto de los "
+                    "planes de vigilancia de cada parque. El modelo no distingue especies ni sabe a qué altura "
+                    "pasan las aves sobre cada parque, y la verificación contra radar de esta previsión empieza "
+                    "con su publicación.",
         "h_todo": "Qué hacer una noche de aviso",
         "sub_todo": "Lo que reduce las colisiones y la desorientación, por orden de eficacia y de facilidad.",
         "cards": [
@@ -167,6 +194,7 @@ COPY: dict[str, dict[str, str]] = {
             "phase3.html": "Fase 3 — previsión por ciudad",
             "ranking.html": "Ranking de exposición a la luz artificial",
             "scorecard.html": "Verificación — ¿acertaron las previsiones ya publicadas?",
+            "wind.html": "Parques eólicos — previsión nocturna por zona",
             "design.html": "Documento de diseño del proyecto",
         },
         "note_reports": "Los informes técnicos están en inglés.",
@@ -185,7 +213,10 @@ COPY: dict[str, dict[str, str]] = {
         "h_data": "Datos, método y crédito",
         "data": "Perfiles verticales de aves: <a href='https://aloftdata.eu'>Aloft</a> (Desmet y col. 2025), "
                  "red europea de radares meteorológicos, licencia CC0. Meteorología: "
-                 "<a href='https://open-meteo.com'>Open-Meteo</a> (CC BY 4.0). Luz artificial: Falchi y col. "
+                 "<a href='https://open-meteo.com'>Open-Meteo</a> (CC BY 4.0) y ERA5 del Servicio de Cambio Climático "
+                 "de Copernicus (contiene información modificada de "
+                 "Copernicus 2021-2026). Aerogeneradores: © colaboradores de <a href='https://www.openstreetmap.org/"
+                 "copyright'>OpenStreetMap</a> (ODbL). Luz artificial: Falchi y col. "
                  "(2016), <i>The new world atlas of artificial night sky brightness</i>, Science Advances "
                  "2(6):e1600377, y GFZ Data Services doi:10.5880/GFZ.1.4.2016.001 — los ficheros originales "
                  "no se redistribuyen aquí, solo resultados derivados. Método: Van Doren y Horton (2018) para "
@@ -224,6 +255,30 @@ COPY: dict[str, dict[str, str]] = {
         "high_in_one": "high in 1 more city",
         "high_in_many": "high in {n} more cities",
         "no_alert": "No city exceeds its 75th percentile in this period: there is no reason for an alert.",
+        "h_wind": "Wind farms",
+        "sub_wind": "Updated on {date}. {zones} wind zones in Spain and Portugal, {turbines} turbines.",
+        "wind_intro": "The same heavy-passage nights, seen from a wind farm. In the Netherlands the offshore "
+                      "farms are already stopped on nights of intense migration with a forecast like this one; "
+                      "in Spain and Portugal nothing like it is in place. For each zone of about 25 km two things "
+                      "are crossed: <b>how much passage is expected</b> (the same model as the cities, calibrated "
+                      "on five years of ERA5 weather at the zone's point) and <b>what stopping costs</b> (the "
+                      "output the turbines would have that night with the wind forecast at 100 m).",
+        "wind_rule": "<b>Stopping is only suggested when the passage is very high and stopping is cheap</b>, "
+                     "that is, on nights with little wind. Tested on 2021-2026, that rule would have stopped 7 "
+                     "nights per season and zone, for 2 % of the night output, and covered 11 % of the "
+                     "predicted migration. Stopping from the 75th percentile would have cost 13.5 %.",
+        "col_night": "night",
+        "col_very_high": "zones at very high",
+        "col_stop": "stop",
+        "col_peak": "stop at peak hours",
+        "col_where": "where (largest capacity)",
+        "mw": "{n} {zones} · {mw} MW",
+        "zone": ("zone", "zones"),
+        "no_wind_stop": "No zone meets the stopping rule on these nights.",
+        "wind_more": "Map, per-zone table and full method: <a href='{href}'>wind farm report</a>.",
+        "wind_not": "It is a suggestion to rank nights, not a stop order nor a substitute for each farm's "
+                    "monitoring plan. The model does not tell species apart nor know at what height the birds "
+                    "cross each farm, and the radar verification of this forecast starts with its publication.",
         "h_todo": "What to do on an alert night",
         "sub_todo": "What actually reduces collisions and disorientation, ordered by effect and by ease.",
         "cards": [
@@ -284,6 +339,7 @@ COPY: dict[str, dict[str, str]] = {
             "phase3.html": "Phase 3 — city-level forecast",
             "ranking.html": "Artificial light exposure ranking",
             "scorecard.html": "Verification — did the published forecasts hold up?",
+            "wind.html": "Wind farms — nightly forecast per zone",
             "design.html": "Project design document",
         },
         "note_reports": "The technical reports are in English.",
@@ -304,7 +360,10 @@ COPY: dict[str, dict[str, str]] = {
         "h_data": "Data, method and credit",
         "data": "Bird vertical profiles: <a href='https://aloftdata.eu'>Aloft</a> (Desmet et al. 2025), "
                  "European weather radar network, CC0. Weather: <a href='https://open-meteo.com'>Open-Meteo"
-                 "</a> (CC BY 4.0). Artificial light: Falchi et al. (2016), <i>The new world atlas of "
+                 "</a> (CC BY 4.0) and ERA5 from the Copernicus Climate Change Service (contains modified "
+                 "Copernicus information 2021-2026). Turbines: © <a href='https://www.openstreetmap.org/"
+                 "copyright'>OpenStreetMap</a> contributors (ODbL). Artificial light: Falchi et al. (2016), "
+                 "<i>The new world atlas of "
                  "artificial night sky brightness</i>, Science Advances 2(6):e1600377, and GFZ Data Services "
                  "doi:10.5880/GFZ.1.4.2016.001 — the original files are not redistributed here, only derived "
                  "results. Method: Van Doren & Horton (2018) for the model, Horton et al. (2019) for light "
@@ -382,8 +441,27 @@ def ranking_table(rk: pd.DataFrame, season: str, lang: str, n: int = 12) -> str:
             f"<th>{c['col_exposure']}</th></tr>{rows}</table>")
 
 
+def wind_table(wf: pd.DataFrame, lang: str) -> str:
+    """One row per night: zones at "very high", where stopping is suggested and how much capacity that is."""
+    c = COPY[lang]
+    rows = []
+    for night, g in wf.groupby("night"):
+        stop = g[g["advice"] == "stop"]
+        peak = g[g["advice"] == "stop at peak hours"]
+        fmt = lambda x: c["mw"].format(n=len(x), zones=c["zone"][len(x) != 1], mw=f"{x['power_mw'].sum():,.0f}"
+                                       .replace(",", "." if lang == "es" else ",")) if len(x) else "—"
+        places = pd.concat([stop, peak]).sort_values("power_mw", ascending=False)["place"].astype(str)
+        where = ", ".join(places.drop_duplicates().head(4)) or "—"
+        rows.append(f"<tr><td>{_night(pd.Timestamp(night), lang)}</td>"
+                    f"<td>{(g['level'] == 'very high').sum()}</td><td>{fmt(stop)}</td><td>{fmt(peak)}</td>"
+                    f"<td style='text-align:left'>{where}</td></tr>")
+    return (f"<div class='cal'><table><tr><th>{c['col_night']}</th><th>{c['col_very_high']}</th>"
+            f"<th>{c['col_stop']}</th><th>{c['col_peak']}</th><th>{c['col_where']}</th></tr>"
+            f"{''.join(rows)}</table></div>")
+
+
 def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], lang: str,
-          prefix: str, today: dt.date) -> str:
+          prefix: str, today: dt.date, wf: pd.DataFrame | None = None) -> str:
     """Assemble the complete HTML of one of the two pages. `prefix` fixes the relative paths."""
     c = COPY[lang]
     other = "en" if lang == "es" else "es"
@@ -417,6 +495,18 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
     else:
         p.append(f"<h2>{c['h_forecast']}</h2><p class='sub'>{c['no_forecast']}</p>")
 
+    if wf is not None and not wf.empty:
+        zones = wf.drop_duplicates("zone")
+        acted = wf[wf["advice"].isin(["stop", "stop at peak hours"])]
+        p += [f"<h2>{c['h_wind']}</h2><p class='sub'>"
+              + c["sub_wind"].format(date=_date(today, lang), zones=len(zones),
+                                     turbines=f"{zones['turbines'].sum():,}".replace(
+                                         ",", "." if lang == "es" else ",")) + "</p>",
+              f"<p>{c['wind_intro']}</p>", f"<p>{c['wind_rule']}</p>",
+              wind_table(wf, lang) if not acted.empty else f"<p>{c['no_wind_stop']}</p>",
+              f"<p class='sub'>{c['wind_not']}</p>",
+              f"<p>{c['wind_more'].format(href=prefix + 'output/wind.html')}</p>"]
+
     p += [f"<h2>{c['h_todo']}</h2><p class='sub'>{c['sub_todo']}</p><div class='cards'>"]
     p += [f"<div><b>{t}</b><p>{d}</p></div>" for t, d in c["cards"]]
     p.append("</div>")
@@ -448,7 +538,7 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
 
 
 def build(fc: pd.DataFrame | None, rk: pd.DataFrame | None, reports: list[Path], out_dir: Path,
-          log=print) -> list[Path]:
+          log=print, wf: pd.DataFrame | None = None) -> list[Path]:
     """Write `index.html` (Spanish) and `en/index.html` (English) into `out_dir`.
 
     Pages serves the repository root, so the reports are linked where they already are (`output/`) instead
@@ -461,13 +551,15 @@ def build(fc: pd.DataFrame | None, rk: pd.DataFrame | None, reports: list[Path],
     if fc is not None and not fc.empty:
         # the download starts the day before so 24 h trends can be computed: that night is already gone
         fc = fc[pd.to_datetime(fc["night"]).dt.date >= today]
+    if wf is not None and not wf.empty:
+        wf = wf[pd.to_datetime(wf["night"]).dt.date >= today]
 
     written = []
     for lang in LANGS:
         dest = out_dir / "index.html" if lang == "es" else out_dir / "en" / "index.html"
         dest.parent.mkdir(parents=True, exist_ok=True)
         prefix = "" if lang == "es" else "../"
-        dest.write_text(_page(fc, rk, links, lang, prefix, today), encoding="utf-8", newline="\n")
+        dest.write_text(_page(fc, rk, links, lang, prefix, today, wf), encoding="utf-8", newline="\n")
         log(f"{dest} ({dest.stat().st_size / 1000:.0f} kB)")
         written.append(dest)
     log(f"{len(links)} reports linked")
