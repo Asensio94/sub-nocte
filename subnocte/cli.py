@@ -755,7 +755,9 @@ def web():
     wf = pd.read_csv(wind_csv, parse_dates=["night"]) if wind_csv.exists() else None
     flows = sorted((ROOT / "data" / "flows").glob("*.csv"))
     nights = pd.read_csv(flows[-1]) if flows else None
-    W.build(fc, rk, [ROOT / n for n in REPORTS], ROOT, log=rprint, nights=nights, wf=wf)
+    sc_csv = OUTPUT / "scorecard_nights.csv"
+    sc = pd.read_csv(sc_csv) if sc_csv.exists() else None
+    W.build(fc, rk, [ROOT / n for n in REPORTS], ROOT, log=rprint, nights=nights, wf=wf, sc=sc)
 
 
 if __name__ == "__main__":

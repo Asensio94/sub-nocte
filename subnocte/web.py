@@ -11,6 +11,7 @@ birds, and that is said right where the alert is shown, not in a footnote.
 from __future__ import annotations
 
 import datetime as dt
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -77,6 +78,12 @@ td:first-child,th:first-child{text-align:left}
 .cal th{text-align:center}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:6px 0 0}
 .legend span i{display:inline-block;width:13px;height:13px;vertical-align:-2px;margin-right:5px}
+.check select{font:15px var(--font-data);padding:4px 8px;margin:4px 0 8px}
+.check td.res_hit,.check td.res_quiet{color:#1d6b3a}
+.check td.res_false,.check td.res_miss{color:#b32d1f}
+.check td.res_none{color:var(--muted)}
+.check .k{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px;color:var(--muted);margin:6px 0 12px}
+.check .k b{color:var(--ink);font:700 22px/1 var(--font-data)}
 .night{background:#0d1b2a;color:#e8ecf4;margin:8px 0 26px;padding:18px 18px 14px}
 .night h2{color:#fff;margin-top:0}
 .night .sub,.night figcaption{color:#aab3c5}
@@ -146,6 +153,29 @@ COPY: dict[str, dict[str, str]] = {
         "high_in_one": "alto en 1 ciudad más",
         "high_in_many": "alto en {n} ciudades más",
         "no_alert": "Ninguna ciudad supera su percentil 75 en este periodo: no hay motivo para un aviso.",
+        "h_check": "¿Acertamos?",
+        "sub_check": "Cada previsión se publica antes de la noche y se compara después con lo que midió el "
+                     "radar más cercano. {nights} noches verificadas, del {first} al {last}.",
+        "check_kpi": ["de las alertas cayeron en noche fuerte", "lo que acertaría el azar",
+                      "de las noches fuertes tuvieron alerta"],
+        "check_pick": "Elige una noche",
+        "col_published": "aviso publicado",
+        "col_measured": "aves/km² medidas",
+        "col_radar": "radar",
+        "col_result": "resultado",
+        "res_hit": "✓ avisada",
+        "res_quiet": "✓ tranquila",
+        "res_false": "✗ falsa alarma",
+        "res_miss": "✗ no avisada",
+        "res_none": "sin registro",
+        "check_read": "Una noche es <b>fuerte</b> si está en el cuarto superior del registro de su radar, y "
+                      "hay <b>alerta</b> cuando se publicó «alto» o «muy alto». Los radares españoles renovados "
+                      "en 2025 aún no tienen registro suficiente para decir qué es una noche fuerte, así que "
+                      "salen como «sin registro» y no cuentan en los porcentajes. El radar no está en la "
+                      "ciudad: es el más cercano, a decenas de kilómetros.",
+        "check_more": "Todas las cifras, semana a semana y por días de antelación: "
+                      "<a href='{href}'>informe de verificación</a> (en inglés) y los datos en "
+                      "<a href='{csv}'>CSV</a>.",
         "h_wind": "Parques eólicos",
         "sub_wind": "Actualizado el {date}. {zones} zonas eólicas de España y Portugal, {turbines} aerogeneradores.",
         "wind_intro": "Las mismas noches de paso fuerte, vistas desde un parque eólico. En los Países Bajos los "
@@ -397,6 +427,28 @@ COPY: dict[str, dict[str, str]] = {
         "high_in_one": "high in 1 more city",
         "high_in_many": "high in {n} more cities",
         "no_alert": "No city exceeds its 75th percentile in this period: there is no reason for an alert.",
+        "h_check": "Did we get it right?",
+        "sub_check": "Every forecast is published before the night and checked afterwards against what the "
+                     "nearest radar measured. {nights} nights verified, from {first} to {last}.",
+        "check_kpi": ["of the alerts landed on a busy night", "what chance would get",
+                      "of the busy nights had an alert"],
+        "check_pick": "Pick a night",
+        "col_published": "published alert",
+        "col_measured": "birds/km² measured",
+        "col_radar": "radar",
+        "col_result": "result",
+        "res_hit": "✓ flagged",
+        "res_quiet": "✓ quiet",
+        "res_false": "✗ false alarm",
+        "res_miss": "✗ missed",
+        "res_none": "no record",
+        "check_read": "A night is <b>busy</b> if it falls in the top quarter of its radar's own record, and "
+                      "there is an <b>alert</b> when «high» or «very high» was published. The Spanish radars "
+                      "renewed in 2025 do not have a long enough record yet to say what a busy night is, so "
+                      "they show as «no record» and do not count in the percentages. The radar is not in the "
+                      "city: it is the nearest one, tens of kilometres away.",
+        "check_more": "Every figure, week by week and by days ahead: <a href='{href}'>verification report</a> "
+                      "and the data as <a href='{csv}'>CSV</a>.",
         "h_wind": "Wind farms",
         "sub_wind": "Updated on {date}. {zones} wind zones in Spain and Portugal, {turbines} turbines.",
         "wind_intro": "The same heavy-passage nights, seen from a wind farm. In the Netherlands the offshore "
@@ -851,9 +903,87 @@ def last_night(nights: pd.DataFrame | None, lang: str, prefix: str) -> list[str]
             "</section>"]
 
 
+MIN_REF = 100   # nights a radar needs in its own record before a busy night means anything (as in scorecard)
+
+
+def _result(alert: bool, busy, ref_n: int) -> str:
+    if ref_n < MIN_REF or pd.isna(busy):
+        return "res_none"
+    if alert:
+        return "res_hit" if busy else "res_false"
+    return "res_miss" if busy else "res_quiet"
+
+
+def check_section(sc: pd.DataFrame | None, lang: str, prefix: str) -> list[str]:
+    """Past nights, one at a time: the alert published before the night against what the radar measured.
+
+    The latest night is written into the page, so it reads without JavaScript; the selector swaps in the others
+    from a small JSON block with the same rows.
+    """
+    if sc is None or sc.empty:
+        return []
+    c = COPY[lang]
+    sc = sc.copy()
+    sc["night"] = pd.to_datetime(sc["night"])
+    sc["alert"] = sc["level"].isin(["high", "very high"])
+    sc["busy"] = (sc["obs_pct"] >= 0.75).where(sc["obs_pct"].notna())
+    sc["res"] = [_result(a, b, n) for a, b, n in zip(sc["alert"], sc["busy"], sc["ref_n"])]
+    ok = sc[sc["res"] != "res_none"]
+    a, o = ok["alert"], ok["busy"].astype(bool)
+    pct = lambda x: f"{x:.0%}".replace("%", " %") if lang == "es" else f"{x:.0%}"
+    kpi = [pct((a & o).sum() / max(a.sum(), 1)), pct(o.mean()), pct((a & o).sum() / max(o.sum(), 1))]
+
+    nights = sorted(sc["night"].unique(), reverse=True)
+    rows = {}
+    for n, g in sc.groupby("night"):
+        g = g.sort_values("vid_night", ascending=False)
+        rows[pd.Timestamp(n).strftime("%Y-%m-%d")] = [
+            [r.city, r.nearest_radar, int(round(r.dist_km)), r.level, LEVEL_NAME[lang].get(r.level, r.level),
+             _num(r.vid_night, lang, 1), c[r.res], r.res] for r in g.itertuples()]
+
+    def table(key: str) -> str:
+        body = "".join(
+            f"<tr><td><b>{city}</b></td><td>{radar} · {km} km</td>"
+            f"<td class='n' style='background:{COLOR.get(lv, '#f6f6f6')};color:{TEXT.get(lv, '#3a3f45')}'>"
+            f"{name}</td><td>{vid}</td><td class='{rk}'>{res}</td></tr>"
+            for city, radar, km, lv, name, vid, res, rk in rows[key])
+        return (f"<tr><th>{c['col_city']}</th><th>{c['col_radar']}</th><th>{c['col_published']}</th>"
+                f"<th>{c['col_measured']}</th><th>{c['col_result']}</th></tr>{body}")
+
+    latest = pd.Timestamp(nights[0]).strftime("%Y-%m-%d")
+    options = "".join(f"<option value='{pd.Timestamp(n):%Y-%m-%d}'>{_night(pd.Timestamp(n), lang)}</option>"
+                      for n in nights)
+    data = json.dumps({"head": table(latest).split("</tr>", 1)[0] + "</tr>", "rows": rows},
+                      ensure_ascii=False).replace("</", "<\\/")
+    script = ("(function(){var d=JSON.parse(document.getElementById('check-data').textContent),"
+              "s=document.getElementById('check-night'),t=document.getElementById('check-table');"
+              "s.hidden=false;document.getElementById('check-label').hidden=false;"
+              "s.addEventListener('change',function(){t.innerHTML=d.head+d.rows[s.value].map(function(r){"
+              "var lv=r[3];return '<tr><td><b>'+r[0]+'</b></td><td>'+r[1]+' · '+r[2]+' km</td>"
+              "<td class=\"n\" style=\"background:'+(COLOR[lv]||'#f6f6f6')+';color:'+(TEXT[lv]||'#3a3f45')+'\">'"
+              "+r[4]+'</td><td>'+r[5]+'</td><td class=\"'+r[7]+'\">'+r[6]+'</td></tr>';}).join('');});})();")
+    colors = f"var COLOR={json.dumps(COLOR)},TEXT={json.dumps(TEXT)};"
+    span = c["sub_check"].format(nights=len(nights), first=_date(pd.Timestamp(nights[-1]).date(), lang),
+                                 last=_date(pd.Timestamp(nights[0]).date(), lang))
+    more = c["check_more"].format(href=prefix + "output/scorecard.html", csv=prefix + "output/scorecard_nights.csv")
+    return ["<section class='check' aria-labelledby='h-check'>",
+            f"<h2 id='h-check'>{c['h_check']}</h2>",
+            f"<p class='sub'>{span}</p>",
+            "<div class='k'>" + "".join(f"<span><b>{v}</b> {k}</span>" for v, k in zip(kpi, c["check_kpi"]))
+            + "</div>",
+            f"<label id='check-label' for='check-night' hidden>{c['check_pick']}</label> "
+            f"<select id='check-night' hidden>{options}</select>",
+            f"<div class='cal'><table id='check-table'>{table(latest)}</table></div>",
+            f"<p class='sub'>{c['check_read']}</p>",
+            f"<p>{more}</p>",
+            f"<script type='application/json' id='check-data'>{data}</script>",
+            f"<script>{colors}{script}</script>",
+            "</section>"]
+
+
 def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], lang: str,
           prefix: str, today: dt.date, nights: pd.DataFrame | None = None,
-          wf: pd.DataFrame | None = None) -> str:
+          wf: pd.DataFrame | None = None, sc: pd.DataFrame | None = None) -> str:
     """Assemble the complete HTML of one of the two pages. `prefix` fixes the relative paths."""
     c = COPY[lang]
     other = "en" if lang == "es" else "es"
@@ -906,6 +1036,8 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
               f"<p class='sub'>{c['wind_not']}</p>",
               f"<p>{c['wind_more'].format(href=prefix + 'output/wind.html')}</p>"]
 
+    p += check_section(sc, lang, prefix)
+
     p += [f"<h2>{c['h_todo']}</h2><p class='sub'>{c['sub_todo']}</p><div class='cards'>"]
     p += [f"<div><b>{t}</b><p>{d}</p></div>" for t, d in c["cards"]]
     p.append("</div>")
@@ -934,7 +1066,8 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
 
 
 def build(fc: pd.DataFrame | None, rk: pd.DataFrame | None, reports: list[Path], out_dir: Path,
-          log=print, nights: pd.DataFrame | None = None, wf: pd.DataFrame | None = None) -> list[Path]:
+          log=print, nights: pd.DataFrame | None = None, wf: pd.DataFrame | None = None,
+          sc: pd.DataFrame | None = None) -> list[Path]:
     """Write `index.html` (Spanish) and `en/index.html` (English) into `out_dir`.
 
     Pages serves the repository root, so the reports are linked where they already are (`output/`) instead
@@ -955,7 +1088,7 @@ def build(fc: pd.DataFrame | None, rk: pd.DataFrame | None, reports: list[Path],
         dest = out_dir / "index.html" if lang == "es" else out_dir / "en" / "index.html"
         dest.parent.mkdir(parents=True, exist_ok=True)
         prefix = "" if lang == "es" else "../"
-        dest.write_text(_page(fc, rk, links, lang, prefix, today, nights, wf), encoding="utf-8",
+        dest.write_text(_page(fc, rk, links, lang, prefix, today, nights, wf, sc), encoding="utf-8",
                         newline="\n")
         log(f"{dest} ({dest.stat().st_size / 1000:.0f} kB)")
         written.append(dest)
