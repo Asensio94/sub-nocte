@@ -534,6 +534,7 @@ def scorecard(days_shown: int = 21, embed: bool = True):
     k = S.metrics(m)
     OUTPUT.mkdir(exist_ok=True)
     figs = S.figures(m, OUTPUT, nights_shown=days_shown)
+    S.nights(m).to_csv(OUTPUT / "scorecard_nights.csv", index=False, float_format="%.4f", date_format="%Y-%m-%d")
     out = OUTPUT / "scorecard.html"
     S.write_report(m, k, figs, out)
     if embed:
