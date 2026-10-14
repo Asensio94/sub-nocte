@@ -40,7 +40,7 @@ ARCHIVE_COLS = ["city", "night", "season", "country", "doy", "pred", "p_alert", 
 MIN_COVERAGE = 0.6     # same coverage filter used everywhere else in the project
 MIN_REF = 100          # nights a radar needs in its own record before its percentiles mean anything
 WINDOW = 21            # half-width, in days, of the window the observed percentile is taken over
-LEAD_OP = (-1, 1)      # the operational alert: last night, tonight and tomorrow
+LEAD_OP = (0, 1)       # the operational alert: tonight and tomorrow, both issued before the night began
 LAG_DAYS = 3           # the public archive publishes each day's file with about two days of delay
 
 
@@ -218,6 +218,39 @@ def by_place(m: pd.DataFrame) -> pd.DataFrame:
     return t.sort_values("measured birds/km²", ascending=False)
 
 
+def nights(m: pd.DataFrame) -> pd.DataFrame:
+    """One row per place and night: the last forecast issued before the night against what the radar measured.
+
+    This is the table behind the timeline, and the one published as CSV so anyone can redo the sums.
+    """
+    op = m[m["lead"].between(*LEAD_OP)].sort_values("lead")
+    t = op.drop_duplicates(["city", "night"], keep="first")
+    cols = ["night", "city", "nearest_radar", "dist_km", "issued", "lead", "level", "p_alert", "pred_vid",
+            "vid_night", "obs_pct", "obs_pct_win", "ref_n"]
+    return t[cols].sort_values(["night", "city"]).reset_index(drop=True)
+
+
+def by_week(m: pd.DataFrame) -> pd.DataFrame:
+    """The headline numbers week by week since the first forecast was published: is the model holding up?"""
+    rows = []
+    t = nights(m)
+    t["week"] = t["night"].dt.to_period("W-SUN").dt.start_time
+    for wk, g in t.groupby("week"):
+        rho = (g.groupby("nearest_radar")
+                 .apply(lambda x: spearmanr(x["pred_vid"], x["vid_night"]).correlation if len(x) > 4 else np.nan)
+                 .dropna())
+        ok = g[g["ref_n"] >= MIN_REF]
+        a, o = ok["level"].isin(["high", "very high"]), ok["obs_pct"] >= 0.75
+        rows.append({"week of": wk.strftime("%d %b"), "place-nights": len(g),
+                     "median rank correlation": rho.median() if len(rho) >= 3 else np.nan,
+                     "alerts": int(a.sum()), "busy nights": int(o.sum()),
+                     "alerts right": (a & o).sum() / a.sum() if a.sum() else np.nan,
+                     "busy nights flagged": (a & o).sum() / o.sum() if o.sum() else np.nan,
+                     "by chance": o.mean() if len(ok) else np.nan,
+                     "forecast birds/km²": g["pred_vid"].mean(), "measured birds/km²": g["vid_night"].mean()})
+    return pd.DataFrame(rows)
+
+
 def by_lead(m: pd.DataFrame) -> pd.DataFrame:
     """How the skill decays as the forecast reaches further ahead."""
     rows = []
@@ -234,6 +267,8 @@ def by_lead(m: pd.DataFrame) -> pd.DataFrame:
 
 def figures(m: pd.DataFrame, out_dir: Path, nights_shown: int = 21) -> list[Path]:
     import matplotlib
+    import matplotlib.dates
+    import matplotlib.ticker
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.patches import Patch
@@ -241,17 +276,17 @@ def figures(m: pd.DataFrame, out_dir: Path, nights_shown: int = 21) -> list[Path
     from .phase3 import LEVEL_COLOR, LEVEL_ORDER
 
     figs = []
-    op = m[m["lead"].between(*LEAD_OP)].sort_values("lead")
-    last = op.drop_duplicates(["city", "night"], keep="first")   # the closest forecast to each night
+    op = m[m["lead"].between(*LEAD_OP)]
+    last = nights(m)   # the last forecast issued before each night
 
     # 1) what was said against what flew, night by night
     p = out_dir / "scorecard_grid.png"
-    nights = sorted(last["night"].unique())[-nights_shown:]
-    g = last[last["night"].isin(nights)]
+    shown = sorted(last["night"].unique())[-nights_shown:]
+    g = last[last["night"].isin(shown)]
     order = g.groupby("city")["vid_night"].mean().sort_values(ascending=False).index.tolist()
-    fig, ax = plt.subplots(figsize=(max(7, 0.55 * len(nights) + 2.5), 0.42 * len(order) + 1.6))
+    fig, ax = plt.subplots(figsize=(max(7, 0.55 * len(shown) + 2.5), 0.42 * len(order) + 1.6))
     for i, c in enumerate(order):
-        for j, n in enumerate(nights):
+        for j, n in enumerate(shown):
             row = g[(g["city"] == c) & (g["night"] == n)]
             if row.empty:
                 continue
@@ -259,16 +294,43 @@ def figures(m: pd.DataFrame, out_dir: Path, nights_shown: int = 21) -> list[Path
             ax.add_patch(plt.Rectangle((j, i), 1, 1, facecolor=LEVEL_COLOR.get(lv, "#fff"), edgecolor="white"))
             ax.text(j + 0.5, i + 0.5, f"{v:.0f}" if v >= 10 else f"{v:.1f}", ha="center", va="center",
                     fontsize=7, color="white" if lv == "very high" else "#2c2c2a")
-    ax.set_xlim(0, len(nights)); ax.set_ylim(0, len(order)); ax.invert_yaxis()
-    ax.set_xticks(np.arange(len(nights)) + 0.5)
-    ax.set_xticklabels([pd.Timestamp(n).strftime("%d/%m") for n in nights], rotation=90, fontsize=7)
+    ax.set_xlim(0, len(shown)); ax.set_ylim(0, len(order)); ax.invert_yaxis()
+    ax.set_xticks(np.arange(len(shown)) + 0.5)
+    ax.set_xticklabels([pd.Timestamp(n).strftime("%d/%m") for n in shown], rotation=90, fontsize=7)
     ax.set_yticks(np.arange(len(order)) + 0.5); ax.set_yticklabels(order, fontsize=8)
     ax.set_title("Colour: the alert that was published. Number: the birds/km² the radar then measured", fontsize=10)
     ax.legend(handles=[Patch(facecolor=LEVEL_COLOR[n], edgecolor="#bbb", label=n) for n in LEVEL_ORDER],
               loc="upper center", bbox_to_anchor=(0.5, -0.12), ncol=4, frameon=False, fontsize=8)
     fig.tight_layout(); fig.savefig(p, dpi=130, bbox_inches="tight"); plt.close(fig); figs.append(p)
 
-    # 2) size: the forecast against the measurement, on the same scale
+    # 2) every night since the first forecast, place by place
+    p = out_dir / "scorecard_timeline.png"
+    order = last.groupby("city")["vid_night"].mean().sort_values(ascending=False).index.tolist()
+    cols = 3
+    rows = int(np.ceil(len(order) / cols))
+    fig, axes = plt.subplots(rows, cols, figsize=(12, 2.1 * rows), sharex=True, squeeze=False)
+    for ax, c in zip(axes.flat, order):
+        g = last[last["city"] == c].sort_values("night")
+        ax.plot(g["night"], g["vid_night"].clip(lower=0.05), color="#2c2c2a", lw=1.3, label="measured")
+        ax.plot(g["night"], g["pred_vid"].clip(lower=0.05), color="#1d6fa5", lw=1.1, ls="--", label="forecast")
+        hi = g[g["level"].isin(["high", "very high"])]
+        ax.scatter(hi["night"], hi["vid_night"].clip(lower=0.05), s=14, zorder=3,
+                   color=[LEVEL_COLOR[lv] for lv in hi["level"]], edgecolors="none")
+        ax.set_yscale("log"); ax.grid(alpha=0.25)
+        for axis in (ax.yaxis.set_major_formatter, ax.yaxis.set_minor_formatter):
+            axis(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
+        ax.set_title(f"{c} ({g['nearest_radar'].iat[0]})", fontsize=9, loc="left")
+        ax.tick_params(labelsize=7)
+    for ax in list(axes.flat)[len(order):]:
+        ax.axis("off")
+    for ax in axes[-1]:
+        ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%d/%m"))
+    axes.flat[0].legend(fontsize=7, loc="lower left")
+    fig.suptitle("Birds/km² the radar measured (black) and the forecast issued before the night (blue). "
+                 "Dots: nights the alert was high or very high", fontsize=10)
+    fig.tight_layout(); fig.savefig(p, dpi=120); plt.close(fig); figs.append(p)
+
+    # 3) size: the forecast against the measurement, on the same scale
     p = out_dir / "scorecard_scatter.png"
     fig, ax = plt.subplots(figsize=(5.6, 5.2))
     ax.scatter(op["pred_vid"].clip(lower=0.05), op["vid_night"].clip(lower=0.05), s=16, alpha=0.45,
@@ -281,7 +343,7 @@ def figures(m: pd.DataFrame, out_dir: Path, nights_shown: int = 21) -> list[Path
     ax.grid(alpha=0.25); ax.legend(fontsize=8)
     fig.tight_layout(); fig.savefig(p, dpi=130); plt.close(fig); figs.append(p)
 
-    # 3) how far ahead the skill survives
+    # 4) how far ahead the skill survives
     t = by_lead(m)
     if len(t) > 1:
         p = out_dir / "scorecard_lead.png"
@@ -315,7 +377,8 @@ def write_report(m: pd.DataFrame, k: dict, figs: list[Path], out: Path) -> None:
         "published before the night happened.</i></p>",
         "<p><b>Where the forecasts come from.</b> The daily routine commits the forecast in force, so the "
         "history of this repository is an archive of forecasts stamped with the day they were issued. "
-        "Nothing is re-run: the model is judged on what it actually said. Against it goes the density each "
+        "Nothing is re-run: the model is judged on what it actually said, and only forecasts issued on the "
+        "morning of the night or earlier count. Against it goes the density each "
         "city's nearest radar went on to measure, taken again from the public archive, which publishes each "
         "day with about two days of delay.</p>",
         "<div class='k'>" + "".join(f"<div>{a}<b>{b}</b></div>" for a, b in summary.items()) + "</div>",
@@ -331,6 +394,16 @@ def write_report(m: pd.DataFrame, k: dict, figs: list[Path], out: Path) -> None:
     parts += [
         "<h2>Place by place</h2>",
         by_place(m).round(2).to_html(index=False),
+        "<h2>Week by week</h2>",
+        "<p>The same check, one week at a time since the first published forecast, to see whether the "
+        "model holds up as the season moves on. A busy night is one in the top quarter of its radar's own "
+        "record; the alert columns only count radars with a long enough record, and «by chance» is how often "
+        "an alert fired at random would have landed on one.</p>",
+        by_week(m).to_html(index=False, na_rep="—", formatters={
+            c: (lambda x: "—" if pd.isna(x) else f"{x:.0%}")
+            for c in ("alerts right", "busy nights flagged", "by chance")}, float_format="%.2f"),
+        "<p>Every night behind these numbers, with the forecast and the measurement side by side: "
+        "<a href='scorecard_nights.csv'>scorecard_nights.csv</a>.</p>",
         "<h2>By how far ahead</h2>",
         by_lead(m).round(3).to_html(index=False),
         "<h2>What this cannot tell you</h2><ul>"
