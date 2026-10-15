@@ -55,13 +55,13 @@ a{color:var(--amber)}
 
 <h2>What already works</h2>
 <p><span class="mono">sub-nocte</span> is an open project that combines radar profiles with weather to forecast nightly migration intensity, including at places without a radar. Leave-one-radar-out validation gives an AUC of 0.77, catching 34% of heavy nights against 10% by chance.</p>
-<p>On top of it we built a decision tool for 151 wind farm zones in mainland Iberia and the Balearics. In a hindcast over 59 zones (2021–2026 seasons), stopping only on the heaviest nights with low wind:</p>
+<p>On top of it we built a decision tool for 151 wind farm zones in mainland Iberia and the Balearics. In a hindcast over all 151 zones on the ERA5 reanalysis (2021–2026 seasons), stopping only on the heaviest nights with low wind:</p>
 <div class="facts">
-<div><b>7</b><span>stop nights per season per zone</span></div>
-<div><b>2%</b><span>of night-time energy lost</span></div>
-<div><b>11%</b><span>of forecast migration falls on those nights</span></div>
+<div><b>7.5</b><span>stop nights per season per zone</span></div>
+<div><b>3%</b><span>of night-time energy lost</span></div>
+<div><b>9%</b><span>of forecast migration falls on those nights</span></div>
 </div>
-<p class="note">Heavy-passage nights tend to be calm (correlation −0.19 between power and bird density), which is why stopping is cheap.</p>
+<p class="note">Heavy-passage nights tend to be calm, which is why stopping is cheap. And the rule picks the right nights: in the 55 zones with a radar within 75 km, that radar measured heavy passage on 67% of the stop nights, against 24% by chance.</p>
 
 </section>
 <figure class="demo" aria-labelledby="demo-cap">
