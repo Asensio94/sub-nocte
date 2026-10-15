@@ -18,6 +18,8 @@ en los picos, reduciendo colisiones con edificios. En Europa existen los datos (
 ciencia, pero **no existe ningún servicio público de pronóstico por ciudad ni ningún programa municipal ligado a
 la migración**.
 
+> **Estado: activo.** Se actualiza solo y sigue en desarrollo.
+
 ## Cómo funciona
 
 ```
