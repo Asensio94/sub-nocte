@@ -168,9 +168,15 @@ fase 3, que funciona en cualquier punto aunque no haya radar, a los aerogenerado
   - con alerta alta (P75), vigilar;
   - con cualquier alerta inferior, funcionar.
 
-  Sobre las temporadas 2021–2026 esto supone unas 7 noches por temporada y zona y un 2 % de la producción
-  nocturna, para el 11 % de la migración que predice el modelo. Parar desde el P75 habría supuesto 21 noches y un
-  13,5 %. Sale tan barato porque las noches de mucho paso suelen ser noches de poco viento.
+  Sobre las temporadas 2021–2026 (reanálisis ERA5, 151 zonas) esto supone unas 7,5 noches por temporada y zona
+  y un 3,1 % de la producción nocturna, para el 8,8 % de la migración que predice el modelo. Parar todas las
+  noches de paso muy alto habría supuesto un 12,8 %. Sale tan barato porque las noches de mucho paso suelen ser
+  noches de poco viento.
+- **Contraste con radar** (`wind-check`). Las 55 zonas con un radar a menos de 75 km se comparan con lo que
+  midió ese radar cada noche, dentro de su propio registro desde 2021. Una noche «fuerte» es el cuarto superior
+  de ese registro, así que por azar lo es el 24 %. En las noches de alerta muy alta lo fue el 63 %, en las que
+  la regla dice parar el 67 % y en las de alerta baja el 12 %. Fuera quedan las zonas sin radar cerca y el
+  registro anterior a 2021, medido en otra escala por varios radares.
 
   Sirve para ordenar noches, no es una orden de operación.
 

@@ -650,6 +650,34 @@ def wind(days: int = 7, cache: bool = False, region: str = REGION):
 
 
 @app.command()
+def wind_check(region: str = REGION):
+    """Hindcast of the stopping rule on the ERA5 archive, and its check against the nearest radar."""
+    from . import wind_check as C
+    from .history import load_all_nightly
+
+    w = _Wind(region)
+    climate = w.climate("era5")
+    if not climate.exists():
+        rprint(f"[red]no ERA5 predictions: run wind-thresholds --region {region} first[/red]")
+        raise typer.Exit(1)
+    x = C.levels(pd.read_parquet(climate), pd.read_csv(w.dir / "thresholds.csv"))
+    h = C.hindcast(x)
+    ov = C.overall(h)
+    z = w.zones()
+    n = load_all_nightly(NIGHTLY)
+    m = C.radar_check(x, C.pair_radars(z[z["zone"].isin(set(x["zone"]))], n), n)
+    cs, bz = C.check_summary(m), C.by_zone(m)
+    h.to_csv(w.dir / "check_hindcast.csv", index=False, float_format="%.4f")
+    cs.to_csv(w.dir / "check_radar.csv", index=False, float_format="%.4f")
+    bz.to_csv(w.dir / "check_by_zone.csv", index=False, float_format="%.3f")
+    out = OUTPUT / ("wind_check.html" if region == "iberia" else f"wind_check_{region}.html")
+    C.write_report(x, h, ov, cs, bz, x["zone"].nunique(), out)
+    rprint(ov.round(3).to_string(index=False))
+    rprint(cs.round(3).to_string(index=False))
+    rprint(f"Report: {out}")
+
+
+@app.command()
 def flows(night: str = typer.Option(None, help="YYYY-MM-DD, date of the sunset; by default the latest complete one")):
     """Replay of a night: density and flight of the migrating birds over Iberia and France, every 20 minutes."""
     from concurrent.futures import ThreadPoolExecutor
@@ -737,7 +765,8 @@ def scorecard(days_shown: int = 21, embed: bool = True):
 
 
 REPORTS = ["output/phase0.html", "output/phase1.html", "output/phase2.html", "output/phase3.html",
-           "output/ranking.html", "output/scorecard.html", "output/wind.html", "docs/design.html",
+           "output/ranking.html", "output/scorecard.html", "output/wind.html", "output/wind_check.html",
+           "docs/design.html",
            "docs/proposal/proposal_es.html", "docs/proposal/proposal_en.html"]
 
 

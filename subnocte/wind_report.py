@@ -134,10 +134,12 @@ def write_report(fc: pd.DataFrame, thresholds: pd.DataFrame, out: Path, region: 
         f"{EXPENSIVE:.0%} it is <i>expensive</i>. The two halves cross in a fixed table: very high and cheap → stop; very "
         "high and moderate → stop at the peak hours; very high and expensive, or high → watch; anything below → run. "
         "It is a way of ranking nights, not an operating order.</p>",
-        "<p><b>Why so strict.</b> Over the 2021-2026 seasons on the Peninsula, where the table was chosen, stopping "
-        "from the 75th percentile would have meant 21 nights per season and zone and 13.5 % of the night output. "
-        "With this table it is about 7 nights and 2 % of the output, which still covers about 11 % of the migration "
-        "the model predicts. It comes out this cheap because the heavy nights tend to be calm ones.</p>",
+        "<p><b>Why so strict.</b> Over the 2021-2026 seasons on the Peninsula (ERA5 reanalysis, 151 zones), this "
+        "table would have stopped about 7.5 nights per season and zone for 3.1 % of the night output, covering "
+        "8.8 % of the migration the model predicts; stopping on every very high night would have cost 12.8 %. It "
+        "comes out this cheap because the heavy nights tend to be calm ones. The nearest radar, where there is one "
+        "within 75 km, measured a busy night on 67 % of the suggested stops against 24 % by chance: "
+        "<a href='wind_check.html'>hindcast and radar check</a>.</p>",
         "<div class='k'>" + "".join(f"<div>{k}<b>{v}</b></div>" for k, v in summary.items()) + "</div>",
     ]
     parts += [f"<p><img src='{f.name}'></p>" for f in figs]

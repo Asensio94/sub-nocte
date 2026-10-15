@@ -186,9 +186,11 @@ COPY: dict[str, dict[str, str]] = {
                       "(la producción que tendrían esa noche los aerogeneradores con el viento previsto a "
                       "100 m).",
         "wind_rule": "<b>Solo se sugiere parar cuando el paso es muy alto y parar sale barato</b>, es decir, en "
-                     "noches de poco viento. Probado sobre 2021-2026, esa regla habría parado 7 noches por "
-                     "temporada y zona, con un 2 % de la producción nocturna, y habría cubierto el 11 % de la "
-                     "migración prevista. Parar desde el percentil 75 habría costado el 13,5 %.",
+                     "noches de poco viento. Probado sobre 2021-2026, esa regla habría parado 7,5 noches por "
+                     "temporada y zona, con un 3 % de la producción nocturna, y habría cubierto el 9 % de la "
+                     "migración prevista; parar todas las noches de paso muy alto habría costado el 13 %. "
+                     "Y elige bien: el radar más cercano midió paso fuerte en el 67 % de esas noches, cuando "
+                     "por azar sería el 24 %.",
         "col_night": "noche",
         "col_very_high": "zonas en muy alto",
         "col_stop": "parar",
@@ -197,12 +199,13 @@ COPY: dict[str, dict[str, str]] = {
         "mw": "{n} {zones} · {mw} MW",
         "zone": ("zona", "zonas"),
         "no_wind_stop": "Ninguna zona cumple la regla de parada en estas noches.",
-        "wind_more": "Mapa, tabla por zona y método completo: <a href='{href}'>informe de parques eólicos</a> "
-                     "(en inglés).",
+        "wind_more": "Mapa, tabla por zona y método completo: <a href='{href}'>informe de parques eólicos</a>; "
+                     "lo que habría hecho la regla desde 2021 y su contraste con el radar: "
+                     "<a href='{check}'>verificación</a> (ambos en inglés).",
         "wind_not": "Es una sugerencia para ordenar las noches, no una orden de parada ni un sustituto de los "
                     "planes de vigilancia de cada parque. El modelo no distingue especies ni sabe a qué altura "
-                    "pasan las aves sobre cada parque, y la verificación contra radar de esta previsión empieza "
-                    "con su publicación.",
+                    "pasan las aves sobre cada parque, y el radar más cercano está a decenas de kilómetros del "
+                    "parque.",
         "h_todo": "Qué hacer una noche de aviso",
         "sub_todo": "Lo que reduce las colisiones y la desorientación, por orden de eficacia y de facilidad.",
         "cards": [
@@ -354,6 +357,7 @@ COPY: dict[str, dict[str, str]] = {
             "ranking.html": "Ranking de exposición a la luz artificial",
             "scorecard.html": "Verificación — ¿acertaron las previsiones ya publicadas?",
             "wind.html": "Parques eólicos — previsión nocturna por zona",
+            "wind_check.html": "Parques eólicos — la regla de parada desde 2021 y su contraste con el radar",
             "design.html": "Documento de diseño del proyecto",
             "proposal_es.html": "Propuesta a SEO/BirdLife y AEMET — datos de radar con horas de retraso, no días",
             "proposal_en.html": "La misma propuesta en inglés, para Aloft y OPERA",
@@ -458,9 +462,11 @@ COPY: dict[str, dict[str, str]] = {
                       "on five years of ERA5 weather at the zone's point) and <b>what stopping costs</b> (the "
                       "output the turbines would have that night with the wind forecast at 100 m).",
         "wind_rule": "<b>Stopping is only suggested when the passage is very high and stopping is cheap</b>, "
-                     "that is, on nights with little wind. Tested on 2021-2026, that rule would have stopped 7 "
-                     "nights per season and zone, for 2 % of the night output, and covered 11 % of the "
-                     "predicted migration. Stopping from the 75th percentile would have cost 13.5 %.",
+                     "that is, on nights with little wind. Tested on 2021-2026, that rule would have stopped 7.5 "
+                     "nights per season and zone, for 3 % of the night output, and covered 9 % of the "
+                     "predicted migration; stopping on every very high night would have cost 13 %. And it "
+                     "picks the right nights: the nearest radar measured heavy passage on 67 % of them, "
+                     "against 24 % by chance.",
         "col_night": "night",
         "col_very_high": "zones at very high",
         "col_stop": "stop",
@@ -469,10 +475,12 @@ COPY: dict[str, dict[str, str]] = {
         "mw": "{n} {zones} · {mw} MW",
         "zone": ("zone", "zones"),
         "no_wind_stop": "No zone meets the stopping rule on these nights.",
-        "wind_more": "Map, per-zone table and full method: <a href='{href}'>wind farm report</a>.",
+        "wind_more": "Map, per-zone table and full method: <a href='{href}'>wind farm report</a>; what the rule "
+                     "would have done since 2021 and how it compares with the radar: "
+                     "<a href='{check}'>verification</a>.",
         "wind_not": "It is a suggestion to rank nights, not a stop order nor a substitute for each farm's "
                     "monitoring plan. The model does not tell species apart nor know at what height the birds "
-                    "cross each farm, and the radar verification of this forecast starts with its publication.",
+                    "cross each farm, and the nearest radar is tens of kilometres from the farm.",
         "h_todo": "What to do on an alert night",
         "sub_todo": "What actually reduces collisions and disorientation, ordered by effect and by ease.",
         "cards": [
@@ -625,6 +633,7 @@ COPY: dict[str, dict[str, str]] = {
             "ranking.html": "Artificial light exposure ranking",
             "scorecard.html": "Verification — did the published forecasts hold up?",
             "wind.html": "Wind farms — nightly forecast per zone",
+            "wind_check.html": "Wind farms — the stopping rule since 2021, checked against the radar",
             "design.html": "Project design document",
             "proposal_en.html": "Proposal to Aloft and OPERA — radar data in hours, not days",
             "proposal_es.html": "The same proposal in Spanish, for SEO/BirdLife and AEMET",
@@ -1034,7 +1043,7 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
               f"<p>{c['wind_intro']}</p>", f"<p>{c['wind_rule']}</p>",
               wind_table(wf, lang) if not acted.empty else f"<p>{c['no_wind_stop']}</p>",
               f"<p class='sub'>{c['wind_not']}</p>",
-              f"<p>{c['wind_more'].format(href=prefix + 'output/wind.html')}</p>"]
+              f"<p>{c['wind_more'].format(href=prefix + 'output/wind.html', check=prefix + 'output/wind_check.html')}</p>"]
 
     p += check_section(sc, lang, prefix)
 

@@ -254,10 +254,10 @@ def stop_cost(power_frac: float) -> str:
 def advice(level: str, cost: str) -> str:
     """The decision table that crosses the two halves. It is a suggestion to rank nights, not an order.
 
-    Chosen on the 2021-2026 hindcast of the first 59 zones. Stopping from the 75th percentile would have stopped
-    21 nights per season and zone and lost 13.5 % of the night output; only from the 90th percentile and on cheap
-    nights it is 7 nights and 2 % of the output, for 11 % of the predicted migration. It is that cheap because the
-    heavy nights tend to be calm ones (correlation -0.19 between night output and predicted density).
+    Checked on the 2021-2026 ERA5 hindcast of the 151 Iberian zones (`wind-check`): stopping on cheap very high
+    nights is 7.5 nights per season and zone and 3.1 % of the night output, for 8.8 % of the predicted migration;
+    stopping on every very high night would cost 12.8 % for 10.9 %. It is that cheap because the heavy nights tend
+    to be calm ones. The nearest radar found 67 % of the suggested stops busy, against 24 % by chance.
     """
     if level == "very high":
         return {"cheap": "stop", "moderate": "stop at peak hours"}.get(cost, "watch")
