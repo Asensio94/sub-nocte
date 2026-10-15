@@ -62,6 +62,10 @@ CSS = """
 .lang{position:absolute;top:16px;right:16px;font:600 13px/1 var(--font-title);text-transform:uppercase;letter-spacing:.08em}
 .lang a,.lang span{display:inline-block;padding:5px 9px 4px;border:1.5px solid var(--line);text-decoration:none}
 .lang span{border-color:var(--accent);color:var(--accent)}
+.routes-cta{display:block;margin:28px 0;padding:18px 20px;border-radius:6px;color:#e9e4d6;text-decoration:none;background:radial-gradient(120% 140% at 85% 20%,#5b2a6e 0%,#1b2340 45%,#0a1322 100%);border:1px solid #2a3858}
+.routes-cta span{display:block;max-width:60ch;line-height:1.5}
+.routes-cta strong{display:inline-block;margin-top:10px;color:#ffd98e;font:600 15px/1 var(--font-title);text-transform:uppercase;letter-spacing:.06em}
+.routes-cta:hover strong{text-decoration:underline}
 .beta-note{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);padding:12px 16px;margin:8px 0 22px;font-size:15px}
 h2{margin:38px 0 6px;font:700 28px/1 var(--font-title);text-transform:uppercase;letter-spacing:.03em}
 h2+p.sub{margin:0 0 16px}
@@ -199,6 +203,10 @@ COPY: dict[str, dict[str, str]] = {
         "mw": "{n} {zones} · {mw} MW",
         "zone": ("zona", "zonas"),
         "no_wind_stop": "Ninguna zona cumple la regla de parada en estas noches.",
+        "routes_cta": "<b>Por dónde vuelan.</b> El mapa de rutas dibuja la dirección que miden los radares desde "
+                      "2016, noche a noche, y pone encima los parques eólicos de las próximas noches: cuáles "
+                      "quedan en el camino y por qué la sugerencia es parar o seguir.",
+        "routes_link": "Ver el mapa de rutas →",
         "wind_more": "Mapa, tabla por zona y método completo: <a href='{href}'>informe de parques eólicos</a>; "
                      "lo que habría hecho la regla desde 2021 y su contraste con el radar: "
                      "<a href='{check}'>verificación</a> (ambos en inglés).",
@@ -475,6 +483,10 @@ COPY: dict[str, dict[str, str]] = {
         "mw": "{n} {zones} · {mw} MW",
         "zone": ("zone", "zones"),
         "no_wind_stop": "No zone meets the stopping rule on these nights.",
+        "routes_cta": "<b>Where they fly.</b> The routes map draws the direction the radars have measured since "
+                      "2016, night by night, and lays the wind farms of the coming nights on top: which ones are "
+                      "in the way and why the advice is to stop or to keep running.",
+        "routes_link": "See the routes map →",
         "wind_more": "Map, per-zone table and full method: <a href='{href}'>wind farm report</a>; what the rule "
                      "would have done since 2021 and how it compares with the radar: "
                      "<a href='{check}'>verification</a>.",
@@ -1032,6 +1044,12 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
         p += nights_to_switch_off(alerts, lang) if not alerts.empty else [f"<p>{c['no_alert']}</p>"]
     else:
         p.append(f"<h2>{c['h_forecast']}</h2><p class='sub'>{c['no_forecast']}</p>")
+
+    routes = Path(__file__).resolve().parents[1] / "rutas.html"
+    if routes.exists():
+        href = "rutas.html" if lang == "es" else "routes.html"
+        p.append(f"<a class='routes-cta' href='{href}'><span>{c['routes_cta']}</span>"
+                 f"<strong>{c['routes_link']}</strong></a>")
 
     if wf is not None and not wf.empty:
         zones = wf.drop_duplicates("zone")

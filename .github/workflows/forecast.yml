@@ -64,6 +64,14 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
 
+      - name: Routes map
+        # the routes page redraws the coming nights on top of the measured flight directions; an add-on too.
+        continue-on-error: true
+        timeout-minutes: 10
+        run: python -m subnocte.cli routes
+        env:
+          PYTHONIOENCODING: utf-8
+
       - name: Regenerate the website
         run: python -m subnocte.cli web
         env:
@@ -74,7 +82,7 @@ jobs:
           git config user.name "sub-nocte"
           git config user.email "actions@github.com"
           git add index.html en .nojekyll data/phase3_forecast.csv data/flows output/phase3.html \
-            data/wind/forecast.csv output/wind.html
+            data/wind/forecast.csv output/wind.html rutas.html data/routes/climatology.csv
           if git diff --cached --quiet; then
             echo "no changes"
           else

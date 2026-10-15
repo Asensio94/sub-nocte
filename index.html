@@ -100,6 +100,10 @@ table.params td.num,table.params th.num{text-align:right;font-family:var(--font-
 .lang{position:absolute;top:16px;right:16px;font:600 13px/1 var(--font-title);text-transform:uppercase;letter-spacing:.08em}
 .lang a,.lang span{display:inline-block;padding:5px 9px 4px;border:1.5px solid var(--line);text-decoration:none}
 .lang span{border-color:var(--accent);color:var(--accent)}
+.routes-cta{display:block;margin:28px 0;padding:18px 20px;border-radius:6px;color:#e9e4d6;text-decoration:none;background:radial-gradient(120% 140% at 85% 20%,#5b2a6e 0%,#1b2340 45%,#0a1322 100%);border:1px solid #2a3858}
+.routes-cta span{display:block;max-width:60ch;line-height:1.5}
+.routes-cta strong{display:inline-block;margin-top:10px;color:#ffd98e;font:600 15px/1 var(--font-title);text-transform:uppercase;letter-spacing:.06em}
+.routes-cta:hover strong{text-decoration:underline}
 .beta-note{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);padding:12px 16px;margin:8px 0 22px;font-size:15px}
 h2{margin:38px 0 6px;font:700 28px/1 var(--font-title);text-transform:uppercase;letter-spacing:.03em}
 h2+p.sub{margin:0 0 16px}
@@ -181,12 +185,13 @@ ul{padding-left:20px}li{margin:5px 0}
 <li><b>mar 20 oct</b>: alto en 2 ciudades más.</li>
 <li><b>mié 21 oct</b>: <b>muy alto</b> en Montpellier, Málaga; alto en 7 ciudades más.</li>
 </ul>
+<a class='routes-cta' href='rutas.html'><span><b>Por dónde vuelan.</b> El mapa de rutas dibuja la dirección que miden los radares desde 2016, noche a noche, y pone encima los parques eólicos de las próximas noches: cuáles quedan en el camino y por qué la sugerencia es parar o seguir.</span><strong>Ver el mapa de rutas →</strong></a>
 <h2>Parques eólicos</h2><p class='sub'>Actualizado el 15 de octubre de 2026. 151 zonas eólicas de España y Portugal, 24.529 aerogeneradores.</p>
 <p>Las mismas noches de paso fuerte, vistas desde un parque eólico. En los Países Bajos los parques marinos ya se paran en las noches de migración intensa con una previsión como esta; en España y Portugal no hay nada parecido. Para cada zona de unos 25 km se cruzan dos cosas: <b>cuánto paso se espera</b> (el mismo modelo de las ciudades, calibrado con cinco años de meteorología ERA5 en el punto de la zona) y <b>cuánto cuesta parar</b> (la producción que tendrían esa noche los aerogeneradores con el viento previsto a 100 m).</p>
-<p><b>Solo se sugiere parar cuando el paso es muy alto y parar sale barato</b>, es decir, en noches de poco viento. Probado sobre 2021-2026, esa regla habría parado 7 noches por temporada y zona, con un 2 % de la producción nocturna, y habría cubierto el 11 % de la migración prevista. Parar desde el percentil 75 habría costado el 13,5 %.</p>
+<p><b>Solo se sugiere parar cuando el paso es muy alto y parar sale barato</b>, es decir, en noches de poco viento. Probado sobre 2021-2026, esa regla habría parado 7,5 noches por temporada y zona, con un 3 % de la producción nocturna, y habría cubierto el 9 % de la migración prevista; parar todas las noches de paso muy alto habría costado el 13 %. Y elige bien: el radar más cercano midió paso fuerte en el 67 % de esas noches, cuando por azar sería el 24 %.</p>
 <div class='cal'><table><tr><th>noche</th><th>zonas en muy alto</th><th>parar</th><th>parar en horas punta</th><th>dónde (mayor potencia)</th></tr><tr><td>jue 15 oct</td><td>7</td><td>7 zonas · 3.025 MW</td><td>—</td><td style='text-align:left'>Valdejalón, Hoya de Huesca, La Rioja, Santarém</td></tr><tr><td>vie 16 oct</td><td>17</td><td>14 zonas · 1.711 MW</td><td>1 zona · 557 MW</td><td style='text-align:left'>Soria, Hoya de Huesca, Vila Real, Comunidad de Calatayud</td></tr><tr><td>sáb 17 oct</td><td>4</td><td>1 zona · 203 MW</td><td>2 zonas · 28 MW</td><td style='text-align:left'>Coímbra, Oporto</td></tr><tr><td>dom 18 oct</td><td>4</td><td>4 zonas · 813 MW</td><td>—</td><td style='text-align:left'>Guadalteba, Huelva, Comunidad de Calatayud, Jaén</td></tr><tr><td>lun 19 oct</td><td>2</td><td>2 zonas · 236 MW</td><td>—</td><td style='text-align:left'>Priorato, Somontano de Barbastro</td></tr><tr><td>mar 20 oct</td><td>20</td><td>20 zonas · 3.317 MW</td><td>—</td><td style='text-align:left'>Campo de Belchite, Hoya de Huesca, Zaragoza, Albacete</td></tr></table></div>
-<p class='sub'>Es una sugerencia para ordenar las noches, no una orden de parada ni un sustituto de los planes de vigilancia de cada parque. El modelo no distingue especies ni sabe a qué altura pasan las aves sobre cada parque, y la verificación contra radar de esta previsión empieza con su publicación.</p>
-<p>Mapa, tabla por zona y método completo: <a href='output/wind.html'>informe de parques eólicos</a> (en inglés).</p>
+<p class='sub'>Es una sugerencia para ordenar las noches, no una orden de parada ni un sustituto de los planes de vigilancia de cada parque. El modelo no distingue especies ni sabe a qué altura pasan las aves sobre cada parque, y el radar más cercano está a decenas de kilómetros del parque.</p>
+<p>Mapa, tabla por zona y método completo: <a href='output/wind.html'>informe de parques eólicos</a>; lo que habría hecho la regla desde 2021 y su contraste con el radar: <a href='output/wind_check.html'>verificación</a> (ambos en inglés).</p>
 <section class='check' aria-labelledby='h-check'>
 <h2 id='h-check'>¿Acertamos?</h2>
 <p class='sub'>Cada previsión se publica antes de la noche y se compara después con lo que midió el radar más cercano. 39 noches verificadas, del 3 de septiembre de 2026 al 11 de octubre de 2026.</p>
@@ -260,6 +265,7 @@ ul{padding-left:20px}li{margin:5px 0}
 <li><a href='output/ranking.html'>Ranking de exposición a la luz artificial</a></li>
 <li><a href='output/scorecard.html'>Verificación — ¿acertaron las previsiones ya publicadas?</a></li>
 <li><a href='output/wind.html'>Parques eólicos — previsión nocturna por zona</a></li>
+<li><a href='output/wind_check.html'>Parques eólicos — la regla de parada desde 2021 y su contraste con el radar</a></li>
 <li><a href='docs/design.html'>Documento de diseño del proyecto</a></li>
 <li><a href='docs/proposal/proposal_es.html'>Propuesta a SEO/BirdLife y AEMET — datos de radar con horas de retraso, no días</a></li>
 <li><a href='docs/proposal/proposal_en.html'>La misma propuesta en inglés, para Aloft y OPERA</a></li>

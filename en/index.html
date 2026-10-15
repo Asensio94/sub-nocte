@@ -100,6 +100,10 @@ table.params td.num,table.params th.num{text-align:right;font-family:var(--font-
 .lang{position:absolute;top:16px;right:16px;font:600 13px/1 var(--font-title);text-transform:uppercase;letter-spacing:.08em}
 .lang a,.lang span{display:inline-block;padding:5px 9px 4px;border:1.5px solid var(--line);text-decoration:none}
 .lang span{border-color:var(--accent);color:var(--accent)}
+.routes-cta{display:block;margin:28px 0;padding:18px 20px;border-radius:6px;color:#e9e4d6;text-decoration:none;background:radial-gradient(120% 140% at 85% 20%,#5b2a6e 0%,#1b2340 45%,#0a1322 100%);border:1px solid #2a3858}
+.routes-cta span{display:block;max-width:60ch;line-height:1.5}
+.routes-cta strong{display:inline-block;margin-top:10px;color:#ffd98e;font:600 15px/1 var(--font-title);text-transform:uppercase;letter-spacing:.06em}
+.routes-cta:hover strong{text-decoration:underline}
 .beta-note{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);padding:12px 16px;margin:8px 0 22px;font-size:15px}
 h2{margin:38px 0 6px;font:700 28px/1 var(--font-title);text-transform:uppercase;letter-spacing:.03em}
 h2+p.sub{margin:0 0 16px}
@@ -181,12 +185,13 @@ ul{padding-left:20px}li{margin:5px 0}
 <li><b>Tue 20 Oct</b>: high in 2 more cities.</li>
 <li><b>Wed 21 Oct</b>: <b>very high</b> in Montpellier, Málaga; high in 7 more cities.</li>
 </ul>
+<a class='routes-cta' href='routes.html'><span><b>Where they fly.</b> The routes map draws the direction the radars have measured since 2016, night by night, and lays the wind farms of the coming nights on top: which ones are in the way and why the advice is to stop or to keep running.</span><strong>See the routes map →</strong></a>
 <h2>Wind farms</h2><p class='sub'>Updated on 15 October 2026. 151 wind zones in Spain and Portugal, 24,529 turbines.</p>
 <p>The same heavy-passage nights, seen from a wind farm. In the Netherlands the offshore farms are already stopped on nights of intense migration with a forecast like this one; in Spain and Portugal nothing like it is in place. For each zone of about 25 km two things are crossed: <b>how much passage is expected</b> (the same model as the cities, calibrated on five years of ERA5 weather at the zone's point) and <b>what stopping costs</b> (the output the turbines would have that night with the wind forecast at 100 m).</p>
-<p><b>Stopping is only suggested when the passage is very high and stopping is cheap</b>, that is, on nights with little wind. Tested on 2021-2026, that rule would have stopped 7 nights per season and zone, for 2 % of the night output, and covered 11 % of the predicted migration. Stopping from the 75th percentile would have cost 13.5 %.</p>
+<p><b>Stopping is only suggested when the passage is very high and stopping is cheap</b>, that is, on nights with little wind. Tested on 2021-2026, that rule would have stopped 7.5 nights per season and zone, for 3 % of the night output, and covered 9 % of the predicted migration; stopping on every very high night would have cost 13 %. And it picks the right nights: the nearest radar measured heavy passage on 67 % of them, against 24 % by chance.</p>
 <div class='cal'><table><tr><th>night</th><th>zones at very high</th><th>stop</th><th>stop at peak hours</th><th>where (largest capacity)</th></tr><tr><td>Thu 15 Oct</td><td>7</td><td>7 zones · 3,025 MW</td><td>—</td><td style='text-align:left'>Valdejalón, Hoya de Huesca, La Rioja, Santarém</td></tr><tr><td>Fri 16 Oct</td><td>17</td><td>14 zones · 1,711 MW</td><td>1 zone · 557 MW</td><td style='text-align:left'>Soria, Hoya de Huesca, Vila Real, Comunidad de Calatayud</td></tr><tr><td>Sat 17 Oct</td><td>4</td><td>1 zone · 203 MW</td><td>2 zones · 28 MW</td><td style='text-align:left'>Coímbra, Oporto</td></tr><tr><td>Sun 18 Oct</td><td>4</td><td>4 zones · 813 MW</td><td>—</td><td style='text-align:left'>Guadalteba, Huelva, Comunidad de Calatayud, Jaén</td></tr><tr><td>Mon 19 Oct</td><td>2</td><td>2 zones · 236 MW</td><td>—</td><td style='text-align:left'>Priorato, Somontano de Barbastro</td></tr><tr><td>Tue 20 Oct</td><td>20</td><td>20 zones · 3,317 MW</td><td>—</td><td style='text-align:left'>Campo de Belchite, Hoya de Huesca, Zaragoza, Albacete</td></tr></table></div>
-<p class='sub'>It is a suggestion to rank nights, not a stop order nor a substitute for each farm's monitoring plan. The model does not tell species apart nor know at what height the birds cross each farm, and the radar verification of this forecast starts with its publication.</p>
-<p>Map, per-zone table and full method: <a href='../output/wind.html'>wind farm report</a>.</p>
+<p class='sub'>It is a suggestion to rank nights, not a stop order nor a substitute for each farm's monitoring plan. The model does not tell species apart nor know at what height the birds cross each farm, and the nearest radar is tens of kilometres from the farm.</p>
+<p>Map, per-zone table and full method: <a href='../output/wind.html'>wind farm report</a>; what the rule would have done since 2021 and how it compares with the radar: <a href='../output/wind_check.html'>verification</a>.</p>
 <section class='check' aria-labelledby='h-check'>
 <h2 id='h-check'>Did we get it right?</h2>
 <p class='sub'>Every forecast is published before the night and checked afterwards against what the nearest radar measured. 39 nights verified, from 3 September 2026 to 11 October 2026.</p>
@@ -260,6 +265,7 @@ ul{padding-left:20px}li{margin:5px 0}
 <li><a href='../output/ranking.html'>Artificial light exposure ranking</a></li>
 <li><a href='../output/scorecard.html'>Verification — did the published forecasts hold up?</a></li>
 <li><a href='../output/wind.html'>Wind farms — nightly forecast per zone</a></li>
+<li><a href='../output/wind_check.html'>Wind farms — the stopping rule since 2021, checked against the radar</a></li>
 <li><a href='../docs/design.html'>Project design document</a></li>
 <li><a href='../docs/proposal/proposal_es.html'>The same proposal in Spanish, for SEO/BirdLife and AEMET</a></li>
 <li><a href='../docs/proposal/proposal_en.html'>Proposal to Aloft and OPERA — radar data in hours, not days</a></li>

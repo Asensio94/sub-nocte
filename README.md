@@ -198,6 +198,29 @@ intensas. Hace falta una cuenta gratuita en el Climate Data Store, aceptar la li
 El siguiente paso es usar la cota de cada zona (`ground_m`, en muchos casos 800–1500 m s.n.m.) para leer la
 densidad de la banda de altura que los radares sí ven a esa cota.
 
+## Rutas
+
+`rutas.html` (y `en/routes.html`) es un mapa animado de **por dónde vuelan** las aves de noche sobre la península
+y Francia, con los parques eólicos encima. Tiene tres vistas: las próximas noches, el histórico de otoño y el de
+primavera.
+
+- **De dónde sale la dirección.** vol2bird da, por cada capa de 200 m, la velocidad de las aves sobre el suelo
+  (u, v). `routes-archive` vuelve a leer los ficheros mensuales de Aloft de los meses de paso que publican ese
+  vector y guarda por radar y noche el **vector de tráfico**: Σ densidad × velocidad × grosor × tiempo, es decir,
+  cuántas aves cruzaron cada km de frente y hacia dónde. El resultado está en `data/routes/flight_nights.parquet`.
+- **De noches a ruta** (`routes`). Por estación y temporada se suman los vectores. La dirección de la suma es la
+  ruta y su constancia (0–1) indica si las noches coinciden. Se descartan las noches con poco vector, las de menos
+  de dos horas de radar y las de más de 25 m/s sobre el suelo, que suelen ser lluvia o ecos arrastrados. Para la
+  dirección, ninguna noche pesa más que el percentil 95 de su estación.
+- **En el mapa**, las líneas son un suavizado gaussiano entre radares (130 km) que se apaga a 320 km del radar más
+  cercano: donde no hay radar, no hay línea. El color muestra el paso previsto por el modelo de Sub Nocte en cada
+  zona eólica y ciudad: la previsión de la noche o la media de la temporada. Al pulsar un parque se ven su
+  sugerencia de la noche, la ruta que pasa por encima, su puesto por paso medio y cómo acierta el modelo con el
+  radar más cercano.
+- **Huecos.** Los radares españoles renovados y los franceses desde 2021 apenas publican vector, así que la ruta
+  española se apoya en 2018-2020, la francesa en 2016-2022 y la portuguesa en 2019-2026. La dirección no depende
+  de la calibración de cada radar; la cantidad sí.
+
 ## Aviso metodológico
 
 - Los perfiles de Aloft **no tienen control de calidad** y llegan con 1-2 días de retraso. Sirven para entrenar y
@@ -264,6 +287,9 @@ python -m subnocte.cli wind-archive                      # o el de Open-Meteo, z
 python -m subnocte.cli wind-compare                      # ¿dan las dos fuentes las mismas noches?
 python -m subnocte.cli wind-thresholds --source era5     # percentiles propios de cada zona
 python -m subnocte.cli wind --days 7                     # previsión, coste de parar e informe
+# Rutas: dirección de vuelo medida por los radares y mapa con los parques
+python -m subnocte.cli routes-archive                    # vectores de tráfico por noche (una vez; reanudable)
+python -m subnocte.cli routes                            # climatología de rutas y rutas.html
 # Recreación de una noche: dónde estaban las aves, cada 20 minutos
 python -m subnocte.cli flows                             # la última noche completa (unos 3 días atrás)
 python -m subnocte.cli flows --night 2026-09-24
@@ -275,7 +301,7 @@ python -m subnocte.cli nightly estjv
 ```
 
 Informes (en inglés): `output/phase0.html` (validación de radares), `output/phase1.html` (climatologías y umbrales),
-`output/phase2.html` (modelo meteorológico y validación), `output/phase3.html` (previsión por ciudad), `output/wind.html` (parques eólicos),
+`output/phase2.html` (modelo meteorológico y validación), `output/phase3.html` (previsión por ciudad), `output/wind.html` (parques eólicos), `rutas.html` (mapa de rutas, en español e inglés),
 `output/ranking.html` (exposición a la luz) y `output/scorecard.html` (verificación de lo ya publicado). Todos son autocontenidos: las figuras van incrustadas dentro del
 propio HTML, así que se pueden enviar o abrir desde cualquier carpeta.
 
@@ -295,6 +321,8 @@ curl -sSL -o data/lights/World_Atlas_2015.zip https://datapub.gfz-potsdam.de/dow
 | `data/thresholds.csv` | umbrales P70/P90 por radar y temporada |
 | `data/climatology_doy.csv` | climatología por día del año |
 | `data/cities.csv` | ciudad → radar útil más cercano, entre 5 y 100 km, con nivel de confianza |
+| `data/routes/flight_nights.parquet` | vector de tráfico por radar y noche de paso (versionado) |
+| `data/routes/climatology.csv` | dirección, constancia, velocidad y altitud por estación y temporada |
 
 ## Fuentes y licencias
 
