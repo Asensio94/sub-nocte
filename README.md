@@ -289,6 +289,7 @@ curl -sSL -o data/lights/World_Atlas_2015.zip https://datapub.gfz-potsdam.de/dow
 | `data/thresholds.csv` | umbrales P70/P90 por radar y temporada |
 | `data/climatology_doy.csv` | climatología por día del año |
 | `data/cities.csv` | ciudad → radar útil más cercano, entre 5 y 100 km, con nivel de confianza |
+| `signals.json` | previsión de la primera noche por venir en cada ciudad española, para [Estado de las IBA](https://asensio94.github.io/estado-iba/) según su [contrato](https://github.com/Asensio94/estado-iba/blob/main/CONTRATO.md); lo escribe `cli web` |
 
 ## Fuentes y licencias
 
