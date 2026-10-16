@@ -552,14 +552,14 @@ dx=Math.sin(h),dy=-Math.cos(h);c.strokeStyle='rgba(10,19,34,.85)';c.lineWidth=4.
 c.lineTo(x+dx*L,y+dy*L);c.stroke();c.strokeStyle='#fff';c.fillStyle='#fff';c.lineWidth=2;c.beginPath();
 c.moveTo(x,y);c.lineTo(x+dx*L,y+dy*L);c.stroke();arrow(c,x+dx*L,y+dy*L,Math.atan2(dy,dx),6);c.beginPath();
 c.arc(x,y,3.6,0,7);c.fill();if(sel&&sel[0]==='s'&&sel[1]===s[0]){c.beginPath();c.arc(x,y,8,0,7);c.stroke()}})}
-function spawn(p){p.lo=null;p.life=50+Math.random()*90;p.age=0;for(var t=0;t<25;t++){
+function spawn(p){p.lo=null;p.life=120+Math.random()*200;p.age=0;for(var t=0;t<25;t++){
 var lo=E[0]+Math.random()*(E[1]-E[0]),la=E[2]+Math.random()*(E[3]-E[2]),s=sample(lo,la);if(!s||s[2]<.05)continue;
 if(Math.random()<s[2]*(.18+.82*inten(s))*Math.min(1,Math.hypot(s[0],s[1])*1.5)){p.lo=lo;p.la=la;return}}}
 function seed(){var n=W<600?700:1600;P=[];for(var k=0;k<n;k++){var p={};spawn(p);p.age=Math.random()*p.life;P.push(p)}
 cf.getContext('2d').clearRect(0,0,W,H)}
 function frame(){raf=0;if(!playing||!visible||!M)return;var c=cf.getContext('2d');
-c.globalCompositeOperation='destination-out';c.fillStyle='rgba(0,0,0,.075)';c.fillRect(0,0,W,H);
-c.globalCompositeOperation='source-over';c.lineWidth=1.4;c.lineCap='round';var st=1.3/S;
+c.globalCompositeOperation='destination-out';c.fillStyle='rgba(0,0,0,.04)';c.fillRect(0,0,W,H);
+c.globalCompositeOperation='source-over';c.lineWidth=1.4;c.lineCap='round';var st=.55/S;
 for(var k=0;k<P.length;k++){var p=P[k];if(p.lo===null||p.age++>p.life){spawn(p);continue}
 var s=sample(p.lo,p.la);if(!s||s[2]<.04){p.lo=null;continue}var m=Math.hypot(s[0],s[1]);if(m<.05){p.age+=3;continue}
 var f=st*(.45+m),lo=p.lo+s[0]/m*f/KX,la=p.la+s[1]/m*f,t=inten(s);
