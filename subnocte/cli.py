@@ -816,6 +816,8 @@ def web():
     sc_csv = OUTPUT / "scorecard_nights.csv"
     sc = pd.read_csv(sc_csv) if sc_csv.exists() else None
     W.build(fc, rk, [ROOT / n for n in REPORTS], ROOT, log=rprint, nights=nights, wf=wf, sc=sc)
+    from . import signals
+    rprint(f"signals.json: {signals.write(fc, ROOT / 'signals.json')} signals for Estado de las IBA")
 
 
 if __name__ == "__main__":

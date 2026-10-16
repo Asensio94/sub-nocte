@@ -18,6 +18,8 @@ en los picos, reduciendo colisiones con edificios. En Europa existen los datos (
 ciencia, pero **no existe ningún servicio público de pronóstico por ciudad ni ningún programa municipal ligado a
 la migración**.
 
+> **Estado: activo.** Se actualiza solo y sigue en desarrollo.
+
 ## Cómo funciona
 
 ```
@@ -323,6 +325,7 @@ curl -sSL -o data/lights/World_Atlas_2015.zip https://datapub.gfz-potsdam.de/dow
 | `data/cities.csv` | ciudad → radar útil más cercano, entre 5 y 100 km, con nivel de confianza |
 | `data/routes/flight_nights.parquet` | vector de tráfico por radar y noche de paso (versionado) |
 | `data/routes/climatology.csv` | dirección, constancia, velocidad y altitud por estación y temporada |
+| `signals.json` | previsión de la primera noche por venir en cada ciudad española, para [Estado de las IBA](https://asensio94.github.io/estado-iba/) según su [contrato](https://github.com/Asensio94/estado-iba/blob/main/CONTRATO.md); lo escribe `cli web` |
 
 ## Fuentes y licencias
 
