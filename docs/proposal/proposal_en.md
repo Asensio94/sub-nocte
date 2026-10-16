@@ -17,14 +17,15 @@ few hours. No public product does this for Spain today.
 including at places without a radar. Leave-one-radar-out validation gives an AUC of 0.77, catching 34% of heavy nights
 against 10% by chance.
 
-On top of it we built a decision tool for 151 wind farm zones in mainland Iberia and the Balearics. In a hindcast over 59
-zones (2021–2026 seasons), stopping only on the heaviest nights with low wind:
+On top of it we built a decision tool for 151 wind farm zones in mainland Iberia and the Balearics. In a hindcast over all
+151 zones on the ERA5 reanalysis (2021–2026 seasons), stopping only on the heaviest nights with low wind:
 
 | Stop nights per season per zone | Night-time energy lost | Forecast migration on those nights |
 |---:|---:|---:|
-| 7 | 2% | 11% |
+| 7.5 | 3% | 9% |
 
-Heavy-passage nights tend to be calm (correlation −0.19 between power and bird density), which is why stopping is cheap.
+Heavy-passage nights tend to be calm, which is why stopping is cheap. And the rule picks the right nights: in the 55
+zones with a radar within 75 km, that radar measured heavy passage on 67% of the stop nights, against 24% by chance.
 
 ![Replay of the night of 24/09/2026](night_20260924.gif)
 

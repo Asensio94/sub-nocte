@@ -55,13 +55,13 @@ a{color:var(--amber)}
 
 <h2>Lo que ya funciona</h2>
 <p><span class="mono">sub-nocte</span> es un proyecto abierto que combina los perfiles de radar con meteorología para predecir la intensidad de migración de cada noche, también en lugares sin radar. En una validación que deja fuera radares completos obtiene un AUC de 0,77 y recoge el 34 % de las noches intensas, frente al 10 % que se esperaría por azar.</p>
-<p>Sobre esa predicción hemos construido una herramienta de decisión para 151 zonas eólicas de la península y Baleares. En el análisis retrospectivo de 59 zonas (temporadas 2021–2026), parando solo en las noches más intensas y con viento flojo:</p>
+<p>Sobre esa predicción hemos construido una herramienta de decisión para 151 zonas eólicas de la península y Baleares. En el análisis retrospectivo de las 151 zonas con el reanálisis ERA5 (temporadas 2021–2026), parando solo en las noches más intensas y con viento flojo:</p>
 <div class="facts">
-<div><b>7</b><span>noches de parada por temporada y zona</span></div>
-<div><b>2 %</b><span>de la energía nocturna perdida</span></div>
-<div><b>11 %</b><span>de la migración prevista cae en esas noches</span></div>
+<div><b>7,5</b><span>noches de parada por temporada y zona</span></div>
+<div><b>3 %</b><span>de la energía nocturna perdida</span></div>
+<div><b>9 %</b><span>de la migración prevista cae en esas noches</span></div>
 </div>
-<p class="note">Las noches de más paso suelen ser de viento flojo (correlación −0,19 entre potencia y densidad de aves), y por eso parar cuesta poco.</p>
+<p class="note">Las noches de más paso suelen ser de viento flojo, y por eso parar cuesta poco. Y la regla elige bien: en las 55 zonas con un radar a menos de 75 km, ese radar midió paso fuerte en el 67 % de las noches de parada, frente al 24 % que daría el azar.</p>
 </section>
 <figure class="demo" aria-labelledby="demo-cap">
 <div class="in">

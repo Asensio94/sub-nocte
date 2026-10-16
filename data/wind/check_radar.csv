@@ -1,0 +1,8 @@
+group,zone_nights,busy,lift
+all nights,20563,0.2431,1.0000
+level low,10533,0.1146,0.4714
+level moderate,5207,0.2587,1.0641
+level high,2961,0.4306,1.7712
+level very high,1862,0.6284,2.5847
+advice stop,1469,0.6746,2.7750
+advice stop at peak hours,185,0.5568,2.2902
