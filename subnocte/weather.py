@@ -61,21 +61,20 @@ def _chunks(years: list[int], maximum: int) -> list[tuple[int, int]]:
     return chunks
 
 
-def fetch_hourly(lat: float, lon: float, start: dt.date, end: dt.date, url: str = ARCHIVE,
-                 hourly: list[str] | None = None, log=print) -> pd.DataFrame:
-    params = {"latitude": lat, "longitude": lon, "start_date": start.isoformat(), "end_date": end.isoformat(),
-              "hourly": ",".join(hourly or HOURLY), "timezone": "UTC", "wind_speed_unit": "ms"}
+def _get_hourly(url: str, params: dict, timeout: float, backoff: float, log=print) -> list[dict]:
+    """One request with retries; the answer as a list, one item per point asked for."""
     for attempt in range(RETRIES):
         try:
-            r = requests.get(url, params=params, timeout=300)
+            r = requests.get(url, params=params, timeout=timeout)
             if r.status_code == 429 or r.status_code >= 500:
                 raise requests.RequestException(f"HTTP {r.status_code}")
             r.raise_for_status()
             j = r.json()
-            if "hourly" in j:
-                break
+            items = j if isinstance(j, list) else [j]  # several points come back as a list, one as an object
+            if all("hourly" in x for x in items):
+                return items
             # quota exhausted or another logical error: arrives as 200 with an error flag and a reason
-            raise requests.RequestException(j.get("reason", "response without hourly data"))
+            raise requests.RequestException(items[0].get("reason", "response without hourly data"))
         except requests.RequestException as e:
             if attempt == RETRIES - 1:
                 raise
@@ -85,12 +84,45 @@ def fetch_hourly(lat: float, lon: float, start: dt.date, end: dt.date, url: str 
             if "hourly api request limit" in msg or ("429" in msg and attempt >= 1):
                 wait = _until_next_hour()
             else:
-                wait = min(BACKOFF_S * (attempt + 1), BACKOFF_MAX_S)
+                wait = int(min(backoff * (attempt + 1), BACKOFF_MAX_S))
             log(f"  Open-Meteo: {e}; retrying in {wait} s")
             time.sleep(wait)
-    df = pd.DataFrame(j["hourly"])
+    raise AssertionError("unreachable")
+
+
+def _frame(item: dict) -> pd.DataFrame:
+    df = pd.DataFrame(item["hourly"])
     df["time"] = pd.to_datetime(df.pop("time"), utc=True)
     return df
+
+
+def fetch_hourly(lat: float, lon: float, start: dt.date, end: dt.date, url: str = ARCHIVE,
+                 hourly: list[str] | None = None, log=print, timeout: float = 300,
+                 backoff: float = BACKOFF_S) -> pd.DataFrame:
+    """Hourly series at one point. The long timeout is for the archive, where years of data take a while."""
+    return fetch_hourly_many([(lat, lon)], start, end, url, hourly, log, timeout, backoff)[0]
+
+
+def fetch_hourly_many(points: list[tuple[float, float]], start: dt.date, end: dt.date, url: str = ARCHIVE,
+                      hourly: list[str] | None = None, log=print, timeout: float = 300,
+                      backoff: float = BACKOFF_S, per_request: int = 50) -> list[pd.DataFrame]:
+    """Hourly series at several points, `per_request` of them in each request, in the order given.
+
+    Open-Meteo takes comma-separated coordinates and answers with one series per point, so a few requests replace
+    one per point. The quota counts points, not requests, so this saves time and not quota.
+    """
+    out: list[pd.DataFrame] = []
+    for i in range(0, len(points), per_request):
+        batch = points[i:i + per_request]
+        params = {"latitude": ",".join(f"{la:.4f}" for la, _ in batch),
+                  "longitude": ",".join(f"{lo:.4f}" for _, lo in batch),
+                  "start_date": start.isoformat(), "end_date": end.isoformat(),
+                  "hourly": ",".join(hourly or HOURLY), "timezone": "UTC", "wind_speed_unit": "ms"}
+        items = _get_hourly(url, params, timeout, backoff, log)
+        if len(items) != len(batch):
+            raise requests.RequestException(f"asked for {len(batch)} points, got {len(items)}")
+        out += [_frame(x) for x in items]
+    return out
 
 
 # Migration windows with three days of margin on each side (the margin allows the 24 h trends)
