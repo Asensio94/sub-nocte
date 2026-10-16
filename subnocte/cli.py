@@ -701,6 +701,35 @@ def flows(night: str = typer.Option(None, help="YYYY-MM-DD, date of the sunset; 
 LIGHTS = ROOT / "data" / "lights"
 
 
+ROUTES = ROOT / "data" / "routes"
+
+
+@app.command()
+def routes_archive(workers: int = 4, cache_dir: Path = typer.Option(None, help="where the monthly files land "
+                                                                     "while they are read (deleted after)")):
+    """Flight vector of every migration night with one: the raw material of the routes map (data/routes)."""
+    from . import routes as Ro
+
+    months = Ro.flight_months(NIGHTLY)
+    dest = Ro.archive(months, ROUTES, cache_dir or CACHE, workers=workers, log=rprint)
+    rprint(f"-> {dest}")
+
+
+@app.command()
+def routes():
+    """Routes map: the flight direction per station and season, and the page that draws it (rutas.html)."""
+    from . import routes as Ro
+    from . import routes_page as RP
+
+    if not (ROUTES / "flight_nights.parquet").exists():
+        rprint("[red]no flight vectors: run routes-archive first[/red]")
+        raise typer.Exit(1)
+    inp = RP.load(ROOT)
+    clim = Ro.climatology(inp.nights)
+    clim.to_csv(ROUTES / "climatology.csv", index=False, float_format="%.3f")
+    RP.build(inp, ROOT, log=rprint)
+
+
 @app.command()
 def ranking(radius_km: float = 10.0):
     """Exposure ranking: artificial light of each city × bird density forecast above it."""
