@@ -31,8 +31,8 @@ import numpy as np
 import pandas as pd
 
 from .history import SEASONS, season_mask
-from .weather import (ARCHIVE_LEVELS, HOURLY, HOURLY_LEVELS, LEVELS_YEAR0, fetch_hourly, fetch_radar_weather,
-                      night_features)
+from .weather import (ARCHIVE_LEVELS, HOURLY, HOURLY_LEVELS, LEVELS_YEAR0, fetch_hourly, fetch_hourly_many,
+                      fetch_radar_weather, night_features)
 from .nightly import NIGHT_ELEV
 from .solar import sun_elevation
 
@@ -101,6 +101,14 @@ def fetch_forecast(lat: float, lon: float, days: int = FORECAST_DAYS, log=print)
     today = dt.datetime.now(dt.timezone.utc).date()
     return fetch_hourly(lat, lon, today - dt.timedelta(days=1), today + dt.timedelta(days=days),
                         url=FORECAST, hourly=HOURLY_ALL, log=log)
+
+
+def fetch_forecast_many(lats: list[float], lons: list[float], days: int = FORECAST_DAYS,
+                        log=print) -> list[pd.DataFrame]:
+    """`fetch_forecast` for many points in a few requests, in the order given."""
+    today = dt.datetime.now(dt.timezone.utc).date()
+    return fetch_hourly_many(lats, lons, today - dt.timedelta(days=1), today + dt.timedelta(days=days),
+                             url=FORECAST, hourly=HOURLY_ALL, log=log)
 
 
 def load_models(data_dir: Path) -> tuple:
