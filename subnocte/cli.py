@@ -627,8 +627,9 @@ def wind(days: int = 7, cache: bool = False, region: str = REGION):
     else:
         models = P.load_models(ROOT / "data")
         parts = []
-        for r in z[z["zone"].isin(set(th["zone"]))].itertuples():
-            h = P.fetch_forecast(r.lat, r.lon, days, log=rprint)
+        zs = z[z["zone"].isin(set(th["zone"]))]
+        hs = P.fetch_forecast_many(zs["lat"].tolist(), zs["lon"].tolist(), days, log=rprint)
+        for r, h in zip(zs.itertuples(), hs):
             x = P.features(r.zone, r.lat, r.lon, h)
             if x.empty:
                 continue
