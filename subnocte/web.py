@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from . import site
 from .logo import LOGO_SVG, favicon_link
 
 LANGS = ("es", "en")
@@ -59,9 +60,6 @@ CSS = """
 .wrap{margin:0 auto;padding:0 16px}
 .site-header{position:relative}
 .site-header .verse{margin:-6px 0 0;font-style:italic;color:var(--muted);font-size:15px}
-.lang{position:absolute;top:16px;right:16px;font:600 13px/1 var(--font-title);text-transform:uppercase;letter-spacing:.08em}
-.lang a,.lang span{display:inline-block;padding:5px 9px 4px;border:1.5px solid var(--line);text-decoration:none}
-.lang span{border-color:var(--accent);color:var(--accent)}
 .routes-cta{display:block;margin:28px 0;padding:18px 20px;border-radius:6px;color:#e9e4d6;text-decoration:none;background:radial-gradient(120% 140% at 85% 20%,#5b2a6e 0%,#1b2340 45%,#0a1322 100%);border:1px solid #2a3858}
 .routes-cta span{display:block;max-width:60ch;line-height:1.5}
 .routes-cta strong{display:inline-block;margin-top:10px;color:#ffd98e;font:600 15px/1 var(--font-title);text-transform:uppercase;letter-spacing:.06em}
@@ -116,7 +114,7 @@ ul{padding-left:20px}li{margin:5px 0}
 .beam .lbl{font:600 12px var(--font-title);letter-spacing:.06em;text-transform:uppercase;fill:var(--ink)}
 .formula{font:14.5px/1.5 var(--font-data);background:var(--paper);border:1px solid var(--line);padding:8px 12px;display:inline-block;max-width:100%;overflow-x:auto}
 .data-note{font-size:14.5px}
-@media (max-width:560px){.lang{position:static;justify-self:start}h2{font-size:23px}.method ol.steps>li{padding-left:44px}}
+@media (max-width:560px){h2{font-size:23px}.method ol.steps>li{padding-left:44px}}
 """
 
 # The whole prose of the page, in both languages. It is kept complete and literal for each language instead
@@ -126,7 +124,6 @@ COPY: dict[str, dict[str, str]] = {
         "title": "Sub Nocte · migración nocturna de aves en Europa",
         "description": "Previsión por ciudad de la intensidad de migración nocturna de aves en Europa, "
                        "con avisos de luces fuera, sobre los perfiles de radar abiertos de Aloft.",
-        "other_lang": "English",
         "claim": "Cada noche de primavera y de otoño, millones de aves cruzan Europa en la oscuridad. Unas "
                  "pocas noches concentran la mitad del paso. Esta página intenta decir <b>cuáles</b>, ciudad "
                  "por ciudad, para que se puedan apagar las luces justo esas noches.",
@@ -207,6 +204,12 @@ COPY: dict[str, dict[str, str]] = {
                       "2016, noche a noche, y pone encima los parques eólicos de las próximas noches: cuáles "
                       "quedan en el camino y por qué la sugerencia es parar o seguir.",
         "routes_link": "Ver el mapa de rutas →",
+        "farms_cta": "<b>Zona por zona.</b> El mapa de los parques eólicos noche a noche, la tabla con el "
+                     "viento previsto y lo que costaría parar en cada zona, y cómo se decide la sugerencia.",
+        "farms_link": "Ver los parques eólicos →",
+        "method_cta": "<b>{n} informes</b> con las figuras, las tablas y las limitaciones de cada paso, explicados "
+                      "uno a uno: qué pregunta responde cada uno y dónde está cada cifra.",
+        "method_link": "Ir al método →",
         "wind_more": "Mapa, tabla por zona y método completo: <a href='{href}'>informe de parques eólicos</a>; "
                      "lo que habría hecho la regla desde 2021 y su contraste con el radar: "
                      "<a href='{check}'>verificación</a> (ambos en inglés).",
@@ -408,7 +411,6 @@ COPY: dict[str, dict[str, str]] = {
         "title": "Sub Nocte · nocturnal bird migration in Europe",
         "description": "City-level forecast of nocturnal bird migration intensity in Europe, with lights-out "
                        "alerts, built on the open radar profiles published by Aloft.",
-        "other_lang": "Español",
         "claim": "Every spring and autumn night, millions of birds cross Europe in the dark. A handful of "
                  "nights carry half of the passage. This page tries to say <b>which ones</b>, city by city, "
                  "so that the lights can go out on exactly those nights.",
@@ -487,6 +489,12 @@ COPY: dict[str, dict[str, str]] = {
                       "2016, night by night, and lays the wind farms of the coming nights on top: which ones are "
                       "in the way and why the advice is to stop or to keep running.",
         "routes_link": "See the routes map →",
+        "farms_cta": "<b>Zone by zone.</b> The wind farm map night by night, the table with the forecast wind "
+                     "and what stopping would cost in each zone, and how the suggestion is decided.",
+        "farms_link": "See the wind farms →",
+        "method_cta": "<b>{n} reports</b> with the figures, tables and limitations of each step, explained one by "
+                      "one: what question each answers and where every figure is.",
+        "method_link": "Go to the method →",
         "wind_more": "Map, per-zone table and full method: <a href='{href}'>wind farm report</a>; what the rule "
                      "would have done since 2021 and how it compares with the radar: "
                      "<a href='{check}'>verification</a>.",
@@ -1007,8 +1015,6 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
           wf: pd.DataFrame | None = None, sc: pd.DataFrame | None = None) -> str:
     """Assemble the complete HTML of one of the two pages. `prefix` fixes the relative paths."""
     c = COPY[lang]
-    other = "en" if lang == "es" else "es"
-    other_path = f"{prefix}en/" if lang == "es" else prefix
     p = [f"<!doctype html><html lang='{lang}'><meta charset='utf-8'>",
          "<meta name='viewport' content='width=device-width,initial-scale=1'>",
          f"<title>{c['title']}</title>",
@@ -1020,10 +1026,9 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
          f"<link rel='preconnect' href='https://fonts.googleapis.com'>",
          f"<link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>",
          f"<link rel='stylesheet' href='{FONTS}'>",
-         f"<style>{COMMON_CSS}{CSS}</style>",
+         f"<style>{COMMON_CSS}{CSS}{site.CSS}</style>",
+         site.page_bar(lang, "home", prefix.count("../")),
          "<header class='site-header'>",
-         f"<div class='lang'><span>{'Español' if lang == 'es' else 'English'}</span> "
-         f"<a href='{other_path}' hreflang='{other}'>{c['other_lang']}</a></div>",
          f"<h1>{LOGO_SVG}Sub <span>Nocte</span></h1>",
          "<p class='verse'>ibant obscuri sola sub nocte per umbram — Virgil, <i>Aeneid</i> VI</p>",
          f"<p class='lede'>{c['claim']}</p>",
@@ -1061,7 +1066,8 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
               f"<p>{c['wind_intro']}</p>", f"<p>{c['wind_rule']}</p>",
               wind_table(wf, lang) if not acted.empty else f"<p>{c['no_wind_stop']}</p>",
               f"<p class='sub'>{c['wind_not']}</p>",
-              f"<p>{c['wind_more'].format(href=prefix + 'output/wind.html', check=prefix + 'output/wind_check.html')}</p>"]
+              f"<a class='routes-cta' href='{prefix}{site.PAGES['farms'][lang]}'><span>{c['farms_cta']}</span>"
+              f"<strong>{c['farms_link']}</strong></a>"]
 
     p += check_section(sc, lang, prefix)
 
@@ -1081,10 +1087,9 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
     p += ["</main>", method_section(lang), "<div class='wrap'>"]
 
     if links:
-        p += [f"<h2>{c['h_reports']}</h2><p class='sub'>{c['sub_reports']}</p><ul>"]
-        p += [f"<li><a href='{prefix}{e}'>{c['reports'].get(e.rsplit('/', 1)[-1], e)}</a></li>"
-              for e in links]
-        p.append(f"</ul><p class='sub'>{c['note_reports']}</p>")
+        p += [f"<h2>{c['h_reports']}</h2><p class='sub'>{c['sub_reports']}</p>",
+              f"<a class='routes-cta' href='{prefix}{site.PAGES['method'][lang]}#informes'>"
+              f"<span>{c['method_cta'].format(n=len(links))}</span><strong>{c['method_link']}</strong></a>"]
 
     p += [f"<h2>{c['h_not']}</h2><ul>"] + [f"<li>{x}</li>" for x in c["not_this"]] + ["</ul>"]
     p += [f"<h2>{c['h_data']}</h2><p class='data-note'>{c['data']}</p><p class='data-note'>{c['cornell']}</p>",

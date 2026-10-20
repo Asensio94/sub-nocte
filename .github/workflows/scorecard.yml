@@ -45,7 +45,7 @@ jobs:
         run: |
           git config user.name "sub-nocte"
           git config user.email "actions@github.com"
-          git add index.html en output/scorecard.html output/scorecard_nights.csv data/forecast_archive.parquet data/verification_nights.parquet
+          git add index.html en metodo.html output/scorecard.html output/scorecard_nights.csv data/forecast_archive.parquet data/verification_nights.parquet
           if git diff --cached --quiet; then
             echo "no changes"
           else

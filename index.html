@@ -97,9 +97,6 @@ table.params td.num,table.params th.num{text-align:right;font-family:var(--font-
 .wrap{margin:0 auto;padding:0 16px}
 .site-header{position:relative}
 .site-header .verse{margin:-6px 0 0;font-style:italic;color:var(--muted);font-size:15px}
-.lang{position:absolute;top:16px;right:16px;font:600 13px/1 var(--font-title);text-transform:uppercase;letter-spacing:.08em}
-.lang a,.lang span{display:inline-block;padding:5px 9px 4px;border:1.5px solid var(--line);text-decoration:none}
-.lang span{border-color:var(--accent);color:var(--accent)}
 .routes-cta{display:block;margin:28px 0;padding:18px 20px;border-radius:6px;color:#e9e4d6;text-decoration:none;background:radial-gradient(120% 140% at 85% 20%,#5b2a6e 0%,#1b2340 45%,#0a1322 100%);border:1px solid #2a3858}
 .routes-cta span{display:block;max-width:60ch;line-height:1.5}
 .routes-cta strong{display:inline-block;margin-top:10px;color:#ffd98e;font:600 15px/1 var(--font-title);text-transform:uppercase;letter-spacing:.06em}
@@ -154,10 +151,28 @@ ul{padding-left:20px}li{margin:5px 0}
 .beam .lbl{font:600 12px var(--font-title);letter-spacing:.06em;text-transform:uppercase;fill:var(--ink)}
 .formula{font:14.5px/1.5 var(--font-data);background:var(--paper);border:1px solid var(--line);padding:8px 12px;display:inline-block;max-width:100%;overflow-x:auto}
 .data-note{font-size:14.5px}
-@media (max-width:560px){.lang{position:static;justify-self:start}h2{font-size:23px}.method ol.steps>li{padding-left:44px}}
+@media (max-width:560px){h2{font-size:23px}.method ol.steps>li{padding-left:44px}}
+
+.sn-nav{position:sticky;top:0;z-index:20;background:#0b1424;color:#e8ecf4;border-bottom:1px solid #2a3a56;
+  font:600 15px/1 "Barlow Condensed","Arial Narrow",sans-serif;text-transform:uppercase;letter-spacing:.06em}
+.sn-nav .sn-in{max-width:1000px;margin:0 auto;padding:0 16px;display:flex;align-items:center;gap:6px 14px}
+.sn-nav a{color:inherit;text-decoration:none}
+.sn-nav .sn-brand{display:flex;align-items:center;gap:6px;padding:10px 0;white-space:nowrap;font-weight:700}
+.sn-nav .sn-brand span{color:#ffb36b}
+.sn-nav .logo{width:20px;height:20px;margin:0;color:#e8ecf4;vertical-align:-4px}
+.sn-nav .logo .logo-breast{fill:#ff8a3d}
+.sn-nav ul{display:flex;gap:2px;margin:0;padding:0;list-style:none;overflow-x:auto;scrollbar-width:none;flex:1}
+.sn-nav li a{display:block;padding:13px 10px 11px;white-space:nowrap;border-bottom:3px solid transparent;color:#cfd6e4}
+.sn-nav li a:hover{color:#fff}
+.sn-nav li a[aria-current=page]{color:#fff;border-bottom-color:#ffb36b}
+.sn-nav .sn-lang{padding:6px 9px 5px;border:1.5px solid #3a4a66;font-size:13px;white-space:nowrap;color:#cfd6e4}
+.sn-nav .sn-lang:hover{border-color:#ffb36b;color:#fff}
+.sn-nav a:focus-visible{outline:2px solid #ffb36b;outline-offset:-2px}
+@media (max-width:640px){.sn-nav .sn-in{flex-wrap:wrap;gap:0 10px}.sn-nav .sn-brand{order:1}
+  .sn-nav .sn-lang{order:2;margin-left:auto}.sn-nav ul{order:3;flex-basis:100%;margin:0 -10px}}
 </style>
+<nav class='sn-nav' aria-label='Secciones' data-lang='es'><div class='sn-in'><a class='sn-brand' href='./'><svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g fill="currentColor"><circle cx="34" cy="31" r="19"/><path d="M19 40 7 50.5l3.5 4L25 46z"/><path d="M52 22l8 2.5-8 2.5z"/></g><path class="logo-breast" d="M34 12a19 19 0 0 1 15 30.8C42 41 37 34 37 26c0-6 1.5-10.5 4-12.6A19 19 0 0 0 34 12z"/><g fill="#221d1a"><circle cx="45" cy="21.5" r="2.1"/></g><path d="M31 49.5V60m7-11v11m-10.5.2h6m1.5 0h6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Sub <span>Nocte</span></a><ul><li><a href='./' aria-current=page>Esta noche</a></li><li><a href='rutas.html'>Rutas</a></li><li><a href='parques.html'>Parques eólicos</a></li><li><a href='metodo.html'>Método</a></li></ul><a class='sn-lang' href='en/' hreflang='en' lang='en'>English</a></div></nav><script>try{localStorage.setItem('sn-lang','es')}catch(e){}</script>
 <header class='site-header'>
-<div class='lang'><span>Español</span> <a href='en/' hreflang='en'>English</a></div>
 <h1><svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g fill="currentColor"><circle cx="34" cy="31" r="19"/><path d="M19 40 7 50.5l3.5 4L25 46z"/><path d="M52 22l8 2.5-8 2.5z"/></g><path class="logo-breast" d="M34 12a19 19 0 0 1 15 30.8C42 41 37 34 37 26c0-6 1.5-10.5 4-12.6A19 19 0 0 0 34 12z"/><g fill="#221d1a"><circle cx="45" cy="21.5" r="2.1"/></g><path d="M31 49.5V60m7-11v11m-10.5.2h6m1.5 0h6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Sub <span>Nocte</span></h1>
 <p class='verse'>ibant obscuri sola sub nocte per umbram — Virgil, <i>Aeneid</i> VI</p>
 <p class='lede'>Cada noche de primavera y de otoño, millones de aves cruzan Europa en la oscuridad. Unas pocas noches concentran la mitad del paso. Esta página intenta decir <b>cuáles</b>, ciudad por ciudad, para que se puedan apagar las luces justo esas noches.</p>
@@ -191,7 +206,7 @@ ul{padding-left:20px}li{margin:5px 0}
 <p><b>Solo se sugiere parar cuando el paso es muy alto y parar sale barato</b>, es decir, en noches de poco viento. Probado sobre 2021-2026, esa regla habría parado 7,5 noches por temporada y zona, con un 3 % de la producción nocturna, y habría cubierto el 9 % de la migración prevista; parar todas las noches de paso muy alto habría costado el 13 %. Y elige bien: el radar más cercano midió paso fuerte en el 67 % de esas noches, cuando por azar sería el 24 %.</p>
 <div class='cal'><table><tr><th>noche</th><th>zonas en muy alto</th><th>parar</th><th>parar en horas punta</th><th>dónde (mayor potencia)</th></tr><tr><td>mar 20 oct</td><td>2</td><td>2 zonas · 31 MW</td><td>—</td><td style='text-align:left'>Comarca de la Costa Granadina, Castellón</td></tr><tr><td>mié 21 oct</td><td>21</td><td>21 zonas · 3.004 MW</td><td>—</td><td style='text-align:left'>Campo de Gibraltar, Guadalteba, Valladolid, Campiña de Jerez</td></tr><tr><td>jue 22 oct</td><td>1</td><td>1 zona · 31 MW</td><td>—</td><td style='text-align:left'>Comarca de la Costa Granadina</td></tr><tr><td>vie 23 oct</td><td>2</td><td>2 zonas · 498 MW</td><td>—</td><td style='text-align:left'>Tarazona y el Moncayo, Costa del Sol Occidental</td></tr><tr><td>sáb 24 oct</td><td>7</td><td>7 zonas · 3.401 MW</td><td>—</td><td style='text-align:left'>Valdejalón, Campo de Gibraltar, La Rioja, Campiña de Jerez</td></tr><tr><td>dom 25 oct</td><td>14</td><td>6 zonas · 3.360 MW</td><td>2 zonas · 1.005 MW</td><td style='text-align:left'>Valdejalón, Campo de Gibraltar, Hoya de Huesca, Zaragoza</td></tr><tr><td>lun 26 oct</td><td>10</td><td>9 zonas · 3.475 MW</td><td>1 zona · 10 MW</td><td style='text-align:left'>Valdejalón, La Rioja, Tarazona y el Moncayo, Huelva</td></tr></table></div>
 <p class='sub'>Es una sugerencia para ordenar las noches, no una orden de parada ni un sustituto de los planes de vigilancia de cada parque. El modelo no distingue especies ni sabe a qué altura pasan las aves sobre cada parque, y el radar más cercano está a decenas de kilómetros del parque.</p>
-<p>Mapa, tabla por zona y método completo: <a href='output/wind.html'>informe de parques eólicos</a>; lo que habría hecho la regla desde 2021 y su contraste con el radar: <a href='output/wind_check.html'>verificación</a> (ambos en inglés).</p>
+<a class='routes-cta' href='parques.html'><span><b>Zona por zona.</b> El mapa de los parques eólicos noche a noche, la tabla con el viento previsto y lo que costaría parar en cada zona, y cómo se decide la sugerencia.</span><strong>Ver los parques eólicos →</strong></a>
 <section class='check' aria-labelledby='h-check'>
 <h2 id='h-check'>¿Acertamos?</h2>
 <p class='sub'>Cada previsión se publica antes de la noche y se compara después con lo que midió el radar más cercano. 44 noches verificadas, del 3 de septiembre de 2026 al 16 de octubre de 2026.</p>
@@ -257,19 +272,8 @@ ul{padding-left:20px}li{margin:5px 0}
 <p class='note'>Medido sobre los perfiles de Aloft en octubre de 2026.</p></div>
 </section>
 <div class='wrap'>
-<h2>Informes técnicos</h2><p class='sub'>Cada fase con sus figuras, sus tablas y sus limitaciones.</p><ul>
-<li><a href='output/phase0.html'>Fase 0 — ¿ven aves los radares españoles renovados?</a></li>
-<li><a href='output/phase1.html'>Fase 1 — histórico 2016-2026 y climatologías por radar</a></li>
-<li><a href='output/phase2.html'>Fase 2 — el modelo meteorológico y su validación</a></li>
-<li><a href='output/phase3.html'>Fase 3 — previsión por ciudad</a></li>
-<li><a href='output/ranking.html'>Ranking de exposición a la luz artificial</a></li>
-<li><a href='output/scorecard.html'>Verificación — ¿acertaron las previsiones ya publicadas?</a></li>
-<li><a href='output/wind.html'>Parques eólicos — previsión nocturna por zona</a></li>
-<li><a href='output/wind_check.html'>Parques eólicos — la regla de parada desde 2021 y su contraste con el radar</a></li>
-<li><a href='docs/design.html'>Documento de diseño del proyecto</a></li>
-<li><a href='docs/proposal/proposal_es.html'>Propuesta a SEO/BirdLife y AEMET — datos de radar con horas de retraso, no días</a></li>
-<li><a href='docs/proposal/proposal_en.html'>La misma propuesta en inglés, para Aloft y OPERA</a></li>
-</ul><p class='sub'>Los informes técnicos están en inglés.</p>
+<h2>Informes técnicos</h2><p class='sub'>Cada fase con sus figuras, sus tablas y sus limitaciones.</p>
+<a class='routes-cta' href='metodo.html#informes'><span><b>11 informes</b> con las figuras, las tablas y las limitaciones de cada paso, explicados uno a uno: qué pregunta responde cada uno y dónde está cada cifra.</span><strong>Ir al método →</strong></a>
 <h2>Lo que esto no es</h2><ul>
 <li>No es un recuento de aves sobre tu tejado: es la densidad media en toda la columna de aire, la mayor parte de ella entre 200 y 3.000 metros de altura.</li>
 <li>No distingue especies. Un radar meteorológico no sabe si el eco es un zorzal o un mosquitero.</li>

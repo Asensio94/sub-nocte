@@ -97,9 +97,6 @@ table.params td.num,table.params th.num{text-align:right;font-family:var(--font-
 .wrap{margin:0 auto;padding:0 16px}
 .site-header{position:relative}
 .site-header .verse{margin:-6px 0 0;font-style:italic;color:var(--muted);font-size:15px}
-.lang{position:absolute;top:16px;right:16px;font:600 13px/1 var(--font-title);text-transform:uppercase;letter-spacing:.08em}
-.lang a,.lang span{display:inline-block;padding:5px 9px 4px;border:1.5px solid var(--line);text-decoration:none}
-.lang span{border-color:var(--accent);color:var(--accent)}
 .routes-cta{display:block;margin:28px 0;padding:18px 20px;border-radius:6px;color:#e9e4d6;text-decoration:none;background:radial-gradient(120% 140% at 85% 20%,#5b2a6e 0%,#1b2340 45%,#0a1322 100%);border:1px solid #2a3858}
 .routes-cta span{display:block;max-width:60ch;line-height:1.5}
 .routes-cta strong{display:inline-block;margin-top:10px;color:#ffd98e;font:600 15px/1 var(--font-title);text-transform:uppercase;letter-spacing:.06em}
@@ -154,10 +151,28 @@ ul{padding-left:20px}li{margin:5px 0}
 .beam .lbl{font:600 12px var(--font-title);letter-spacing:.06em;text-transform:uppercase;fill:var(--ink)}
 .formula{font:14.5px/1.5 var(--font-data);background:var(--paper);border:1px solid var(--line);padding:8px 12px;display:inline-block;max-width:100%;overflow-x:auto}
 .data-note{font-size:14.5px}
-@media (max-width:560px){.lang{position:static;justify-self:start}h2{font-size:23px}.method ol.steps>li{padding-left:44px}}
+@media (max-width:560px){h2{font-size:23px}.method ol.steps>li{padding-left:44px}}
+
+.sn-nav{position:sticky;top:0;z-index:20;background:#0b1424;color:#e8ecf4;border-bottom:1px solid #2a3a56;
+  font:600 15px/1 "Barlow Condensed","Arial Narrow",sans-serif;text-transform:uppercase;letter-spacing:.06em}
+.sn-nav .sn-in{max-width:1000px;margin:0 auto;padding:0 16px;display:flex;align-items:center;gap:6px 14px}
+.sn-nav a{color:inherit;text-decoration:none}
+.sn-nav .sn-brand{display:flex;align-items:center;gap:6px;padding:10px 0;white-space:nowrap;font-weight:700}
+.sn-nav .sn-brand span{color:#ffb36b}
+.sn-nav .logo{width:20px;height:20px;margin:0;color:#e8ecf4;vertical-align:-4px}
+.sn-nav .logo .logo-breast{fill:#ff8a3d}
+.sn-nav ul{display:flex;gap:2px;margin:0;padding:0;list-style:none;overflow-x:auto;scrollbar-width:none;flex:1}
+.sn-nav li a{display:block;padding:13px 10px 11px;white-space:nowrap;border-bottom:3px solid transparent;color:#cfd6e4}
+.sn-nav li a:hover{color:#fff}
+.sn-nav li a[aria-current=page]{color:#fff;border-bottom-color:#ffb36b}
+.sn-nav .sn-lang{padding:6px 9px 5px;border:1.5px solid #3a4a66;font-size:13px;white-space:nowrap;color:#cfd6e4}
+.sn-nav .sn-lang:hover{border-color:#ffb36b;color:#fff}
+.sn-nav a:focus-visible{outline:2px solid #ffb36b;outline-offset:-2px}
+@media (max-width:640px){.sn-nav .sn-in{flex-wrap:wrap;gap:0 10px}.sn-nav .sn-brand{order:1}
+  .sn-nav .sn-lang{order:2;margin-left:auto}.sn-nav ul{order:3;flex-basis:100%;margin:0 -10px}}
 </style>
+<nav class='sn-nav' aria-label='Sections' data-lang='en'><div class='sn-in'><a class='sn-brand' href='../en/'><svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g fill="currentColor"><circle cx="34" cy="31" r="19"/><path d="M19 40 7 50.5l3.5 4L25 46z"/><path d="M52 22l8 2.5-8 2.5z"/></g><path class="logo-breast" d="M34 12a19 19 0 0 1 15 30.8C42 41 37 34 37 26c0-6 1.5-10.5 4-12.6A19 19 0 0 0 34 12z"/><g fill="#221d1a"><circle cx="45" cy="21.5" r="2.1"/></g><path d="M31 49.5V60m7-11v11m-10.5.2h6m1.5 0h6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Sub <span>Nocte</span></a><ul><li><a href='../en/' aria-current=page>Tonight</a></li><li><a href='../en/routes.html'>Routes</a></li><li><a href='../en/windfarms.html'>Wind farms</a></li><li><a href='../en/method.html'>Method</a></li></ul><a class='sn-lang' href='../' hreflang='es' lang='es'>Español</a></div></nav><script>try{localStorage.setItem('sn-lang','en')}catch(e){}</script>
 <header class='site-header'>
-<div class='lang'><span>English</span> <a href='../' hreflang='es'>Español</a></div>
 <h1><svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g fill="currentColor"><circle cx="34" cy="31" r="19"/><path d="M19 40 7 50.5l3.5 4L25 46z"/><path d="M52 22l8 2.5-8 2.5z"/></g><path class="logo-breast" d="M34 12a19 19 0 0 1 15 30.8C42 41 37 34 37 26c0-6 1.5-10.5 4-12.6A19 19 0 0 0 34 12z"/><g fill="#221d1a"><circle cx="45" cy="21.5" r="2.1"/></g><path d="M31 49.5V60m7-11v11m-10.5.2h6m1.5 0h6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Sub <span>Nocte</span></h1>
 <p class='verse'>ibant obscuri sola sub nocte per umbram — Virgil, <i>Aeneid</i> VI</p>
 <p class='lede'>Every spring and autumn night, millions of birds cross Europe in the dark. A handful of nights carry half of the passage. This page tries to say <b>which ones</b>, city by city, so that the lights can go out on exactly those nights.</p>
@@ -191,7 +206,7 @@ ul{padding-left:20px}li{margin:5px 0}
 <p><b>Stopping is only suggested when the passage is very high and stopping is cheap</b>, that is, on nights with little wind. Tested on 2021-2026, that rule would have stopped 7.5 nights per season and zone, for 3 % of the night output, and covered 9 % of the predicted migration; stopping on every very high night would have cost 13 %. And it picks the right nights: the nearest radar measured heavy passage on 67 % of them, against 24 % by chance.</p>
 <div class='cal'><table><tr><th>night</th><th>zones at very high</th><th>stop</th><th>stop at peak hours</th><th>where (largest capacity)</th></tr><tr><td>Tue 20 Oct</td><td>2</td><td>2 zones · 31 MW</td><td>—</td><td style='text-align:left'>Comarca de la Costa Granadina, Castellón</td></tr><tr><td>Wed 21 Oct</td><td>21</td><td>21 zones · 3,004 MW</td><td>—</td><td style='text-align:left'>Campo de Gibraltar, Guadalteba, Valladolid, Campiña de Jerez</td></tr><tr><td>Thu 22 Oct</td><td>1</td><td>1 zone · 31 MW</td><td>—</td><td style='text-align:left'>Comarca de la Costa Granadina</td></tr><tr><td>Fri 23 Oct</td><td>2</td><td>2 zones · 498 MW</td><td>—</td><td style='text-align:left'>Tarazona y el Moncayo, Costa del Sol Occidental</td></tr><tr><td>Sat 24 Oct</td><td>7</td><td>7 zones · 3,401 MW</td><td>—</td><td style='text-align:left'>Valdejalón, Campo de Gibraltar, La Rioja, Campiña de Jerez</td></tr><tr><td>Sun 25 Oct</td><td>14</td><td>6 zones · 3,360 MW</td><td>2 zones · 1,005 MW</td><td style='text-align:left'>Valdejalón, Campo de Gibraltar, Hoya de Huesca, Zaragoza</td></tr><tr><td>Mon 26 Oct</td><td>10</td><td>9 zones · 3,475 MW</td><td>1 zone · 10 MW</td><td style='text-align:left'>Valdejalón, La Rioja, Tarazona y el Moncayo, Huelva</td></tr></table></div>
 <p class='sub'>It is a suggestion to rank nights, not a stop order nor a substitute for each farm's monitoring plan. The model does not tell species apart nor know at what height the birds cross each farm, and the nearest radar is tens of kilometres from the farm.</p>
-<p>Map, per-zone table and full method: <a href='../output/wind.html'>wind farm report</a>; what the rule would have done since 2021 and how it compares with the radar: <a href='../output/wind_check.html'>verification</a>.</p>
+<a class='routes-cta' href='../en/windfarms.html'><span><b>Zone by zone.</b> The wind farm map night by night, the table with the forecast wind and what stopping would cost in each zone, and how the suggestion is decided.</span><strong>See the wind farms →</strong></a>
 <section class='check' aria-labelledby='h-check'>
 <h2 id='h-check'>Did we get it right?</h2>
 <p class='sub'>Every forecast is published before the night and checked afterwards against what the nearest radar measured. 44 nights verified, from 3 September 2026 to 16 October 2026.</p>
@@ -257,19 +272,8 @@ ul{padding-left:20px}li{margin:5px 0}
 <p class='note'>Measured on the Aloft profiles in October 2026.</p></div>
 </section>
 <div class='wrap'>
-<h2>Technical reports</h2><p class='sub'>Each phase with its figures, its tables and its limitations.</p><ul>
-<li><a href='../output/phase0.html'>Phase 0 — do the renewed Spanish radars see birds?</a></li>
-<li><a href='../output/phase1.html'>Phase 1 — 2016-2026 archive and per-radar climatologies</a></li>
-<li><a href='../output/phase2.html'>Phase 2 — the weather model and its validation</a></li>
-<li><a href='../output/phase3.html'>Phase 3 — city-level forecast</a></li>
-<li><a href='../output/ranking.html'>Artificial light exposure ranking</a></li>
-<li><a href='../output/scorecard.html'>Verification — did the published forecasts hold up?</a></li>
-<li><a href='../output/wind.html'>Wind farms — nightly forecast per zone</a></li>
-<li><a href='../output/wind_check.html'>Wind farms — the stopping rule since 2021, checked against the radar</a></li>
-<li><a href='../docs/design.html'>Project design document</a></li>
-<li><a href='../docs/proposal/proposal_es.html'>The same proposal in Spanish, for SEO/BirdLife and AEMET</a></li>
-<li><a href='../docs/proposal/proposal_en.html'>Proposal to Aloft and OPERA — radar data in hours, not days</a></li>
-</ul><p class='sub'>The technical reports are in English.</p>
+<h2>Technical reports</h2><p class='sub'>Each phase with its figures, its tables and its limitations.</p>
+<a class='routes-cta' href='../en/method.html#informes'><span><b>11 reports</b> with the figures, tables and limitations of each step, explained one by one: what question each answers and where every figure is.</span><strong>Go to the method →</strong></a>
 <h2>What this is not</h2><ul>
 <li>It is not a count of the birds over your roof: it is the mean density across the whole air column, most of it between 200 and 3,000 metres up.</li>
 <li>It does not tell species apart. A weather radar cannot know whether the echo is a thrush or a warbler.</li>

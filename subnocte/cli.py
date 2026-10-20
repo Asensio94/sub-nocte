@@ -729,6 +729,8 @@ def routes():
     clim = Ro.climatology(inp.nights)
     clim.to_csv(ROUTES / "climatology.csv", index=False, float_format="%.3f")
     RP.build(inp, ROOT, log=rprint)
+    from . import farms_page as FP
+    FP.build(inp, ROOT, log=rprint)
 
 
 @app.command()
@@ -817,6 +819,12 @@ def web():
     sc_csv = OUTPUT / "scorecard_nights.csv"
     sc = pd.read_csv(sc_csv) if sc_csv.exists() else None
     W.build(fc, rk, [ROOT / n for n in REPORTS], ROOT, log=rprint, nights=nights, wf=wf, sc=sc)
+    from . import method_page, site
+    method_page.build(ROOT, log=rprint)
+    # the bar follows the reader's language; a reader arriving straight at a report gets Spanish, but the
+    # English proposal is the one page that is sent to English readers on its own
+    stamped = [n for n in REPORTS if site.stamp(ROOT / n, ROOT, default="en" if n.endswith("_en.html") else "es")]
+    rprint(f"navigation bar on {len(stamped)} reports")
     from . import signals
     rprint(f"signals.json: {signals.write(fc, ROOT / 'signals.json')} signals for Estado de las IBA")
 
