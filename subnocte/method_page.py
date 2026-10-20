@@ -39,6 +39,10 @@ GROUPS = {
             ("output/wind_check.html", "La regla de parada, probada desde 2021",
              "Qué habría hecho la regla en cinco temporadas (noches paradas, producción perdida, migración "
              "cubierta) y si el radar más cercano medía paso fuerte esas noches."),
+            ("output/wind_france.html", "Francia — previsión nocturna por zona eólica",
+             "Lo mismo para las zonas eólicas de Francia, con sus propios umbrales calculados sobre ERA5."),
+            ("output/wind_check_france.html", "Francia — la regla probada desde 2021",
+             "La regla de parada aplicada a las zonas francesas y contrastada con los radares de Météo-France."),
         ]),
         ("¿Acierta?", [
             ("output/scorecard.html", "Verificación de las previsiones publicadas",
@@ -83,6 +87,10 @@ GROUPS = {
             ("output/wind_check.html", "The stopping rule, tested since 2021",
              "What the rule would have done over five seasons (nights stopped, output lost, migration covered) and "
              "whether the nearest radar measured heavy passage on those nights."),
+            ("output/wind_france.html", "France — nightly forecast per wind zone",
+             "The same for the French wind zones, with their own thresholds computed on ERA5."),
+            ("output/wind_check_france.html", "France — the rule tested since 2021",
+             "The stopping rule applied to the French zones and checked against the Météo-France radars."),
         ]),
         ("Does it work?", [
             ("output/scorecard.html", "Checking the published forecasts",
