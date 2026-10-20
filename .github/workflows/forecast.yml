@@ -82,7 +82,8 @@ jobs:
           git config user.name "sub-nocte"
           git config user.email "actions@github.com"
           git add index.html en .nojekyll signals.json data/phase3_forecast.csv data/flows output/phase3.html \
-            data/wind/forecast.csv output/wind.html rutas.html data/routes/climatology.csv
+            data/wind/forecast.csv output/wind.html rutas.html data/routes/climatology.csv \
+            parques.html metodo.html output/*.html docs/*.html docs/proposal/*.html
           if git diff --cached --quiet; then
             echo "no changes"
           else

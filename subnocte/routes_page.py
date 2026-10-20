@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 
 from . import routes as R
+from . import site
 from .logo import LOGO_SVG
 from .web import (BASE, COMMON_CSS, CSS as SITE_CSS, FAVICON, FONTS, LEVEL_NAME, MONTHS, REPO, SEASON_NAME,
                   _date, _night, _num, site_footer)
@@ -347,8 +348,6 @@ def page(inp: Inputs, lang: str, today: dt.date) -> str:
     data, clim, nights = payload(inp, lang, today)
     ev = evidence(inp, clim)
     prefix = "" if lang == "es" else "../"
-    other = "en" if lang == "es" else "es"
-    other_href = "en/routes.html" if lang == "es" else "../rutas.html"
     first = nights[0][0] if nights else ("autumn" if today.month >= 7 else "spring")
     options = "".join(f"<option value='{k}'>{_night(n, lang)}</option>" for k, n in nights)
     buttons = [("forecast", c["mode_forecast"])] if nights else []
@@ -372,11 +371,10 @@ def page(inp: Inputs, lang: str, today: dt.date) -> str:
          "<link rel='preconnect' href='https://fonts.googleapis.com'>",
          "<link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>",
          f"<link rel='stylesheet' href='{FONTS}'>",
-         f"<style>{COMMON_CSS}{SITE_CSS}{CSS}</style>",
+         f"<style>{COMMON_CSS}{SITE_CSS}{CSS}{site.CSS}</style>",
+         site.page_bar(lang, "routes", prefix.count("../")),
          "<header class='site-header'>",
-         f"<div class='lang'><span>{'Español' if lang == 'es' else 'English'}</span> "
-         f"<a href='{other_href}' hreflang='{other}'>{c['other_lang']}</a></div>",
-         f"<h1><a href='{prefix}' class='home'>{LOGO_SVG}Sub <span>Nocte</span></a></h1>",
+         f"<h1><a href='{prefix or './'}' class='home'>{LOGO_SVG}Sub <span>Nocte</span></a></h1>",
          f"<p class='kicker'>{c['kicker']}</p>",
          f"<p class='lede'>{c['claim']}</p>",
          _figures(ev, lang), "</header>",
@@ -399,7 +397,7 @@ def page(inp: Inputs, lang: str, today: dt.date) -> str:
          f"<noscript><p>{c['noscript']}</p></noscript>",
          "</section>",
          f"<h2>{c['h_why']}</h2><p class='sub'>{c['sub_why']}</p>", _why(ev, lang),
-         f"<p>{c['why_more'].format(wind=prefix + 'output/wind.html', check=prefix + 'output/wind_check.html', home=prefix)}</p>",
+         f"<p>{c['why_more'].format(wind=prefix + site.PAGES['farms'][lang], check=prefix + 'output/wind_check.html')}</p>",
          f"<h2>{c['h_table']}</h2><p class='sub'>{c['sub_table']}</p>", _table(clim, lang),
          f"<h2>{c['h_method']}</h2><ol class='steps'>"
          + "".join(f"<li><h3>{t}</h3><p>{b}</p></li>" for t, b in c["method"]).format(
@@ -612,7 +610,6 @@ COPY: dict[str, dict] = {
         "title": "Sub Nocte · rutas de la migración nocturna",
         "description": "Por dónde vuela de noche la migración de aves sobre la península ibérica y Francia, medido "
                        "por los radares meteorológicos, y qué parques eólicos quedan en su camino las próximas noches.",
-        "other_lang": "English",
         "kicker": "Rutas de la migración nocturna",
         "claim": "Por dónde vuelan de noche las aves que cruzan la península y Francia, según lo que miden los "
                  "radares meteorológicos desde 2016, y qué parques eólicos quedan en su camino las próximas "
@@ -700,9 +697,9 @@ COPY: dict[str, dict] = {
         "why_right_h": "El radar confirma las noches elegidas",
         "why_right": "En las noches en que la regla dice parar, el radar más cercano midió paso fuerte el {busy} "
                      "de las veces; al azar sería el {chance}. Son {lift} veces más.",
-        "why_more": "La previsión por zona, noche a noche: <a href='{wind}'>informe de parques eólicos</a>; la regla "
-                    "probada desde 2021: <a href='{check}'>verificación</a> (ambos en inglés). "
-                    "<a href='{home}'>Volver a la portada</a>.",
+        "why_more": "La previsión por zona, noche a noche, en tabla y con la regla explicada: "
+                    "<a href='{wind}'>parques eólicos</a>; la regla probada desde 2021: "
+                    "<a href='{check}'>verificación</a> (en inglés).",
         "h_table": "Las rutas, estación por estación",
         "sub_table": "Lo mismo que dibujan las flechas blancas, con todas sus cifras.",
         "table_summary": "Ver la tabla: dirección, constancia, velocidad, altitud y concentración",
@@ -777,7 +774,6 @@ COPY: dict[str, dict] = {
         "title": "Sub Nocte · nocturnal migration routes",
         "description": "Where the nocturnal bird migration flies over Iberia and France, as the weather radars "
                        "measure it, and which wind farms lie in its way over the coming nights.",
-        "other_lang": "Español",
         "kicker": "Nocturnal migration routes",
         "claim": "Where the birds crossing Iberia and France fly at night, from what the weather radars have "
                  "measured since 2016, and which wind farms lie in their way over the coming nights. The lines "
@@ -864,8 +860,8 @@ COPY: dict[str, dict] = {
         "why_right_h": "The radar confirms the chosen nights",
         "why_right": "On the nights the rule says stop, the nearest radar measured heavy passage {busy} of the "
                      "time; by chance it would be {chance}. That is {lift} times more.",
-        "why_more": "The forecast per zone, night by night: <a href='{wind}'>wind farm report</a>; the rule tested "
-                    "since 2021: <a href='{check}'>verification</a>. <a href='{home}'>Back to the home page</a>.",
+        "why_more": "The forecast per zone, night by night, in a table and with the rule explained: "
+                    "<a href='{wind}'>wind farms</a>; the rule tested since 2021: <a href='{check}'>verification</a>.",
         "h_table": "The routes, station by station",
         "sub_table": "What the white arrows draw, with all their figures.",
         "table_summary": "Show the table: direction, steadiness, speed, altitude and concentration",
