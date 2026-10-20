@@ -19,14 +19,15 @@ migración de cada noche, también en lugares sin radar. En una validación que 
 de 0,77 y recoge el 34 % de las noches intensas, frente al 10 % que se esperaría por azar.
 
 Sobre esa predicción hemos construido una herramienta de decisión para 151 zonas eólicas de la península y Baleares. En
-el análisis retrospectivo de 59 zonas (temporadas 2021–2026), parando solo en las noches más intensas y con viento flojo:
+el análisis retrospectivo de las 151 zonas con el reanálisis ERA5 (temporadas 2021–2026), parando solo en las noches más intensas y con viento flojo:
 
 | Noches de parada por temporada y zona | Energía nocturna perdida | Migración prevista en esas noches |
 |---:|---:|---:|
-| 7 | 2 % | 11 % |
+| 7,5 | 3 % | 9 % |
 
-Las noches de más paso suelen ser de viento flojo (correlación −0,19 entre potencia y densidad de aves), y por eso parar
-cuesta poco.
+Las noches de más paso suelen ser de viento flojo, y por eso parar cuesta poco. Y la regla elige bien: en las 55
+zonas con un radar a menos de 75 km, ese radar midió paso fuerte en el 67 % de las noches de parada, frente al
+24 % que daría el azar.
 
 ![Recreación de la noche del 24/09/2026](night_20260924.gif)
 

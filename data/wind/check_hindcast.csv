@@ -1,0 +1,37 @@
+year,season,rule,zones,nights_per_zone,output_lost,migration_covered
+2021,autumn,stop,151,6.0397,0.0207,0.0655
+2021,autumn,stop + peak hours,151,6.3841,0.0328,0.0689
+2021,autumn,every very high night,151,6.9735,0.0751,0.0744
+2021,spring,stop,151,5.6954,0.0305,0.0637
+2021,spring,stop + peak hours,151,6.4106,0.0530,0.0716
+2021,spring,every very high night,151,7.1060,0.1028,0.0794
+2022,autumn,stop,151,9.8940,0.0299,0.1075
+2022,autumn,stop + peak hours,151,10.5894,0.0495,0.1145
+2022,autumn,every very high night,151,12.0464,0.1441,0.1283
+2022,spring,stop,151,6.1854,0.0292,0.0701
+2022,spring,stop + peak hours,151,7.1126,0.0545,0.0804
+2022,spring,every very high night,151,8.2119,0.1204,0.0925
+2023,autumn,stop,151,5.4106,0.0177,0.0570
+2023,autumn,stop + peak hours,151,6.1656,0.0367,0.0647
+2023,autumn,every very high night,151,8.9536,0.1945,0.0933
+2023,spring,stop,151,10.0927,0.0350,0.1136
+2023,spring,stop + peak hours,151,10.6093,0.0496,0.1193
+2023,spring,every very high night,151,11.4834,0.1119,0.1287
+2024,autumn,stop,151,7.0728,0.0258,0.0780
+2024,autumn,stop + peak hours,151,7.6026,0.0406,0.0839
+2024,autumn,every very high night,151,8.5364,0.0994,0.0932
+2024,spring,stop,151,7.2715,0.0264,0.0788
+2024,spring,stop + peak hours,151,8.7351,0.0582,0.0942
+2024,spring,every very high night,151,12.1457,0.2242,0.1309
+2025,autumn,stop,151,7.9735,0.0215,0.0872
+2025,autumn,stop + peak hours,151,8.3245,0.0324,0.0911
+2025,autumn,every very high night,151,9.5364,0.1168,0.1030
+2025,spring,stop,151,7.4636,0.0323,0.0841
+2025,spring,stop + peak hours,151,8.4437,0.0616,0.0948
+2025,spring,every very high night,151,9.7020,0.1438,0.1093
+2026,autumn,stop,151,6.6159,0.0628,0.1327
+2026,autumn,stop + peak hours,151,6.7947,0.0793,0.1363
+2026,autumn,every very high night,151,6.8940,0.0983,0.1383
+2026,spring,stop,151,10.6026,0.0359,0.1180
+2026,spring,stop + peak hours,151,11.1325,0.0514,0.1237
+2026,spring,every very high night,151,11.9404,0.1065,0.1319
