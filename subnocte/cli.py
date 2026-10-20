@@ -798,6 +798,7 @@ def scorecard(days_shown: int = 21, embed: bool = True):
 
 REPORTS = ["output/phase0.html", "output/phase1.html", "output/phase2.html", "output/phase3.html",
            "output/ranking.html", "output/scorecard.html", "output/wind.html", "output/wind_check.html",
+           "output/wind_france.html", "output/wind_check_france.html",
            "docs/design.html",
            "docs/proposal/proposal_es.html", "docs/proposal/proposal_en.html"]
 
