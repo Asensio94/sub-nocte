@@ -1,7 +1,7 @@
 {
  "source": "sub-nocte",
  "version": 1,
- "generated": "2026-10-20T08:50Z",
+ "generated": "2026-10-20T10:35Z",
  "coverage": {
   "label": "Ciudades con radar meteorológico",
   "sites": [],
@@ -12,14 +12,14 @@
    "id": "Madrid-2026-10-20",
    "kind": "migration",
    "date": "2026-10-20",
-   "title": "Madrid: migración nocturna moderada prevista",
+   "title": "Madrid: migración nocturna baja prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
     "Madrid"
    ],
    "precision": "radar",
    "deadline": null,
-   "status": "moderate",
+   "status": "low",
    "value": null,
    "details": {
     "city": "Madrid",
@@ -33,14 +33,14 @@
    "id": "Barcelona-2026-10-20",
    "kind": "migration",
    "date": "2026-10-20",
-   "title": "Barcelona: migración nocturna baja prevista",
+   "title": "Barcelona: migración nocturna moderada prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
     "Barcelona"
    ],
    "precision": "radar",
    "deadline": null,
-   "status": "low",
+   "status": "moderate",
    "value": null,
    "details": {
     "city": "Barcelona",
@@ -54,14 +54,14 @@
    "id": "Valencia-2026-10-20",
    "kind": "migration",
    "date": "2026-10-20",
-   "title": "Valencia: migración nocturna moderada prevista",
+   "title": "Valencia: migración nocturna muy alta prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
     "Valencia"
    ],
    "precision": "radar",
    "deadline": null,
-   "status": "moderate",
+   "status": "very high",
    "value": null,
    "details": {
     "city": "Valencia",
@@ -117,14 +117,14 @@
    "id": "Málaga-2026-10-20",
    "kind": "migration",
    "date": "2026-10-20",
-   "title": "Málaga: migración nocturna moderada prevista",
+   "title": "Málaga: migración nocturna baja prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
     "Málaga"
    ],
    "precision": "radar",
    "deadline": null,
-   "status": "moderate",
+   "status": "low",
    "value": null,
    "details": {
     "city": "Málaga",
@@ -159,14 +159,14 @@
    "id": "Palma-2026-10-20",
    "kind": "migration",
    "date": "2026-10-20",
-   "title": "Palma: migración nocturna alta prevista",
+   "title": "Palma: migración nocturna moderada prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
     "Palma"
    ],
    "precision": "radar",
    "deadline": null,
-   "status": "high",
+   "status": "moderate",
    "value": null,
    "details": {
     "city": "Palma",
@@ -201,14 +201,14 @@
    "id": "Alicante-2026-10-20",
    "kind": "migration",
    "date": "2026-10-20",
-   "title": "Alicante: migración nocturna moderada prevista",
+   "title": "Alicante: migración nocturna baja prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
     "Alicante"
    ],
    "precision": "radar",
    "deadline": null,
-   "status": "moderate",
+   "status": "low",
    "value": null,
    "details": {
     "city": "Alicante",
