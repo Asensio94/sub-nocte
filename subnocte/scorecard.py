@@ -175,9 +175,17 @@ def match(fc: pd.DataFrame, obs: pd.DataFrame, cities: pd.DataFrame) -> pd.DataF
     return m.assign(pred_vid=m["pred"].clip(lower=0) ** 3)
 
 
+def operational(m: pd.DataFrame) -> pd.DataFrame:
+    """One forecast per place and night: the last one issued before the night (lead 0 before lead 1).
+
+    Every count on the report, the weekly table and the home page is taken from this same set.
+    """
+    return m[m["lead"].between(*LEAD_OP)].sort_values("lead").drop_duplicates(["city", "night"], keep="first")
+
+
 def metrics(m: pd.DataFrame) -> dict:
     """The headline numbers of the verification."""
-    op = m[m["lead"].between(*LEAD_OP)]
+    op = operational(m)
     rho = (op.groupby("nearest_radar")
              .apply(lambda x: spearmanr(x["pred"], x["vid_night"]).correlation if len(x) > 5 else np.nan)
              .dropna())
@@ -185,7 +193,7 @@ def metrics(m: pd.DataFrame) -> dict:
     a = ok["level"].isin(["high", "very high"])
     o = ok["obs_pct"] >= 0.75
     out = {
-        "nights": int(m["night"].nunique()), "places": int(m["nearest_radar"].nunique()),
+        "nights": int(op["night"].nunique()), "places": int(m["nearest_radar"].nunique()),
         "cases": len(op), "radars_scored": len(rho),
         "rho_median": float(rho.median()) if len(rho) else np.nan,
         "rho_positive": int((rho > 0).sum()),
@@ -203,7 +211,7 @@ def metrics(m: pd.DataFrame) -> dict:
 
 def by_place(m: pd.DataFrame) -> pd.DataFrame:
     """One row per place: how well its nights were ordered and how far the size fell short."""
-    op = m[m["lead"].between(*LEAD_OP)]
+    op = operational(m)
     t = (op.groupby(["city", "nearest_radar"])
            .apply(lambda x: pd.Series({
                "nights": x["night"].nunique(),
@@ -223,8 +231,7 @@ def nights(m: pd.DataFrame) -> pd.DataFrame:
 
     This is the table behind the timeline, and the one published as CSV so anyone can redo the sums.
     """
-    op = m[m["lead"].between(*LEAD_OP)].sort_values("lead")
-    t = op.drop_duplicates(["city", "night"], keep="first")
+    t = operational(m)
     cols = ["night", "city", "nearest_radar", "dist_km", "issued", "lead", "level", "p_alert", "pred_vid",
             "vid_night", "obs_pct", "obs_pct_win", "ref_n"]
     return t[cols].sort_values(["night", "city"]).reset_index(drop=True)
@@ -364,7 +371,7 @@ def write_report(m: pd.DataFrame, k: dict, figs: list[Path], out: Path) -> None:
     summary = {
         "nights verified": f"{k['nights']}",
         "places with a radar": f"{k['places']}",
-        "forecast-nights checked": f"{k['cases']:,}",
+        "place-nights checked": f"{k['cases']:,}",
         "median rank correlation": num(k["rho_median"]),
         "places where it is positive": f"{k['rho_positive']} of {k['radars_scored']}",
         "alerts that landed on a busy night": pct(k["precision"]),
@@ -378,7 +385,8 @@ def write_report(m: pd.DataFrame, k: dict, figs: list[Path], out: Path) -> None:
         "<p><b>Where the forecasts come from.</b> The daily routine commits the forecast in force, so the "
         "history of this repository is an archive of forecasts stamped with the day they were issued. "
         "Nothing is re-run: the model is judged on what it actually said, and only forecasts issued on the "
-        "morning of the night or earlier count. Against it goes the density each "
+        "morning of the night or earlier count, one per place and night (the latest), so the figures "
+        "here add up to the week-by-week table and to the home page. Against it goes the density each "
         "city's nearest radar went on to measure, taken again from the public archive, which publishes each "
         "day with about two days of delay.</p>",
         "<div class='k'>" + "".join(f"<div>{a}<b>{b}</b></div>" for a, b in summary.items()) + "</div>",
@@ -409,7 +417,8 @@ def write_report(m: pd.DataFrame, k: dict, figs: list[Path], out: Path) -> None:
         "<h2>What this cannot tell you</h2><ul>"
         "<li>The radar is not in the city: it is the nearest one, tens of kilometres away, and it sees a "
         "circle of its own. A forecast can be right about the city and still miss the radar.</li>"
-        "<li>The Spanish radars renewed in 2025 have no full autumn in the archive yet, so what counts as a "
+        "<li>The renewed Spanish radars, which only appear in the European archive from November 2025, "
+        "have no full autumn there yet, so what counts as a "
         "busy night there is not settled and their alert figures are left out of the totals.</li>"
         "<li>The French radars changed scale in 2019, by a factor of tens: their nights are comparable with "
         "each other from that year on, but not with the ones before.</li>"

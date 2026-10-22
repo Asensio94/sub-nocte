@@ -10,6 +10,19 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+# Display names, one convention per language: the data keeps the local name, the pages show the usual
+# Spanish or English exonym where there is one (Oporto in Spanish, Seville in English).
+PLACE_NAMES = {
+    "es": {"Porto": "Oporto", "Bordeaux": "Burdeos", "Marseille": "Marsella", "Nice": "Niza"},
+    "en": {"Lisboa": "Lisbon", "Sevilla": "Seville"},
+}
+
+
+def place_name(name: str, lang: str) -> str:
+    """The name a page in `lang` shows for a city; the data key is left as it is."""
+    return PLACE_NAMES.get(lang, {}).get(name, name)
+
+
 R_EARTH = 6371.0
 D_MIN, D_MAX = 5.0, 100.0
 

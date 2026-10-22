@@ -93,7 +93,10 @@ def write_report(th: pd.DataFrame, doy: pd.DataFrame, nightly: pd.DataFrame, fig
         f"<p>Generated on {pd.Timestamp.utcnow():%Y-%m-%d %H:%M} UTC. {nightly['radar'].nunique()} radars, "
         f"{len(nightly):,} nights ({nightly['night'].min():%Y-%m-%d} → {nightly['night'].max():%Y-%m-%d}). "
         "Only nights with coverage &ge; 60 %.</p>",
-        "<div class='note'>Relative thresholds: high = night MTR &ge; the radar's historical P90 for the season; "
+        "<div class='note'>P70 and P90 are the 70th and 90th percentiles: the values only 30 % and 10 % of the "
+        "radar's nights exceed (P50, the median, splits them in half). MTR is the migration traffic rate, birds "
+        "crossing a kilometre of front per hour. "
+        "Relative thresholds: high = night MTR &ge; the radar's historical P90 for the season; "
         "medium = P70-P90. share_top10 = share of the seasonal passage concentrated on the 10 % busiest nights "
         "(BirdCast US: ~54 %). Two metrics: the MTR needs the speed from the wind fit, which many French radars "
         "stopped publishing in 2023; the VID (integrated density) only needs the density and is the only homogeneous "

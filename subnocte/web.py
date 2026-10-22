@@ -17,6 +17,7 @@ from pathlib import Path
 import pandas as pd
 
 from . import site
+from .cities import place_name
 from .logo import LOGO_SVG, favicon_link
 
 LANGS = ("es", "en")
@@ -128,10 +129,13 @@ COPY: dict[str, dict[str, str]] = {
                  "pocas noches concentran la mitad del paso. Esta página intenta decir <b>cuáles</b>, ciudad "
                  "por ciudad, para que se puedan apagar las luces justo esas noches.",
         "beta": "<b>Versión técnica, no un servicio en producción.</b> El modelo está validado (ver más "
-                "abajo) pero ninguna de estas ciudades tiene un radar cerca con el que comprobar la previsión "
-                "al día siguiente. Úsese como indicación, no como dato cerrado.",
+                "abajo) pero no se puede comprobar a la mañana siguiente: los datos de radar abiertos llegan "
+                "con unos dos días de retraso, y el radar con el que se compara cada ciudad es el más cercano, "
+                "casi siempre a decenas de kilómetros (ver «¿Acertamos?»). Úsese como indicación, no como dato "
+                "cerrado.",
         "h_night": "La última noche vista por los radares",
-        "sub_night": "Noche del {date}, vista por {n} radares de España, Portugal y Francia, cada 20 minutos.",
+        "sub_night": "Noche del {date}, vista por los {n} radares de España, Portugal y Francia que publicaron "
+                     "datos esa noche, cada 20 minutos.",
         "night_lag": "Es la última noche completa: los perfiles de radar abiertos se publican con unos dos días de "
                      "retraso. Con datos en pocas horas, este mapa estaría listo cada mañana "
                      "(<a href='{prefix}docs/proposal/proposal_es.html'>propuesta</a>).",
@@ -146,8 +150,10 @@ COPY: dict[str, dict[str, str]] = {
                     "significa que esa noche entra en el 10 % más intenso del historial <i>de esa misma "
                     "ciudad</i>. Así el aviso quiere decir lo mismo en Sevilla y en Bilbao, aunque por "
                     "Sevilla pase mucha más ave.",
-        "peak": "En pleno pico de la migración es normal que varias ciudades salgan altas a la vez: el "
-                "percentil se mide contra las noches de esas mismas fechas en años anteriores.",
+        "peak": "El <b>percentil</b> 90 de una ciudad es la cifra que solo supera el 10 % de sus noches (el "
+                "75, una de cada cuatro; la mediana o percentil 50, la mitad). En pleno pico de la migración es "
+                "normal que varias ciudades salgan altas a la vez: el percentil se mide contra las noches de "
+                "esas mismas fechas en años anteriores.",
         "no_forecast": "Previsión no disponible todavía.",
         "h_switch_off": "Noches para apagar",
         "very_high_in": "<b>muy alto</b> en {cities}",
@@ -157,7 +163,8 @@ COPY: dict[str, dict[str, str]] = {
         "h_check": "¿Acertamos?",
         "sub_check": "Cada previsión se publica antes de la noche y se compara después con lo que midió el "
                      "radar más cercano. {nights} noches verificadas, del {first} al {last}.",
-        "check_kpi": ["de las alertas cayeron en noche fuerte", "lo que acertaría el azar",
+        "check_kpi": ["de las alertas cayeron en noche fuerte",
+                      "acertaría una alerta al azar (las noches fuertes de la muestra)",
                       "de las noches fuertes tuvieron alerta"],
         "check_pick": "Elige una noche",
         "col_published": "aviso publicado",
@@ -170,28 +177,36 @@ COPY: dict[str, dict[str, str]] = {
         "res_miss": "✗ no avisada",
         "res_none": "sin registro",
         "check_read": "Una noche es <b>fuerte</b> si está en el cuarto superior del registro de su radar, y "
-                      "hay <b>alerta</b> cuando se publicó «alto» o «muy alto». Los radares españoles renovados "
-                      "en 2025 aún no tienen registro suficiente para decir qué es una noche fuerte, así que "
-                      "salen como «sin registro» y no cuentan en los porcentajes. El radar no está en la "
-                      "ciudad: es el más cercano, a decenas de kilómetros.",
+                      "hay <b>alerta</b> cuando se publicó «alto» o «muy alto». Los radares españoles renovados, "
+                      "que solo aparecen en el archivo europeo desde noviembre de 2025, aún no tienen registro "
+                      "suficiente (100 noches) para decir qué es una noche fuerte, así que salen como «sin "
+                      "registro» y no cuentan en los porcentajes. Estos porcentajes no son el 34 % de la "
+                      "cabecera: aquel es la validación del modelo con la mitad de noches más exigente "
+                      "(el 10 % más fuerte). El radar no está en la ciudad: es el más cercano, de unos pocos "
+                      "a más de 80 km.",
         "check_more": "Todas las cifras, semana a semana y por días de antelación: "
                       "<a href='{href}'>informe de verificación</a> (en inglés) y los datos en "
                       "<a href='{csv}'>CSV</a>.",
         "h_wind": "Parques eólicos",
-        "sub_wind": "Actualizado el {date}. {zones} zonas eólicas de España y Portugal, {turbines} aerogeneradores.",
+        "sub_wind": "Actualizado el {date}. Esta tabla cubre las {zones} zonas eólicas de España y Portugal "
+                    "({turbines} aerogeneradores); la página de parques eólicos suma además las de Francia, así "
+                    "que allí las cifras por noche son mayores.",
         "wind_intro": "Las mismas noches de paso fuerte, vistas desde un parque eólico. En los Países Bajos los "
                       "parques marinos ya se paran en las noches de migración intensa con una previsión como "
-                      "esta; en España y Portugal no hay nada parecido. Para cada zona de unos 25 km se cruzan "
-                      "dos cosas: <b>cuánto paso se espera</b> (el mismo modelo de las ciudades, calibrado con "
-                      "cinco años de meteorología ERA5 en el punto de la zona) y <b>cuánto cuesta parar</b> "
+                      "esta; en España y Portugal no hay nada parecido. Para cada zona (una celda de medio grado, "
+                      "unos 55 × 42 km) se cruzan dos cosas: <b>cuánto paso se espera</b> (el mismo modelo de "
+                      "las ciudades, calibrado con la meteorología de 2021-2026 de ERA5, la reconstrucción del "
+                      "tiempo pasado de Copernicus, en el punto de la zona) y <b>cuánto cuesta parar</b> "
                       "(la producción que tendrían esa noche los aerogeneradores con el viento previsto a "
                       "100 m).",
         "wind_rule": "<b>Solo se sugiere parar cuando el paso es muy alto y parar sale barato</b>, es decir, en "
-                     "noches de poco viento. Probado sobre 2021-2026, esa regla habría parado 7,5 noches por "
-                     "temporada y zona, con un 3 % de la producción nocturna, y habría cubierto el 9 % de la "
-                     "migración prevista; parar todas las noches de paso muy alto habría costado el 13 %. "
-                     "Y elige bien: el radar más cercano midió paso fuerte en el 67 % de esas noches, cuando "
-                     "por azar sería el 24 %.",
+                     "noches de poco viento.",
+        "wind_test": "Probada sobre 2021-2026 en las {zones} zonas de España y Portugal, esa regla habría "
+                     "parado {nights} noches por temporada y zona, con un {lost} de la producción nocturna, y "
+                     "habría cubierto el {covered} de la migración prevista; parar todas las noches de paso muy "
+                     "alto habría costado el {all}.",
+        "wind_radar": "Y elige bien: el radar más cercano midió paso fuerte en el {busy} de esas noches, cuando "
+                      "por azar sería el {chance}.",
         "col_night": "noche",
         "col_very_high": "zonas en muy alto",
         "col_stop": "parar",
@@ -275,7 +290,12 @@ COPY: dict[str, dict[str, str]] = {
              "meteorológicos de casi toda Europa. <b>Aloft</b>, un archivo científico europeo, pasa vol2bird "
              "sobre esos volúmenes y publica los perfiles en abierto (CC0), con uno o dos días de retraso y "
              "sin control de calidad. Sub Nocte los descarga de ahí: un fichero por radar y día, con una fila "
-             "por rodaja y por perfil.</p>"),
+             "por rodaja y por perfil.</p>"
+             "<p><b>Cuántos radares.</b> Cada cifra cuenta una cosa distinta: 56 radares tienen algún dato "
+             "en el histórico 2016-2026 (islas incluidas); 55 tienen datos desde 2021 y entran en el modelo; "
+             "una noche cualquiera publican unos 35-40, los que se citan en «La última noche vista por los radares»; y el mapa de "
+             "rutas muestra 43 estaciones, porque un radar renovado en el mismo sitio que el antiguo cuenta "
+             "como una sola y las Azores y Canarias quedan fuera del mapa.</p>"),
             ("Una noche, una cifra",
              "<p>Se suman las rodajas entre 200 y 3.000 m, cada una con su densidad por 0,2 km de grosor. "
              "El resultado es cuántas aves hay en la columna de aire sobre un kilómetro cuadrado de suelo. "
@@ -289,19 +309,22 @@ COPY: dict[str, dict[str, str]] = {
              "no, queda vacía, nunca a cero.</p>"),
             ("Qué es una noche fuerte, en cada sitio",
              "<p>Con el histórico de cada radar desde 2016 se calcula, para cada día del año, cómo es una "
-             "noche normal y dónde caen los percentiles 70 y 90. Comprobación de coherencia: el 10 % de "
+             "noche normal y dónde caen los percentiles 70 y 90 (las cifras que solo superan el 30 % y el "
+             "10 % de las noches). Comprobación de coherencia: el 10 % de "
              "noches más intensas concentra el 50-55 % del paso de la temporada en España, Portugal y "
              "Francia, el mismo valor que se midió en Estados Unidos (54 %).</p>"),
             ("La meteorología explica buena parte de esa cifra",
-             "<p>Con once años de noches de 55 radares de España, Portugal y Francia se entrenan dos "
-             "modelos: uno estima cuánta ave habrá y otro decide si la noche va a ser de paso fuerte. Las "
+             "<p>Con las noches de 2021 a 2026, los años que traen viento a la altura de vuelo, de los 55 "
+             "radares de España, Portugal y Francia que tienen datos en esos años (de los 56 del histórico, "
+             "uno dejó de publicar en 2020) se entrenan dos modelos: uno estima cuánta ave habrá y otro decide si la noche va a ser de paso fuerte. Las "
              "variables son el viento a la altura a la que vuelan (750, 1.500 y 3.000 metros), descompuesto "
              "en lo que empuja hacia el rumbo migratorio y lo que desvía; la temperatura y su cambio en 24 "
              "horas; la humedad, la nubosidad, la lluvia y la presión; y el día del año.</p>"),
             ("La validación quita radares enteros",
              "<p>No se quitan noches al azar. Es la única prueba honesta para una ciudad sin radar: se "
              "entrena sin ese radar y se le pide predecirlo a ciegas. Así el modelo captura un <b>34 % de "
-             "las noches de paso fuerte</b> frente al 10 % que daría el azar, con un 66 % de falsas alarmas. "
+             "las noches de paso fuerte</b> (aquí, el 10 % más intenso de cada radar) frente al 10 % que "
+             "daría el azar, con un 66 % de falsas alarmas. Es el 34 % de la cabecera de la portada. "
              "Acierta tres veces más que tirar una moneda, y se equivoca a menudo.</p>"),
             ("El aviso se calibra ciudad a ciudad y fecha a fecha",
              "<p>Se corre el modelo sobre la meteorología de 2021 a hoy en el punto exacto de la ciudad, y "
@@ -356,8 +379,8 @@ COPY: dict[str, dict[str, str]] = {
         "evidence_note": "Medido sobre los perfiles de Aloft en octubre de 2026.",
         "fig_cities": "ciudades",
         "fig_nights": "noches previstas",
-        "fig_radars": "radares en el histórico",
-        "fig_hit": "noches fuertes captadas",
+        "fig_radars": "radares en el histórico 2016-2026",
+        "fig_hit": "noches fuertes captadas en la validación (azar: 10 %)",
         "h_reports": "Informes técnicos",
         "sub_reports": "Cada fase con sus figuras, sus tablas y sus limitaciones.",
         "reports": {
@@ -415,10 +438,12 @@ COPY: dict[str, dict[str, str]] = {
                  "nights carry half of the passage. This page tries to say <b>which ones</b>, city by city, "
                  "so that the lights can go out on exactly those nights.",
         "beta": "<b>Technical preview, not a production service.</b> The model is validated (see below), but "
-                "none of these cities has a radar close enough to check the forecast the next morning. Treat "
-                "it as an indication, not a settled figure.",
+                "it cannot be checked the next morning: the open radar data arrive about two days late, and the "
+                "radar each city is checked against is the nearest one, usually tens of kilometres away (see "
+                "“Did we get it right?”). Treat it as an indication, not a settled figure.",
         "h_night": "The latest night on the radars",
-        "sub_night": "Night of {date}, as {n} radars in Spain, Portugal and France saw it, every 20 minutes.",
+        "sub_night": "Night of {date}, as the {n} radars in Spain, Portugal and France that published data "
+                     "that night saw it, every 20 minutes.",
         "night_lag": "It is the latest complete night: the open radar profiles are published about two days late. "
                      "With data within hours this map would be ready every morning "
                      "(<a href='{prefix}docs/proposal/proposal_en.html'>proposal</a>).",
@@ -433,8 +458,10 @@ COPY: dict[str, dict[str, str]] = {
                     "means the night falls in the most intense 10 % of the record <i>for that same city</i>. "
                     "That way the alert means the same thing in Seville and in Bilbao, even though far more "
                     "birds pass over Seville.",
-        "peak": "At the peak of the passage it is normal for several cities to come out high at once: the "
-                "percentile is measured against the nights of those same dates in earlier years.",
+        "peak": "A city's 90th <b>percentile</b> is the figure only 10 % of its nights exceed (the 75th, one "
+                "night in four; the median or 50th, half of them). At the peak of the passage it is normal for "
+                "several cities to come out high at once: the percentile is measured against the nights of "
+                "those same dates in earlier years.",
         "no_forecast": "Forecast not available yet.",
         "h_switch_off": "Nights to switch off",
         "very_high_in": "<b>very high</b> in {cities}",
@@ -444,7 +471,8 @@ COPY: dict[str, dict[str, str]] = {
         "h_check": "Did we get it right?",
         "sub_check": "Every forecast is published before the night and checked afterwards against what the "
                      "nearest radar measured. {nights} nights verified, from {first} to {last}.",
-        "check_kpi": ["of the alerts landed on a busy night", "what chance would get",
+        "check_kpi": ["of the alerts landed on a busy night",
+                      "an alert at random would get (the busy nights in the sample)",
                       "of the busy nights had an alert"],
         "check_pick": "Pick a night",
         "col_published": "published alert",
@@ -457,26 +485,34 @@ COPY: dict[str, dict[str, str]] = {
         "res_miss": "✗ missed",
         "res_none": "no record",
         "check_read": "A night is <b>busy</b> if it falls in the top quarter of its radar's own record, and "
-                      "there is an <b>alert</b> when «high» or «very high» was published. The Spanish radars "
-                      "renewed in 2025 do not have a long enough record yet to say what a busy night is, so "
-                      "they show as «no record» and do not count in the percentages. The radar is not in the "
-                      "city: it is the nearest one, tens of kilometres away.",
+                      "there is an <b>alert</b> when «high» or «very high» was published. The renewed Spanish "
+                      "radars, which only appear in the European archive from November 2025, do not have a "
+                      "long enough record yet (100 nights) to say what a busy night is, so they show as «no "
+                      "record» and do not count in the percentages. These percentages are not the 34 % at the "
+                      "top of the page: that one is the model's validation on a stricter definition (the "
+                      "busiest 10 % of nights). The radar is not in the city: it is the nearest one, from a few "
+                      "to over 80 km away.",
         "check_more": "Every figure, week by week and by days ahead: <a href='{href}'>verification report</a> "
                       "and the data as <a href='{csv}'>CSV</a>.",
         "h_wind": "Wind farms",
-        "sub_wind": "Updated on {date}. {zones} wind zones in Spain and Portugal, {turbines} turbines.",
+        "sub_wind": "Updated on {date}. This table covers the {zones} wind zones in Spain and Portugal "
+                    "({turbines} turbines); the wind farms page adds the French ones too, so its per-night "
+                    "figures are larger.",
         "wind_intro": "The same heavy-passage nights, seen from a wind farm. In the Netherlands the offshore "
                       "farms are already stopped on nights of intense migration with a forecast like this one; "
-                      "in Spain and Portugal nothing like it is in place. For each zone of about 25 km two things "
-                      "are crossed: <b>how much passage is expected</b> (the same model as the cities, calibrated "
-                      "on five years of ERA5 weather at the zone's point) and <b>what stopping costs</b> (the "
+                      "in Spain and Portugal nothing like it is in place. For each zone (a half-degree cell, about "
+                      "55 × 42 km) two things are crossed: <b>how much passage is expected</b> (the same model "
+                      "as the cities, calibrated on the 2021-2026 weather from ERA5, Copernicus's reconstruction "
+                      "of past weather, at the zone's point) and <b>what stopping costs</b> (the "
                       "output the turbines would have that night with the wind forecast at 100 m).",
         "wind_rule": "<b>Stopping is only suggested when the passage is very high and stopping is cheap</b>, "
-                     "that is, on nights with little wind. Tested on 2021-2026, that rule would have stopped 7.5 "
-                     "nights per season and zone, for 3 % of the night output, and covered 9 % of the "
-                     "predicted migration; stopping on every very high night would have cost 13 %. And it "
-                     "picks the right nights: the nearest radar measured heavy passage on 67 % of them, "
-                     "against 24 % by chance.",
+                     "that is, on nights with little wind.",
+        "wind_test": "Tested on 2021-2026 at the {zones} zones in Spain and Portugal, that rule would have "
+                     "stopped {nights} nights per season and zone, for {lost} of the night output, and covered "
+                     "{covered} of the predicted migration; stopping on every very high night would have cost "
+                     "{all}.",
+        "wind_radar": "And it picks the right nights: the nearest radar measured heavy passage on {busy} of "
+                      "them, against {chance} by chance.",
         "col_night": "night",
         "col_very_high": "zones at very high",
         "col_stop": "stop",
@@ -559,7 +595,12 @@ COPY: dict[str, dict[str, str]] = {
              "weather radars of almost all of Europe. <b>Aloft</b>, a European scientific archive, runs "
              "vol2bird on those volumes and publishes the profiles openly (CC0), one or two days late and "
              "without quality control. Sub Nocte downloads them from there: one file per radar and day, "
-             "with one row per slice and per profile.</p>"),
+             "with one row per slice and per profile.</p>"
+             "<p><b>How many radars.</b> Each figure counts something different: 56 radars have some data "
+             "in the 2016-2026 record (islands included); 55 have data since 2021 and go into the model; on "
+             "any given night about 35-40 publish, the ones quoted under «The latest night on the radars»; and the routes map "
+             "shows 43 stations, because a radar renewed on the same site as the old one counts as one and "
+             "the Azores and the Canaries are off the map.</p>"),
             ("One night, one figure",
              "<p>The slices between 200 and 3,000 m are added up, each one as its density times 0.2 km of "
              "thickness. The result is how many birds there are in the air column over one square "
@@ -573,12 +614,14 @@ COPY: dict[str, dict[str, str]] = {
              "set to zero.</p>"),
             ("What a heavy night is, place by place",
              "<p>From each radar's record since 2016 we work out, for every day of the year, what a normal "
-             "night looks like and where the 70th and 90th percentiles fall. Sanity check: the most "
+             "night looks like and where the 70th and 90th percentiles fall (the figures only 30 % and 10 % "
+             "of nights exceed). Sanity check: the most "
              "intense 10 % of nights carry 50-55 % of the season's passage in Spain, Portugal and France, "
              "the same share measured in the United States (54 %).</p>"),
             ("Weather explains a good part of that figure",
-             "<p>Using eleven years of nights from 55 radars in Spain, Portugal and France we train two "
-             "models: one estimates how many birds there will be and the other decides whether the night "
+             "<p>Using the nights of 2021 to 2026, the years that come with wind at flight height, from the "
+             "55 radars in Spain, Portugal and France with data in those years (of the 56 in the record, one "
+             "stopped publishing in 2020) we train two models: one estimates how many birds there will be and the other decides whether the night "
              "will carry heavy passage. The variables are the wind at the heights where they fly (750, "
              "1,500 and 3,000 metres), split into the part pushing along the migratory heading and the "
              "part pushing sideways; temperature and its 24-hour change; humidity, cloud cover, rain and "
@@ -586,8 +629,8 @@ COPY: dict[str, dict[str, str]] = {
             ("Validation leaves whole radars out",
              "<p>Not random nights. It is the only honest test for a city without a radar: the model is "
              "trained without that radar and then asked to predict it blind. Done that way it captures "
-             "<b>34 % of the heavy-passage nights</b> against the 10 % that chance would give, with 66 % "
-             "false alarms. Three times better than a coin flip, and wrong fairly often.</p>"),
+             "<b>34 % of the heavy-passage nights</b> (here, the busiest 10 % of each radar) against the 10 % "
+             "that chance would give, with 66 % false alarms. It is the 34 % at the top of the home page. Three times better than a coin flip, and wrong fairly often.</p>"),
             ("The alert is calibrated city by city and date by date",
              "<p>The model is run over the weather from 2021 to today at the city's exact location, and the "
              "levels are cut at the percentiles of the nights around the same date, in a window of three "
@@ -641,8 +684,8 @@ COPY: dict[str, dict[str, str]] = {
         "evidence_note": "Measured on the Aloft profiles in October 2026.",
         "fig_cities": "cities",
         "fig_nights": "nights ahead",
-        "fig_radars": "radars in the record",
-        "fig_hit": "heavy nights caught",
+        "fig_radars": "radars in the 2016-2026 record",
+        "fig_hit": "heavy nights caught in validation (chance: 10 %)",
         "h_reports": "Technical reports",
         "sub_reports": "Each phase with its figures, its tables and its limitations.",
         "reports": {
@@ -742,6 +785,30 @@ NIGHTLY_DIR = Path(__file__).resolve().parents[1] / "data" / "nightly"
 def _num(x: float, lang: str, nd: int = 0) -> str:
     s = f"{x:,.{nd}f}"
     return s.replace(",", "·").replace(".", ",").replace("·", ".") if lang == "es" else s
+
+
+def wind_test(lang: str) -> list[str]:
+    """The rule tested on the past, from the same files and with the same figures as the wind farms page."""
+    from .wind_check import overall
+    c, wind = COPY[lang], NIGHTLY_DIR.parent / "wind"
+
+    def pct(x: float) -> str:
+        return f"{_num(100 * x, lang, 1)} %" if lang == "es" else f"{100 * x:.1f}%"
+
+    out = []
+    try:
+        h = pd.read_csv(wind / "check_hindcast.csv")
+        ov = overall(h).set_index("rule")
+        out.append(c["wind_test"].format(
+            zones=int(h["zones"].max()), nights=_num(ov.loc["stop", "nights_per_zone"], lang, 1),
+            lost=pct(ov.loc["stop", "output_lost"]), covered=pct(ov.loc["stop", "migration_covered"]),
+            all=pct(ov.loc["every very high night", "output_lost"])))
+        cr = pd.read_csv(wind / "check_radar.csv").set_index("group")
+        out.append(c["wind_radar"].format(busy=pct(cr.loc["advice stop", "busy"]),
+                                          chance=pct(cr.loc["all nights", "busy"])))
+    except (OSError, KeyError):
+        pass
+    return out
 
 
 def figures(fc: pd.DataFrame | None, lang: str) -> str:
@@ -858,7 +925,7 @@ def calendar(fc: pd.DataFrame, lang: str) -> str:
         country = COUNTRY[lang].get(g["country"].iat[0], g["country"].iat[0])
         cells = "".join(_cell(g.loc[n, "level"], lang) if n in g.index else "<td class='n'></td>"
                         for n in nights)
-        rows.append(f"<tr><td><b>{city}</b> <span class='pill'>{country}</span></td>{cells}</tr>")
+        rows.append(f"<tr><td><b>{place_name(city, lang)}</b> <span class='pill'>{country}</span></td>{cells}</tr>")
     legend = "".join(f"<span><i style='background:{COLOR[n]}'></i>{LEVEL_NAME[lang][n]}</span>"
                      for n in ("low", "moderate", "high", "very high"))
     return (f"<div class='cal'><table><tr><th>{c['col_city']}</th>{head}</tr>{''.join(rows)}</table></div>"
@@ -870,7 +937,7 @@ def nights_to_switch_off(alerts: pd.DataFrame, lang: str) -> list[str]:
     c = COPY[lang]
     p = [f"<h3>{c['h_switch_off']}</h3><ul>"]
     for night, g in alerts.groupby("night"):
-        very = sorted(g[g["level"] == "very high"]["city"])
+        very = sorted(place_name(x, lang) for x in g[g["level"] == "very high"]["city"])
         others = len(g) - len(very)
         parts = []
         if very:
@@ -886,7 +953,7 @@ def ranking_table(rk: pd.DataFrame, season: str, lang: str, n: int = 12) -> str:
     c = COPY[lang]
     g = rk[rk["season"] == season].nlargest(n, "exposure_peaks")
     rows = "".join(
-        f"<tr><td>{i}. <b>{r.city}</b> <span class='pill'>{COUNTRY[lang].get(r.country, r.country)}</span></td>"
+        f"<tr><td>{i}. <b>{place_name(r.city, lang)}</b> <span class='pill'>{COUNTRY[lang].get(r.country, r.country)}</span></td>"
         f"<td>{r.times_natural:.0f}×</td><td>{r.vid_peaks:.0f}</td><td>{r.exposure_peaks:.0f}</td></tr>"
         for i, r in enumerate(g.itertuples(index=False), 1))
     return (f"<table><tr><th>{c['col_city']}</th><th>{c['col_sky']}</th><th>{c['col_birds']}</th>"
@@ -973,7 +1040,7 @@ def check_section(sc: pd.DataFrame | None, lang: str, prefix: str) -> list[str]:
     for n, g in sc.groupby("night"):
         g = g.sort_values("vid_night", ascending=False)
         rows[pd.Timestamp(n).strftime("%Y-%m-%d")] = [
-            [r.city, r.nearest_radar, int(round(r.dist_km)), r.level, LEVEL_NAME[lang].get(r.level, r.level),
+            [place_name(r.city, lang), r.nearest_radar, int(round(r.dist_km)), r.level, LEVEL_NAME[lang].get(r.level, r.level),
              _num(r.vid_night, lang, 1), c[r.res], r.res] for r in g.itertuples()]
 
     def table(key: str) -> str:
@@ -1069,7 +1136,7 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
               + c["sub_wind"].format(date=_date(today, lang), zones=len(zones),
                                      turbines=f"{zones['turbines'].sum():,}".replace(
                                          ",", "." if lang == "es" else ",")) + "</p>",
-              f"<p>{c['wind_intro']}</p>", f"<p>{c['wind_rule']}</p>",
+              f"<p>{c['wind_intro']}</p>", f"<p>{' '.join([c['wind_rule'], *wind_test(lang)])}</p>",
               wind_table(wf, lang) if not acted.empty else f"<p>{c['no_wind_stop']}</p>",
               f"<p class='sub'>{c['wind_not']}</p>",
               f"<a class='routes-cta' href='{prefix}{site.PAGES['farms'][lang]}'><span>{c['farms_cta']}</span>"

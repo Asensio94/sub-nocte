@@ -261,7 +261,7 @@ COPY: dict[str, dict] = {
         "lede": "Para cada zona eólica, la previsión de migración nocturna de las próximas noches y lo que costaría "
                 "parar con el viento previsto. La sugerencia es <b>parar</b> solo cuando hay mucho paso y poco "
                 "viento; en el resto, vigilar o seguir.",
-        "fig_zones": "zonas eólicas", "fig_turbines": "aerogeneradores", "fig_gw": "GW instalados",
+        "fig_zones": "zonas eólicas en España, Portugal y Francia", "fig_turbines": "aerogeneradores", "fig_gw": "GW instalados",
         "fig_nights": "de {n} noches con alguna parada sugerida",
         "h_map": "Mapa por noche",
         "pick_night": "Elige la noche",
@@ -295,11 +295,12 @@ COPY: dict[str, dict] = {
              "península). Una celda con {min} aerogeneradores o más es una zona, y su punto de previsión es el "
              "centro de sus aerogeneradores. Países: {countries}."),
             ("Cuánto paso se espera",
-             "El mismo modelo que da la previsión por ciudad: aprende de diez años de radar cómo la meteorología "
+             "El mismo modelo que da la previsión por ciudad: aprende de las noches de radar de 2021 a 2026 cómo la meteorología "
              "de cada noche (viento, temperatura, presión, lluvia) mueve la migración, y se aplica en el punto de "
              "la zona con la previsión de Open-Meteo. El nivel no es absoluto: se compara con el registro de la "
-             "propia zona en la misma época (ERA5, 2021-2026). <b>Alto</b> es por encima de su percentil 75 y "
-             "<b>muy alto</b>, de su percentil 90."),
+             "propia zona en la misma época (ERA5, la reconstrucción del tiempo pasado de Copernicus, 2021-2026). "
+             "<b>Alto</b> es por encima de su percentil 75 (lo que solo supera una noche de cada cuatro) y "
+             "<b>muy alto</b>, de su percentil 90 (una de cada diez)."),
             ("Cuánto cuesta parar",
              "El viento previsto a 100 m en las horas de noche pasa por una curva de potencia genérica: nada por "
              "debajo de {cut_in} m/s, potencia nominal desde {rated} m/s y parada de seguridad a {cut_out} m/s. "
@@ -325,7 +326,9 @@ COPY: dict[str, dict] = {
             "genérica, no de las máquinas reales; la potencia y el rotor solo están etiquetados en parte de los "
             "aerogeneradores, y faltan los que nadie ha cartografiado.",
             "<b>El radar más cercano está lejos.</b> A decenas de kilómetros, y los radares renovados de AEMET "
-            "aciertan menos que los demás (AUC 0,55-0,66 frente a 0,74 en el conjunto de España).",
+            "aciertan menos que los demás (AUC 0,55-0,66 frente a 0,74 en el conjunto de España; el AUC, área "
+            "bajo la curva ROC, mide si el modelo pone las noches fuertes por delante de las flojas: 0,5 es "
+            "azar y 1, perfecto).",
             "<b>Solo en temporada.</b> Fuera de marzo-mayo y agosto-noviembre no hay umbral y no hay sugerencia.",
             "<b>No es una orden.</b> Es una sugerencia para ordenar las noches, no sustituye los planes de "
             "vigilancia de cada parque ni ninguna decisión de la administración.",
@@ -343,8 +346,9 @@ COPY: dict[str, dict] = {
         "sources": "Aerogeneradores: © colaboradores de <a href='https://www.openstreetmap.org/copyright'>"
                    "OpenStreetMap</a> (ODbL). Previsión meteorológica: <a href='https://open-meteo.com'>Open-Meteo"
                    "</a> (CC BY 4.0). Registro de cada zona: reanálisis ERA5 de Copernicus. Radar: perfiles "
-                   "vol2bird de <a href='https://aloftdata.eu'>Aloft</a> (CC0) sobre los radares de AEMET, IPMA y "
-                   "Météo-France. Costas y fronteras: <a href='https://www.naturalearthdata.com'>Natural Earth</a>.",
+                   "vol2bird (el programa que separa los ecos de aves de los de lluvia e insectos) de "
+                   "<a href='https://aloftdata.eu'>Aloft</a> (CC0), el archivo abierto europeo de perfiles de aves, "
+                   "sobre los radares de AEMET, IPMA y Météo-France de la red europea OPERA. Costas y fronteras: <a href='https://www.naturalearthdata.com'>Natural Earth</a>.",
         "code": "El código y los datos de cada noche (<code>data/wind/forecast.csv</code>) están en el "
                 "<a href='{repo}'>repositorio</a>.",
     },
@@ -357,7 +361,7 @@ COPY: dict[str, dict] = {
         "lede": "For each wind zone, the nocturnal migration forecast for the coming nights and what stopping would "
                 "cost with the wind forecast. The suggestion is to <b>stop</b> only when passage is heavy and wind "
                 "is light; otherwise, watch or keep running.",
-        "fig_zones": "wind zones", "fig_turbines": "turbines", "fig_gw": "GW installed",
+        "fig_zones": "wind zones in Spain, Portugal and France", "fig_turbines": "turbines", "fig_gw": "GW installed",
         "fig_nights": "of {n} nights with a suggested stop",
         "h_map": "Map by night",
         "pick_night": "Pick the night",
@@ -390,11 +394,12 @@ COPY: dict[str, dict] = {
              "A cell with {min} turbines or more is a zone, and its forecast point is the centre of its turbines. "
              "Countries: {countries}."),
             ("How much passage is expected",
-             "The same model as the per-city forecast: it learns from ten years of radar how each night's weather "
+             "The same model as the per-city forecast: it learns from the radar nights of 2021 to 2026 how each night's weather "
              "(wind, temperature, pressure, rain) moves migration, and is applied at the zone's point with the "
              "Open-Meteo forecast. The level is not absolute: it is set against the zone's own record at the same "
-             "time of year (ERA5, 2021-2026). <b>High</b> is above its 75th percentile and <b>very high</b> above "
-             "its 90th."),
+             "time of year (ERA5, Copernicus's reconstruction of past weather, 2021-2026). <b>High</b> is above its "
+             "75th percentile (what only one night in four exceeds) and <b>very high</b> above its 90th (one in "
+             "ten)."),
             ("What stopping costs",
              "The wind forecast at 100 m over the night hours goes through a generic power curve: nothing below "
              "{cut_in} m/s, rated power from {rated} m/s and safety cut-out at {cut_out} m/s. Out comes the share "
@@ -419,7 +424,8 @@ COPY: dict[str, dict] = {
             "machines; capacity and rotor are tagged on only part of the turbines, and the unmapped ones are "
             "missing.",
             "<b>The nearest radar is far.</b> Tens of kilometres away, and the renewed AEMET radars do worse than "
-            "the rest (AUC 0.55-0.66 against 0.74 for Spain as a whole).",
+            "the rest (AUC 0.55-0.66 against 0.74 for Spain as a whole; the AUC, area under the ROC curve, measures "
+            "whether the model ranks heavy nights ahead of light ones: 0.5 is chance and 1 is perfect).",
             "<b>In season only.</b> Outside March-May and August-November there is no threshold and no suggestion.",
             "<b>Not an order.</b> It is a suggestion to rank nights; it does not replace each farm's monitoring "
             "plan nor any decision by the authorities.",
@@ -436,7 +442,9 @@ COPY: dict[str, dict] = {
         "sources": "Turbines: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors "
                    "(ODbL). Weather forecast: <a href='https://open-meteo.com'>Open-Meteo</a> (CC BY 4.0). Each "
                    "zone's record: Copernicus ERA5 reanalysis. Radar: vol2bird profiles from "
-                   "<a href='https://aloftdata.eu'>Aloft</a> (CC0) over the AEMET, IPMA and Météo-France radars. "
+                   "<a href='https://aloftdata.eu'>Aloft</a> (CC0), the open European archive of bird profiles (vol2bird "
+                   "is the program that sorts bird echoes from rain and insects), over the AEMET, IPMA and "
+                   "Météo-France radars of the European OPERA network. "
                    "Coasts and borders: <a href='https://www.naturalearthdata.com'>Natural Earth</a>.",
         "code": "The code and each night's data (<code>data/wind/forecast.csv</code>) are in the "
                 "<a href='{repo}'>repository</a>.",
