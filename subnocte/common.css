@@ -74,7 +74,9 @@ table.params td.num,table.params th.num{text-align:right;font-family:var(--font-
 .site-footer .principle{margin:0;color:var(--ink);font-style:italic}
 .siblings{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0;padding:0;list-style:none}
 .siblings li a{text-decoration-color:var(--line)}
-.siblings li[aria-current] a{color:var(--ink);text-decoration-color:var(--accent);font-weight:600}
+.siblings li[aria-current]{color:var(--ink);font-weight:600}
+.site-footer .hub{margin:0}
+.site-footer nav p{margin:0 0 4px}
 
 @media (max-width:640px){
   body{font-size:16px}
