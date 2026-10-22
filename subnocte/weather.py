@@ -36,6 +36,7 @@ HOURLY_LEVELS = ([f"{v}_{h}hPa" for h in LEVEL_HPA for v in ("wind_speed", "wind
                  + ["temperature_850hPa", "geopotential_height_850hPa"])
 LEVELS_YEAR0 = 2021  # the forecast archive has no pressure levels before 2021
 PAUSE_S = 1.0        # courtesy towards the free service
+BATCH_POINTS = 50    # points per request when asking for many at once
 RETRIES = 14
 BACKOFF_S = 90       # the free quota renews by the minute and by the hour
 BACKOFF_MAX_S = 900  # once the hourly quota is exhausted the wait is real, retrying in a loop does not help
@@ -61,21 +62,20 @@ def _chunks(years: list[int], maximum: int) -> list[tuple[int, int]]:
     return chunks
 
 
-def fetch_hourly(lat: float, lon: float, start: dt.date, end: dt.date, url: str = ARCHIVE,
-                 hourly: list[str] | None = None, log=print) -> pd.DataFrame:
-    params = {"latitude": lat, "longitude": lon, "start_date": start.isoformat(), "end_date": end.isoformat(),
-              "hourly": ",".join(hourly or HOURLY), "timezone": "UTC", "wind_speed_unit": "ms"}
+def _get_hourly(url: str, params: dict, log=print, timeout: int = 300) -> dict | list:
+    """One Open-Meteo request with the retry policy below; a list of answers when it asks for several points."""
     for attempt in range(RETRIES):
         try:
-            r = requests.get(url, params=params, timeout=300)
+            r = requests.get(url, params=params, timeout=timeout)
             if r.status_code == 429 or r.status_code >= 500:
                 raise requests.RequestException(f"HTTP {r.status_code}")
             r.raise_for_status()
             j = r.json()
-            if "hourly" in j:
-                break
+            if all("hourly" in x for x in (j if isinstance(j, list) else [j])):
+                return j
             # quota exhausted or another logical error: arrives as 200 with an error flag and a reason
-            raise requests.RequestException(j.get("reason", "response without hourly data"))
+            raise requests.RequestException((j if isinstance(j, dict) else {}).get("reason",
+                                                                                 "response without hourly data"))
         except requests.RequestException as e:
             if attempt == RETRIES - 1:
                 raise
@@ -88,9 +88,40 @@ def fetch_hourly(lat: float, lon: float, start: dt.date, end: dt.date, url: str 
                 wait = min(BACKOFF_S * (attempt + 1), BACKOFF_MAX_S)
             log(f"  Open-Meteo: {e}; retrying in {wait} s")
             time.sleep(wait)
+
+
+def _frame(j: dict) -> pd.DataFrame:
     df = pd.DataFrame(j["hourly"])
     df["time"] = pd.to_datetime(df.pop("time"), utc=True)
     return df
+
+
+def _params(start: dt.date, end: dt.date, hourly: list[str] | None) -> dict:
+    return {"start_date": start.isoformat(), "end_date": end.isoformat(), "hourly": ",".join(hourly or HOURLY),
+            "timezone": "UTC", "wind_speed_unit": "ms"}
+
+
+def fetch_hourly(lat: float, lon: float, start: dt.date, end: dt.date, url: str = ARCHIVE,
+                 hourly: list[str] | None = None, log=print) -> pd.DataFrame:
+    return _frame(_get_hourly(url, {"latitude": lat, "longitude": lon, **_params(start, end, hourly)}, log=log))
+
+
+def fetch_hourly_many(lats: list[float], lons: list[float], start: dt.date, end: dt.date, url: str = ARCHIVE,
+                      hourly: list[str] | None = None, log=print) -> list[pd.DataFrame]:
+    """The same for many points, BATCH_POINTS per request, in the order given.
+
+    One request per point is what timed out the wind step on the shared GitHub runner: 151 zones, each one a
+    round trip that can hang for minutes. Open-Meteo takes comma-separated coordinates and answers a list.
+    """
+    out = []
+    for i in range(0, len(lats), BATCH_POINTS):
+        la, lo = lats[i:i + BATCH_POINTS], lons[i:i + BATCH_POINTS]
+        j = _get_hourly(url, {"latitude": ",".join(f"{x:.4f}" for x in la),
+                              "longitude": ",".join(f"{x:.4f}" for x in lo), **_params(start, end, hourly)},
+                        log=log, timeout=120)
+        out += [_frame(x) for x in (j if isinstance(j, list) else [j])]
+        time.sleep(PAUSE_S)
+    return out
 
 
 # Migration windows with three days of margin on each side (the margin allows the 24 h trends)

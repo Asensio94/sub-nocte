@@ -627,8 +627,9 @@ def wind(days: int = 7, cache: bool = False, region: str = REGION):
     else:
         models = P.load_models(ROOT / "data")
         parts = []
-        for r in z[z["zone"].isin(set(th["zone"]))].itertuples():
-            h = P.fetch_forecast(r.lat, r.lon, days, log=rprint)
+        zs = z[z["zone"].isin(set(th["zone"]))]
+        hs = P.fetch_forecast_many(zs["lat"].tolist(), zs["lon"].tolist(), days, log=rprint)
+        for r, h in zip(zs.itertuples(), hs):
             x = P.features(r.zone, r.lat, r.lon, h)
             if x.empty:
                 continue
@@ -647,6 +648,34 @@ def wind(days: int = 7, cache: bool = False, region: str = REGION):
     R.write_report(fc, th, w.report, w.region)
     stop = fc[fc["advice"].str.startswith("stop")]
     rprint(f"[bold]{len(fc)} zone-nights, {len(stop)} where stopping is suggested[/bold] -> {w.report}")
+
+
+@app.command()
+def wind_check(region: str = REGION):
+    """Hindcast of the stopping rule on the ERA5 archive, and its check against the nearest radar."""
+    from . import wind_check as C
+    from .history import load_all_nightly
+
+    w = _Wind(region)
+    climate = w.climate("era5")
+    if not climate.exists():
+        rprint(f"[red]no ERA5 predictions: run wind-thresholds --region {region} first[/red]")
+        raise typer.Exit(1)
+    x = C.levels(pd.read_parquet(climate), pd.read_csv(w.dir / "thresholds.csv"))
+    h = C.hindcast(x)
+    ov = C.overall(h)
+    z = w.zones()
+    n = load_all_nightly(NIGHTLY)
+    m = C.radar_check(x, C.pair_radars(z[z["zone"].isin(set(x["zone"]))], n), n)
+    cs, bz = C.check_summary(m), C.by_zone(m)
+    h.to_csv(w.dir / "check_hindcast.csv", index=False, float_format="%.4f")
+    cs.to_csv(w.dir / "check_radar.csv", index=False, float_format="%.4f")
+    bz.to_csv(w.dir / "check_by_zone.csv", index=False, float_format="%.3f")
+    out = OUTPUT / ("wind_check.html" if region == "iberia" else f"wind_check_{region}.html")
+    C.write_report(x, h, ov, cs, bz, x["zone"].nunique(), out)
+    rprint(ov.round(3).to_string(index=False))
+    rprint(cs.round(3).to_string(index=False))
+    rprint(f"Report: {out}")
 
 
 @app.command()
@@ -671,6 +700,37 @@ def flows(night: str = typer.Option(None, help="YYYY-MM-DD, date of the sunset; 
 
 
 LIGHTS = ROOT / "data" / "lights"
+
+
+ROUTES = ROOT / "data" / "routes"
+
+
+@app.command()
+def routes_archive(workers: int = 4, cache_dir: Path = typer.Option(None, help="where the monthly files land "
+                                                                     "while they are read (deleted after)")):
+    """Flight vector of every migration night with one: the raw material of the routes map (data/routes)."""
+    from . import routes as Ro
+
+    months = Ro.flight_months(NIGHTLY)
+    dest = Ro.archive(months, ROUTES, cache_dir or CACHE, workers=workers, log=rprint)
+    rprint(f"-> {dest}")
+
+
+@app.command()
+def routes():
+    """Routes map: the flight direction per station and season, and the page that draws it (rutas.html)."""
+    from . import routes as Ro
+    from . import routes_page as RP
+
+    if not (ROUTES / "flight_nights.parquet").exists():
+        rprint("[red]no flight vectors: run routes-archive first[/red]")
+        raise typer.Exit(1)
+    inp = RP.load(ROOT)
+    clim = Ro.climatology(inp.nights)
+    clim.to_csv(ROUTES / "climatology.csv", index=False, float_format="%.3f")
+    RP.build(inp, ROOT, log=rprint)
+    from . import farms_page as FP
+    FP.build(inp, ROOT, log=rprint)
 
 
 @app.command()
@@ -737,7 +797,9 @@ def scorecard(days_shown: int = 21, embed: bool = True):
 
 
 REPORTS = ["output/phase0.html", "output/phase1.html", "output/phase2.html", "output/phase3.html",
-           "output/ranking.html", "output/scorecard.html", "output/wind.html", "docs/design.html",
+           "output/ranking.html", "output/scorecard.html", "output/wind.html", "output/wind_check.html",
+           "output/wind_france.html", "output/wind_check_france.html",
+           "docs/design.html",
            "docs/proposal/proposal_es.html", "docs/proposal/proposal_en.html"]
 
 
@@ -758,6 +820,12 @@ def web():
     sc_csv = OUTPUT / "scorecard_nights.csv"
     sc = pd.read_csv(sc_csv) if sc_csv.exists() else None
     W.build(fc, rk, [ROOT / n for n in REPORTS], ROOT, log=rprint, nights=nights, wf=wf, sc=sc)
+    from . import method_page, site
+    method_page.build(ROOT, log=rprint)
+    # the bar follows the reader's language; a reader arriving straight at a report gets Spanish, but the
+    # English proposal is the one page that is sent to English readers on its own
+    stamped = [n for n in REPORTS if site.stamp(ROOT / n, ROOT, default="en" if n.endswith("_en.html") else "es")]
+    rprint(f"navigation bar on {len(stamped)} reports")
     from . import signals
     rprint(f"signals.json: {signals.write(fc, ROOT / 'signals.json')} signals for Estado de las IBA")
 

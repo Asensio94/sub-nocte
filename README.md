@@ -170,9 +170,15 @@ fase 3, que funciona en cualquier punto aunque no haya radar, a los aerogenerado
   - con alerta alta (P75), vigilar;
   - con cualquier alerta inferior, funcionar.
 
-  Sobre las temporadas 2021–2026 esto supone unas 7 noches por temporada y zona y un 2 % de la producción
-  nocturna, para el 11 % de la migración que predice el modelo. Parar desde el P75 habría supuesto 21 noches y un
-  13,5 %. Sale tan barato porque las noches de mucho paso suelen ser noches de poco viento.
+  Sobre las temporadas 2021–2026 (reanálisis ERA5, 151 zonas) esto supone unas 7,5 noches por temporada y zona
+  y un 3,1 % de la producción nocturna, para el 8,8 % de la migración que predice el modelo. Parar todas las
+  noches de paso muy alto habría supuesto un 12,8 %. Sale tan barato porque las noches de mucho paso suelen ser
+  noches de poco viento.
+- **Contraste con radar** (`wind-check`). Las 55 zonas con un radar a menos de 75 km se comparan con lo que
+  midió ese radar cada noche, dentro de su propio registro desde 2021. Una noche «fuerte» es el cuarto superior
+  de ese registro, así que por azar lo es el 24 %. En las noches de alerta muy alta lo fue el 63 %, en las que
+  la regla dice parar el 67 % y en las de alerta baja el 12 %. Fuera quedan las zonas sin radar cerca y el
+  registro anterior a 2021, medido en otra escala por varios radares.
 
   Sirve para ordenar noches, no es una orden de operación.
 
@@ -193,6 +199,29 @@ intensas. Hace falta una cuenta gratuita en el Climate Data Store, aceptar la li
 
 El siguiente paso es usar la cota de cada zona (`ground_m`, en muchos casos 800–1500 m s.n.m.) para leer la
 densidad de la banda de altura que los radares sí ven a esa cota.
+
+## Rutas
+
+`rutas.html` (y `en/routes.html`) es un mapa animado de **por dónde vuelan** las aves de noche sobre la península
+y Francia, con los parques eólicos encima. Tiene tres vistas: las próximas noches, el histórico de otoño y el de
+primavera.
+
+- **De dónde sale la dirección.** vol2bird da, por cada capa de 200 m, la velocidad de las aves sobre el suelo
+  (u, v). `routes-archive` vuelve a leer los ficheros mensuales de Aloft de los meses de paso que publican ese
+  vector y guarda por radar y noche el **vector de tráfico**: Σ densidad × velocidad × grosor × tiempo, es decir,
+  cuántas aves cruzaron cada km de frente y hacia dónde. El resultado está en `data/routes/flight_nights.parquet`.
+- **De noches a ruta** (`routes`). Por estación y temporada se suman los vectores. La dirección de la suma es la
+  ruta y su constancia (0–1) indica si las noches coinciden. Se descartan las noches con poco vector, las de menos
+  de dos horas de radar y las de más de 25 m/s sobre el suelo, que suelen ser lluvia o ecos arrastrados. Para la
+  dirección, ninguna noche pesa más que el percentil 95 de su estación.
+- **En el mapa**, las líneas son un suavizado gaussiano entre radares (130 km) que se apaga a 320 km del radar más
+  cercano: donde no hay radar, no hay línea. El color muestra el paso previsto por el modelo de Sub Nocte en cada
+  zona eólica y ciudad: la previsión de la noche o la media de la temporada. Al pulsar un parque se ven su
+  sugerencia de la noche, la ruta que pasa por encima, su puesto por paso medio y cómo acierta el modelo con el
+  radar más cercano.
+- **Huecos.** Los radares españoles renovados y los franceses desde 2021 apenas publican vector, así que la ruta
+  española se apoya en 2018-2020, la francesa en 2016-2022 y la portuguesa en 2019-2026. La dirección no depende
+  de la calibración de cada radar; la cantidad sí.
 
 ## Aviso metodológico
 
@@ -260,6 +289,9 @@ python -m subnocte.cli wind-archive                      # o el de Open-Meteo, z
 python -m subnocte.cli wind-compare                      # ¿dan las dos fuentes las mismas noches?
 python -m subnocte.cli wind-thresholds --source era5     # percentiles propios de cada zona
 python -m subnocte.cli wind --days 7                     # previsión, coste de parar e informe
+# Rutas: dirección de vuelo medida por los radares y mapa con los parques
+python -m subnocte.cli routes-archive                    # vectores de tráfico por noche (una vez; reanudable)
+python -m subnocte.cli routes                            # climatología de rutas y rutas.html
 # Recreación de una noche: dónde estaban las aves, cada 20 minutos
 python -m subnocte.cli flows                             # la última noche completa (unos 3 días atrás)
 python -m subnocte.cli flows --night 2026-09-24
@@ -271,7 +303,7 @@ python -m subnocte.cli nightly estjv
 ```
 
 Informes (en inglés): `output/phase0.html` (validación de radares), `output/phase1.html` (climatologías y umbrales),
-`output/phase2.html` (modelo meteorológico y validación), `output/phase3.html` (previsión por ciudad), `output/wind.html` (parques eólicos),
+`output/phase2.html` (modelo meteorológico y validación), `output/phase3.html` (previsión por ciudad), `output/wind.html` (parques eólicos), `rutas.html` (mapa de rutas, en español e inglés),
 `output/ranking.html` (exposición a la luz) y `output/scorecard.html` (verificación de lo ya publicado). Todos son autocontenidos: las figuras van incrustadas dentro del
 propio HTML, así que se pueden enviar o abrir desde cualquier carpeta.
 
@@ -291,6 +323,8 @@ curl -sSL -o data/lights/World_Atlas_2015.zip https://datapub.gfz-potsdam.de/dow
 | `data/thresholds.csv` | umbrales P70/P90 por radar y temporada |
 | `data/climatology_doy.csv` | climatología por día del año |
 | `data/cities.csv` | ciudad → radar útil más cercano, entre 5 y 100 km, con nivel de confianza |
+| `data/routes/flight_nights.parquet` | vector de tráfico por radar y noche de paso (versionado) |
+| `data/routes/climatology.csv` | dirección, constancia, velocidad y altitud por estación y temporada |
 | `signals.json` | previsión de la primera noche por venir en cada ciudad española, para [Estado de las IBA](https://asensio94.github.io/estado-iba/) según su [contrato](https://github.com/Asensio94/estado-iba/blob/main/CONTRATO.md); lo escribe `cli web` |
 
 ## Fuentes y licencias

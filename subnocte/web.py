@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from . import site
 from .logo import LOGO_SVG, favicon_link
 
 LANGS = ("es", "en")
@@ -59,9 +60,10 @@ CSS = """
 .wrap{margin:0 auto;padding:0 16px}
 .site-header{position:relative}
 .site-header .verse{margin:-6px 0 0;font-style:italic;color:var(--muted);font-size:15px}
-.lang{position:absolute;top:16px;right:16px;font:600 13px/1 var(--font-title);text-transform:uppercase;letter-spacing:.08em}
-.lang a,.lang span{display:inline-block;padding:5px 9px 4px;border:1.5px solid var(--line);text-decoration:none}
-.lang span{border-color:var(--accent);color:var(--accent)}
+.routes-cta{display:block;margin:28px 0;padding:18px 20px;border-radius:6px;color:#e9e4d6;text-decoration:none;background:radial-gradient(120% 140% at 85% 20%,#5b2a6e 0%,#1b2340 45%,#0a1322 100%);border:1px solid #2a3858}
+.routes-cta span{display:block;max-width:60ch;line-height:1.5}
+.routes-cta strong{display:inline-block;margin-top:10px;color:#ffd98e;font:600 15px/1 var(--font-title);text-transform:uppercase;letter-spacing:.06em}
+.routes-cta:hover strong{text-decoration:underline}
 .beta-note{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);padding:12px 16px;margin:8px 0 22px;font-size:15px}
 h2{margin:38px 0 6px;font:700 28px/1 var(--font-title);text-transform:uppercase;letter-spacing:.03em}
 h2+p.sub{margin:0 0 16px}
@@ -112,7 +114,7 @@ ul{padding-left:20px}li{margin:5px 0}
 .beam .lbl{font:600 12px var(--font-title);letter-spacing:.06em;text-transform:uppercase;fill:var(--ink)}
 .formula{font:14.5px/1.5 var(--font-data);background:var(--paper);border:1px solid var(--line);padding:8px 12px;display:inline-block;max-width:100%;overflow-x:auto}
 .data-note{font-size:14.5px}
-@media (max-width:560px){.lang{position:static;justify-self:start}h2{font-size:23px}.method ol.steps>li{padding-left:44px}}
+@media (max-width:560px){h2{font-size:23px}.method ol.steps>li{padding-left:44px}}
 """
 
 # The whole prose of the page, in both languages. It is kept complete and literal for each language instead
@@ -122,7 +124,6 @@ COPY: dict[str, dict[str, str]] = {
         "title": "Sub Nocte · migración nocturna de aves en Europa",
         "description": "Previsión por ciudad de la intensidad de migración nocturna de aves en Europa, "
                        "con avisos de luces fuera, sobre los perfiles de radar abiertos de Aloft.",
-        "other_lang": "English",
         "claim": "Cada noche de primavera y de otoño, millones de aves cruzan Europa en la oscuridad. Unas "
                  "pocas noches concentran la mitad del paso. Esta página intenta decir <b>cuáles</b>, ciudad "
                  "por ciudad, para que se puedan apagar las luces justo esas noches.",
@@ -186,9 +187,11 @@ COPY: dict[str, dict[str, str]] = {
                       "(la producción que tendrían esa noche los aerogeneradores con el viento previsto a "
                       "100 m).",
         "wind_rule": "<b>Solo se sugiere parar cuando el paso es muy alto y parar sale barato</b>, es decir, en "
-                     "noches de poco viento. Probado sobre 2021-2026, esa regla habría parado 7 noches por "
-                     "temporada y zona, con un 2 % de la producción nocturna, y habría cubierto el 11 % de la "
-                     "migración prevista. Parar desde el percentil 75 habría costado el 13,5 %.",
+                     "noches de poco viento. Probado sobre 2021-2026, esa regla habría parado 7,5 noches por "
+                     "temporada y zona, con un 3 % de la producción nocturna, y habría cubierto el 9 % de la "
+                     "migración prevista; parar todas las noches de paso muy alto habría costado el 13 %. "
+                     "Y elige bien: el radar más cercano midió paso fuerte en el 67 % de esas noches, cuando "
+                     "por azar sería el 24 %.",
         "col_night": "noche",
         "col_very_high": "zonas en muy alto",
         "col_stop": "parar",
@@ -197,12 +200,23 @@ COPY: dict[str, dict[str, str]] = {
         "mw": "{n} {zones} · {mw} MW",
         "zone": ("zona", "zonas"),
         "no_wind_stop": "Ninguna zona cumple la regla de parada en estas noches.",
-        "wind_more": "Mapa, tabla por zona y método completo: <a href='{href}'>informe de parques eólicos</a> "
-                     "(en inglés).",
+        "routes_cta": "<b>Por dónde vuelan.</b> El mapa de rutas dibuja la dirección que miden los radares desde "
+                      "2016, noche a noche, y pone encima los parques eólicos de las próximas noches: cuáles "
+                      "quedan en el camino y por qué la sugerencia es parar o seguir.",
+        "routes_link": "Ver el mapa de rutas →",
+        "farms_cta": "<b>Zona por zona.</b> El mapa de los parques eólicos noche a noche, la tabla con el "
+                     "viento previsto y lo que costaría parar en cada zona, y cómo se decide la sugerencia.",
+        "farms_link": "Ver los parques eólicos →",
+        "method_cta": "<b>{n} informes</b> con las figuras, las tablas y las limitaciones de cada paso, explicados "
+                      "uno a uno: qué pregunta responde cada uno y dónde está cada cifra.",
+        "method_link": "Ir al método →",
+        "wind_more": "Mapa, tabla por zona y método completo: <a href='{href}'>informe de parques eólicos</a>; "
+                     "lo que habría hecho la regla desde 2021 y su contraste con el radar: "
+                     "<a href='{check}'>verificación</a> (ambos en inglés).",
         "wind_not": "Es una sugerencia para ordenar las noches, no una orden de parada ni un sustituto de los "
                     "planes de vigilancia de cada parque. El modelo no distingue especies ni sabe a qué altura "
-                    "pasan las aves sobre cada parque, y la verificación contra radar de esta previsión empieza "
-                    "con su publicación.",
+                    "pasan las aves sobre cada parque, y el radar más cercano está a decenas de kilómetros del "
+                    "parque.",
         "h_todo": "Qué hacer una noche de aviso",
         "sub_todo": "Lo que reduce las colisiones y la desorientación, por orden de eficacia y de facilidad.",
         "cards": [
@@ -354,6 +368,7 @@ COPY: dict[str, dict[str, str]] = {
             "ranking.html": "Ranking de exposición a la luz artificial",
             "scorecard.html": "Verificación — ¿acertaron las previsiones ya publicadas?",
             "wind.html": "Parques eólicos — previsión nocturna por zona",
+            "wind_check.html": "Parques eólicos — la regla de parada desde 2021 y su contraste con el radar",
             "design.html": "Documento de diseño del proyecto",
             "proposal_es.html": "Propuesta a SEO/BirdLife y AEMET — datos de radar con horas de retraso, no días",
             "proposal_en.html": "La misma propuesta en inglés, para Aloft y OPERA",
@@ -396,7 +411,6 @@ COPY: dict[str, dict[str, str]] = {
         "title": "Sub Nocte · nocturnal bird migration in Europe",
         "description": "City-level forecast of nocturnal bird migration intensity in Europe, with lights-out "
                        "alerts, built on the open radar profiles published by Aloft.",
-        "other_lang": "Español",
         "claim": "Every spring and autumn night, millions of birds cross Europe in the dark. A handful of "
                  "nights carry half of the passage. This page tries to say <b>which ones</b>, city by city, "
                  "so that the lights can go out on exactly those nights.",
@@ -458,9 +472,11 @@ COPY: dict[str, dict[str, str]] = {
                       "on five years of ERA5 weather at the zone's point) and <b>what stopping costs</b> (the "
                       "output the turbines would have that night with the wind forecast at 100 m).",
         "wind_rule": "<b>Stopping is only suggested when the passage is very high and stopping is cheap</b>, "
-                     "that is, on nights with little wind. Tested on 2021-2026, that rule would have stopped 7 "
-                     "nights per season and zone, for 2 % of the night output, and covered 11 % of the "
-                     "predicted migration. Stopping from the 75th percentile would have cost 13.5 %.",
+                     "that is, on nights with little wind. Tested on 2021-2026, that rule would have stopped 7.5 "
+                     "nights per season and zone, for 3 % of the night output, and covered 9 % of the "
+                     "predicted migration; stopping on every very high night would have cost 13 %. And it "
+                     "picks the right nights: the nearest radar measured heavy passage on 67 % of them, "
+                     "against 24 % by chance.",
         "col_night": "night",
         "col_very_high": "zones at very high",
         "col_stop": "stop",
@@ -469,10 +485,22 @@ COPY: dict[str, dict[str, str]] = {
         "mw": "{n} {zones} · {mw} MW",
         "zone": ("zone", "zones"),
         "no_wind_stop": "No zone meets the stopping rule on these nights.",
-        "wind_more": "Map, per-zone table and full method: <a href='{href}'>wind farm report</a>.",
+        "routes_cta": "<b>Where they fly.</b> The routes map draws the direction the radars have measured since "
+                      "2016, night by night, and lays the wind farms of the coming nights on top: which ones are "
+                      "in the way and why the advice is to stop or to keep running.",
+        "routes_link": "See the routes map →",
+        "farms_cta": "<b>Zone by zone.</b> The wind farm map night by night, the table with the forecast wind "
+                     "and what stopping would cost in each zone, and how the suggestion is decided.",
+        "farms_link": "See the wind farms →",
+        "method_cta": "<b>{n} reports</b> with the figures, tables and limitations of each step, explained one by "
+                      "one: what question each answers and where every figure is.",
+        "method_link": "Go to the method →",
+        "wind_more": "Map, per-zone table and full method: <a href='{href}'>wind farm report</a>; what the rule "
+                     "would have done since 2021 and how it compares with the radar: "
+                     "<a href='{check}'>verification</a>.",
         "wind_not": "It is a suggestion to rank nights, not a stop order nor a substitute for each farm's "
                     "monitoring plan. The model does not tell species apart nor know at what height the birds "
-                    "cross each farm, and the radar verification of this forecast starts with its publication.",
+                    "cross each farm, and the nearest radar is tens of kilometres from the farm.",
         "h_todo": "What to do on an alert night",
         "sub_todo": "What actually reduces collisions and disorientation, ordered by effect and by ease.",
         "cards": [
@@ -625,6 +653,7 @@ COPY: dict[str, dict[str, str]] = {
             "ranking.html": "Artificial light exposure ranking",
             "scorecard.html": "Verification — did the published forecasts hold up?",
             "wind.html": "Wind farms — nightly forecast per zone",
+            "wind_check.html": "Wind farms — the stopping rule since 2021, checked against the radar",
             "design.html": "Project design document",
             "proposal_en.html": "Proposal to Aloft and OPERA — radar data in hours, not days",
             "proposal_es.html": "The same proposal in Spanish, for SEO/BirdLife and AEMET",
@@ -987,8 +1016,6 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
           wf: pd.DataFrame | None = None, sc: pd.DataFrame | None = None) -> str:
     """Assemble the complete HTML of one of the two pages. `prefix` fixes the relative paths."""
     c = COPY[lang]
-    other = "en" if lang == "es" else "es"
-    other_path = f"{prefix}en/" if lang == "es" else prefix
     p = [f"<!doctype html><html lang='{lang}'><meta charset='utf-8'>",
          "<meta name='viewport' content='width=device-width,initial-scale=1'>",
          f"<title>{c['title']}</title>",
@@ -1000,10 +1027,9 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
          f"<link rel='preconnect' href='https://fonts.googleapis.com'>",
          f"<link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>",
          f"<link rel='stylesheet' href='{FONTS}'>",
-         f"<style>{COMMON_CSS}{CSS}</style>",
+         f"<style>{COMMON_CSS}{CSS}{site.CSS}</style>",
+         site.page_bar(lang, "home", prefix.count("../")),
          "<header class='site-header'>",
-         f"<div class='lang'><span>{'Español' if lang == 'es' else 'English'}</span> "
-         f"<a href='{other_path}' hreflang='{other}'>{c['other_lang']}</a></div>",
          f"<h1>{LOGO_SVG}Sub <span>Nocte</span></h1>",
          "<p class='verse'>ibant obscuri sola sub nocte per umbram — Virgil, <i>Aeneid</i> VI</p>",
          f"<p class='lede'>{c['claim']}</p>",
@@ -1025,6 +1051,12 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
     else:
         p.append(f"<h2>{c['h_forecast']}</h2><p class='sub'>{c['no_forecast']}</p>")
 
+    routes = Path(__file__).resolve().parents[1] / "rutas.html"
+    if routes.exists():
+        href = "rutas.html" if lang == "es" else "routes.html"
+        p.append(f"<a class='routes-cta' href='{href}'><span>{c['routes_cta']}</span>"
+                 f"<strong>{c['routes_link']}</strong></a>")
+
     if wf is not None and not wf.empty:
         zones = wf.drop_duplicates("zone")
         acted = wf[wf["advice"].isin(["stop", "stop at peak hours"])]
@@ -1035,7 +1067,8 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
               f"<p>{c['wind_intro']}</p>", f"<p>{c['wind_rule']}</p>",
               wind_table(wf, lang) if not acted.empty else f"<p>{c['no_wind_stop']}</p>",
               f"<p class='sub'>{c['wind_not']}</p>",
-              f"<p>{c['wind_more'].format(href=prefix + 'output/wind.html')}</p>"]
+              f"<a class='routes-cta' href='{prefix}{site.PAGES['farms'][lang]}'><span>{c['farms_cta']}</span>"
+              f"<strong>{c['farms_link']}</strong></a>"]
 
     p += check_section(sc, lang, prefix)
 
@@ -1055,10 +1088,9 @@ def _page(fc: pd.DataFrame | None, rk: pd.DataFrame | None, links: list[str], la
     p += ["</main>", method_section(lang), "<div class='wrap'>"]
 
     if links:
-        p += [f"<h2>{c['h_reports']}</h2><p class='sub'>{c['sub_reports']}</p><ul>"]
-        p += [f"<li><a href='{prefix}{e}'>{c['reports'].get(e.rsplit('/', 1)[-1], e)}</a></li>"
-              for e in links]
-        p.append(f"</ul><p class='sub'>{c['note_reports']}</p>")
+        p += [f"<h2>{c['h_reports']}</h2><p class='sub'>{c['sub_reports']}</p>",
+              f"<a class='routes-cta' href='{prefix}{site.PAGES['method'][lang]}#informes'>"
+              f"<span>{c['method_cta'].format(n=len(links))}</span><strong>{c['method_link']}</strong></a>"]
 
     p += [f"<h2>{c['h_not']}</h2><ul>"] + [f"<li>{x}</li>" for x in c["not_this"]] + ["</ul>"]
     p += [f"<h2>{c['h_data']}</h2><p class='data-note'>{c['data']}</p><p class='data-note'>{c['cornell']}</p>",
