@@ -726,11 +726,16 @@ SPEED_EVIDENCE = {
 
 PRINCIPLE = {"es": "Datos públicos, reglas a la vista y cada cifra enlazada a su fuente. Indicios, no veredictos.",
              "en": "Public data, rules in plain sight and every figure linked to its source. Leads, not verdicts."}
-SIBLINGS = [("observatorio-alegaciones", "Observatorio de alegaciones"), ("vigia-incendios", "Vigía de incendios"),
-            ("centinela-natura", "Centinela Natura"), ("vigilancia-humedales", "Vigilancia de humedales"),
-            ("sub-nocte", "Sub Nocte"), ("riesgo-tendidos-aves", "Riesgo de tendidos para aves"),
-            ("grafo-promotores", "Grafo de promotores"), ("cartera-cotizadas", "Cartera de las cotizadas"),
-            ("cuaderno-campo", "Cuaderno de campo"), ("caudal-ecologico", "Caudal ecológico")]
+# Terra Aperta hub and its twelve projects, in the hub's menu order (common footer of the family).
+HUB = "https://asensio94.github.io/terra-aperta/"
+HUB_LABEL = {"es": "← Terra Aperta: todos los proyectos", "en": "← Terra Aperta: all projects"}
+SIBLINGS = [("sub-nocte", "Sub Nocte"), ("vigia-incendios", "Vigía de incendios"),
+            ("centinela-natura", "Centinela Natura"), ("estado-iba", "Estado de las IBA"),
+            ("riesgo-tendidos-aves", "Riesgo de tendidos para aves"),
+            ("observatorio-alegaciones", "Observatorio de alegaciones"), ("grafo-promotores", "Grafo de promotores"),
+            ("vigilancia-humedales", "Vigilancia de humedales"), ("caudal-ecologico", "Caudal ecológico"),
+            ("acuiferos-francia", "Acuíferos de Francia"), ("depuracion-y-bano", "Depuración y baño"),
+            ("zona-inundable", "Construir en zona inundable")]
 NIGHTLY_DIR = Path(__file__).resolve().parents[1] / "data" / "nightly"
 
 
@@ -816,12 +821,13 @@ def method_section(lang: str) -> str:
 def site_footer(lang: str, today: dt.date) -> str:
     c = COPY[lang]
     nav = "Proyectos hermanos" if lang == "es" else "Sibling projects"
-    current = " aria-current='page'"
-    items = "".join(f"<li{current if slug == 'sub-nocte' else ''}>"
-                    f"<a href='https://asensio94.github.io/{slug}/'>{name}</a></li>" for slug, name in SIBLINGS)
+    # The current project stays in the list as plain text, marked as the current page.
+    items = "".join(f"<li aria-current='page'>{name}</li>" if slug == "sub-nocte" else
+                    f"<li><a href='https://asensio94.github.io/{slug}/'>{name}</a></li>" for slug, name in SIBLINGS)
     return (f"<footer class='site-footer'><p class='principle'>{PRINCIPLE[lang]}</p>"
             f"<p>{c['footer']}</p><p>{c['generated'].format(date=_date(today, lang))}</p>"
-            f"<nav aria-label='{nav}'><ul class='siblings'>{items}</ul></nav></footer>")
+            f"<p class='hub'><a href='{HUB}'>{HUB_LABEL[lang]}</a></p>"
+            f"<nav aria-label='{nav}'><p>{nav}:</p><ul class='siblings'>{items}</ul></nav></footer>")
 
 
 def _date(d: dt.date, lang: str) -> str:
