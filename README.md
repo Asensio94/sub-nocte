@@ -14,8 +14,10 @@ eco del radar al aviso, cómo sale cada cifra.
 Proyecto abierto y sin ánimo de lucro. Documento de diseño completo: [`docs/design.html`](docs/design.html).
 
 **Por qué.** En Estados Unidos, BirdCast predice cada noche cuántas aves migrarán y ciudades enteras apagan luces
-en los picos, reduciendo colisiones con edificios. En Europa existen los datos (Aloft, ENRAM, vol2bird) y la
-ciencia, pero **no existe ningún servicio público de pronóstico por ciudad ni ningún programa municipal ligado a
+en los picos, reduciendo colisiones con edificios. En Europa existen los datos (Aloft, el archivo
+abierto de perfiles de aves calculados con vol2bird, el programa que separa los ecos de aves de los de lluvia e
+insectos, sobre los radares meteorológicos de la red europea OPERA; ENRAM, la red científica que lo puso en marcha)
+y la ciencia, pero **no existe ningún servicio público de pronóstico por ciudad ni ningún programa municipal ligado a
 la migración**.
 
 > **Estado: activo.** Se actualiza solo y sigue en desarrollo.

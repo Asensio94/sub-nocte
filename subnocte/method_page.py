@@ -19,14 +19,17 @@ GROUPS = {
     "es": [
         ("Cómo se hizo la previsión, fase a fase", [
             ("output/phase0.html", "Fase 0 — ¿ven aves los radares españoles renovados?",
-             "Antes de nada: si los radares de AEMET renovados en 2021-2022 siguen viendo aves por la noche, con "
+             "Antes de nada: si los radares de AEMET renovados (en el archivo europeo, desde noviembre de 2025) "
+             "siguen viendo aves por la noche, con "
              "qué dirección y velocidad, y si concuerdan entre sí. Sin esto no habría proyecto."),
             ("output/phase1.html", "Fase 1 — diez años de radar y los umbrales de cada radar",
              "El archivo 2016-2026 noche a noche y, para cada radar y época del año, qué es una noche normal y qué "
              "es una noche fuerte. De aquí salen los niveles «alto» y «muy alto»."),
             ("output/phase2.html", "Fase 2 — ¿predice la meteorología la migración?",
              "El modelo que aprende cómo el viento, la temperatura, la presión y la lluvia mueven la migración, y "
-             "su validación dejando fuera radares enteros (AUC 0,77 en Europa, 0,74 en España)."),
+             "su validación dejando fuera radares enteros (AUC 0,77 en el conjunto de España, Portugal y Francia, "
+             "0,74 en España; el AUC mide si el modelo pone las noches fuertes por delante de las flojas: 0,5 "
+             "es azar y 1, perfecto)."),
             ("output/phase3.html", "Fase 3 — la previsión por ciudad",
              "El modelo aplicado a cada ciudad con la previsión de los próximos siete días, los umbrales en vigor "
              "y sus limitaciones. Es la tabla que resume la portada."),
@@ -67,14 +70,16 @@ GROUPS = {
     "en": [
         ("How the forecast was built, phase by phase", [
             ("output/phase0.html", "Phase 0 — do the renewed Spanish radars see birds?",
-             "First things first: whether the AEMET radars renewed in 2021-2022 still see birds at night, with what "
+             "First things first: whether the renewed AEMET radars (in the European archive since November 2025) "
+             "still see birds at night, with what "
              "direction and speed, and whether they agree with each other. Without this there is no project."),
             ("output/phase1.html", "Phase 1 — ten years of radar and each radar's thresholds",
              "The 2016-2026 archive night by night and, for each radar and time of year, what a normal night and a "
              "heavy night are. The «high» and «very high» levels come from here."),
             ("output/phase2.html", "Phase 2 — does the weather predict migration?",
              "The model that learns how wind, temperature, pressure and rain move migration, and its validation "
-             "leaving whole radars out (AUC 0.77 in Europe, 0.74 in Spain)."),
+             "leaving whole radars out (AUC 0.77 across Spain, Portugal and France, 0.74 in Spain; the AUC measures "
+             "whether the model ranks heavy nights ahead of light ones: 0.5 is chance and 1 is perfect)."),
             ("output/phase3.html", "Phase 3 — the per-city forecast",
              "The model applied to each city with the forecast for the next seven days, the thresholds in force and "
              "its limitations. It is the table the home page summarises."),

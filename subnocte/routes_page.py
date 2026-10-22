@@ -632,7 +632,8 @@ COPY: dict[str, dict] = {
         "map_alt": "Mapa animado de la península ibérica y Francia con las líneas de vuelo de la migración "
                    "nocturna, el paso esperado y los parques eólicos.",
         "cap_history": "<b>Histórico de {season}.</b> Líneas: la dirección media del paso en {n} estaciones de "
-                       "radar ({nights} noches con vector). Color: el paso medio de la temporada que calcula el "
+                       "radar ({nights} noches con vector; un radar renovado en el mismo sitio cuenta como una sola "
+                       "estación, y las Azores y Canarias quedan fuera del mapa). Color: el paso medio de la temporada que calcula el "
                        "modelo en cada parque y ciudad. Círculos: parques, más rojos cuanto más paso medio reciben.",
         "cap_forecast": "<b>Noche del {night}.</b> Color: el paso previsto por Sub Nocte. Líneas: la dirección "
                         "habitual para estas fechas (noches de ±{window} días, todos los años), no una previsión de "
@@ -644,14 +645,16 @@ COPY: dict[str, dict] = {
         "legend_exposure": "parque: paso medio de la temporada",
         "read": "Cómo leerlo: las líneas y las partículas van hacia donde vuelan las aves y son más nítidas "
                 "cuanto más se repite la dirección noche tras noche. Las partículas se juntan donde se espera "
-                "más paso. Los círculos son las zonas eólicas de OpenStreetMap (celdas de unos 25 km).",
+                "más paso. Los círculos son las zonas eólicas de OpenStreetMap (celdas de medio grado, unos "
+                "55 × 42 km).",
         "noscript": "El mapa necesita JavaScript. La tabla de rutas y el método de abajo se leen sin él.",
         "in_season": "En {season}",
         "around": "En torno a esta fecha",
         "station_html": "<h3>{name}</h3><p><small>radar · {radars}</small></p><p><b>{when}</b> las aves vuelan "
                         "hacia el <b>{dir}</b> ({heading}°), {word} ({r}), a {speed} m/s sobre el suelo y a unos "
                         "{alt} m de altitud media.</p><p>{nights} noches con vector, {years}. El 10 % de noches "
-                        "más fuertes lleva el {top} del paso. Una noche fuerte (percentil 90) son unas {p90} aves "
+                        "más fuertes lleva el {top} del paso. Una noche fuerte (percentil 90: la que solo supera "
+                        "una de cada diez) son unas {p90} aves "
                         "por kilómetro de frente <small>(orientativo: depende de la calibración del radar)</small>."
                         "</p>",
         "country": {"ES": "España", "PT": "Portugal", "FR": "Francia"},
@@ -690,7 +693,7 @@ COPY: dict[str, dict] = {
         "why_few": "En la estación mediana, el 10 % de las noches más fuertes lleva el {top} de todo el paso de "
                    "la temporada. Parar esas noches protege mucho; parar las demás, poco.",
         "why_cheap_h": "Y suelen ser noches de poco viento",
-        "why_cheap": "Probada sobre 2021-2026 en {zones} zonas, la regla habría parado {nights} noches por "
+        "why_cheap": "Probada sobre 2021-2026 en las {zones} zonas de España y Portugal, la regla habría parado {nights} noches por "
                      "temporada y zona, con un {lost} de la producción nocturna; parar todas las noches de paso "
                      "muy alto costaría el {all}. Medida con la propia previsión, que aplana los picos, cubre el "
                      "{covered} del paso previsto.",
@@ -711,7 +714,8 @@ COPY: dict[str, dict] = {
         "h_method": "Cómo se calcula",
         "method": [
             ("Del eco al vector de vuelo",
-             "Cada perfil de radar (vol2bird, cada 5 a 15 minutos) da, por capas de 200 m entre 200 m y 3 km, la "
+             "Cada perfil de radar (calculado con vol2bird, el programa que separa los ecos de aves de los "
+             "de lluvia e insectos, cada 5 a 15 minutos, y publicado en abierto por Aloft) da, por capas de 200 m entre 200 m y 3 km, la "
              "densidad de aves y su velocidad sobre el suelo hacia el este y hacia el norte. Densidad × velocidad "
              "× grosor de la capa × tiempo, sumado sobre la noche, es el <b>tráfico</b>: cuántas aves cruzan cada "
              "kilómetro de un frente perpendicular a su vuelo. Su dirección es la de esa noche."),
@@ -761,10 +765,11 @@ COPY: dict[str, dict] = {
         ],
         "h_sources": "Fuentes",
         "sources": "Perfiles verticales de aves y vectores de vuelo: <a href='https://aloftdata.eu'>Aloft</a> "
-                   "(CC0), calculados con vol2bird sobre los radares de AEMET, IPMA y Météo-France (red OPERA). "
+                   "(CC0), el archivo abierto europeo de perfiles de aves, calculados con vol2bird sobre los radares "
+                   "de AEMET, IPMA y Météo-France (red OPERA, la que reúne los radares meteorológicos europeos). "
                    "Parques: © colaboradores de <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap"
                    "</a> (ODbL). Meteorología: <a href='https://open-meteo.com'>Open-Meteo</a> (CC BY 4.0) y ERA5 "
-                   "de Copernicus. Costas y fronteras: <a href='https://www.naturalearthdata.com'>Natural Earth</a> "
+                   "de Copernicus (la reconstrucción hora a hora del tiempo pasado). Costas y fronteras: <a href='https://www.naturalearthdata.com'>Natural Earth</a> "
                    "(dominio público). Método: Dokter y col. (2011) para vol2bird; Horton y col. (2021) para la "
                    "concentración del paso en pocas noches.",
         "code": "Todo el código y los datos derivados (el tráfico de cada noche en "
@@ -796,7 +801,8 @@ COPY: dict[str, dict] = {
         "map_alt": "Animated map of Iberia and France with the flight lines of the nocturnal migration, the "
                    "expected passage and the wind farms.",
         "cap_history": "<b>Record, {season}.</b> Lines: the mean direction of the passage at {n} radar stations "
-                       "({nights} nights with a vector). Colour: the season's mean passage the model computes at "
+                       "({nights} nights with a vector; a radar renewed on the same site counts as one station, and the "
+                       "Azores and the Canaries are off the map). Colour: the season's mean passage the model computes at "
                        "each wind zone and city. Circles: wind farms, redder the more passage they get on average.",
         "cap_forecast": "<b>Night of {night}.</b> Colour: the passage Sub Nocte forecasts. Lines: the usual "
                         "direction for these dates (nights within ±{window} days, every year), not a heading forecast. "
@@ -808,14 +814,15 @@ COPY: dict[str, dict] = {
         "legend_exposure": "wind farm: mean passage of the season",
         "read": "How to read it: lines and particles go where the birds fly, and are sharper the more the "
                 "direction repeats night after night. Particles gather where more passage is expected. Circles "
-                "are the OpenStreetMap wind zones (cells of about 25 km).",
+                "are the OpenStreetMap wind zones (half-degree cells, about 55 × 42 km).",
         "noscript": "The map needs JavaScript. The routes table and the method below read without it.",
         "in_season": "In {season}",
         "around": "Around this date",
         "station_html": "<h3>{name}</h3><p><small>radar · {radars}</small></p><p><b>{when}</b> the birds fly "
                         "<b>{dir}</b> ({heading}°), {word} ({r}), at {speed} m/s over the ground and about {alt} m "
                         "above sea level on average.</p><p>{nights} nights with a vector, {years}. The heaviest 10% "
-                        "of nights carry {top} of the passage. A heavy night (90th percentile) is about {p90} birds "
+                        "of nights carry {top} of the passage. A heavy night (90th percentile: one only one night in "
+                        "ten exceeds) is about {p90} birds "
                         "per kilometre of front <small>(indicative: it depends on the radar calibration)</small>.</p>",
         "country": {"ES": "Spain", "PT": "Portugal", "FR": "France"},
         "zone_head": "<h3>{place}</h3><p><small>{zone} · {country}</small><br>{turbines} turbines · {mw} MW in "
@@ -853,7 +860,7 @@ COPY: dict[str, dict] = {
         "why_few": "At the median station, the heaviest 10% of nights carry {top} of the whole season's passage. "
                    "Stopping on those nights protects a lot; stopping on the rest, little.",
         "why_cheap_h": "And they tend to be calm nights",
-        "why_cheap": "Tested on 2021-2026 at {zones} zones, the rule would have stopped {nights} nights per season "
+        "why_cheap": "Tested on 2021-2026 at the {zones} zones in Spain and Portugal, the rule would have stopped {nights} nights per season "
                      "and zone, for {lost} of the night output; stopping on every very high night would cost "
                      "{all}. Measured with the forecast itself, which flattens the peaks, it covers {covered} of the "
                      "predicted passage.",
@@ -873,7 +880,8 @@ COPY: dict[str, dict] = {
         "h_method": "How it is computed",
         "method": [
             ("From echo to flight vector",
-             "Each radar profile (vol2bird, every 5 to 15 minutes) gives, in 200 m layers from 200 m to 3 km, the "
+             "Each radar profile (computed with vol2bird, the program that sorts bird echoes from rain and "
+             "insects, every 5 to 15 minutes, and published openly by Aloft) gives, in 200 m layers from 200 m to 3 km, the "
              "density of birds and their ground speed towards the east and the north. Density × speed × layer "
              "depth × time, summed over the night, is the <b>traffic</b>: how many birds cross each kilometre of "
              "a front across their flight. Its direction is that night's."),
@@ -921,9 +929,11 @@ COPY: dict[str, dict] = {
         ],
         "h_sources": "Sources",
         "sources": "Bird vertical profiles and flight vectors: <a href='https://aloftdata.eu'>Aloft</a> (CC0), "
-                   "computed with vol2bird on the AEMET, IPMA and Météo-France radars (OPERA network). Wind farms: "
+                   "the open European archive of bird profiles, computed with vol2bird on the AEMET, IPMA and "
+                   "Météo-France radars (OPERA, the network that pools Europe's weather radars). Wind farms: "
                    "© <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors (ODbL). "
-                   "Weather: <a href='https://open-meteo.com'>Open-Meteo</a> (CC BY 4.0) and Copernicus ERA5. "
+                   "Weather: <a href='https://open-meteo.com'>Open-Meteo</a> (CC BY 4.0) and Copernicus ERA5 (the "
+                   "hour-by-hour reconstruction of past weather). "
                    "Coasts and borders: <a href='https://www.naturalearthdata.com'>Natural Earth</a> (public "
                    "domain). Method: Dokter et al. (2011) for vol2bird; Horton et al. (2021) for the concentration "
                    "of the passage on a few nights.",
