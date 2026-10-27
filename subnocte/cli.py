@@ -435,10 +435,9 @@ def phase3(days: int = 7, cache: bool = False):
         rprint(f"forecast reused from {raw}")
     else:
         parts = []
-        for name, country, lat, lon in CITIES:
-            if name not in with_threshold:
-                continue
-            h = P.fetch_forecast(lat, lon, days, log=rprint)
+        cities = [c for c in CITIES if c[0] in with_threshold]
+        weather = P.fetch_forecasts([(lat, lon) for _, _, lat, lon in cities], days, log=rprint)
+        for (name, country, lat, lon), h in zip(cities, weather):
             r = P.features(name, lat, lon, h)
             if r.empty:
                 rprint(f"  {name}: the forecast covers no complete night")
@@ -627,9 +626,9 @@ def wind(days: int = 7, cache: bool = False, region: str = REGION):
     else:
         models = P.load_models(ROOT / "data")
         parts = []
-        zs = z[z["zone"].isin(set(th["zone"]))]
-        hs = P.fetch_forecast_many(zs["lat"].tolist(), zs["lon"].tolist(), days, log=rprint)
-        for r, h in zip(zs.itertuples(), hs):
+        zones = z[z["zone"].isin(set(th["zone"]))]
+        weather = P.fetch_forecasts(list(zip(zones["lat"], zones["lon"])), days, log=rprint)
+        for r, h in zip(zones.itertuples(), weather):
             x = P.features(r.zone, r.lat, r.lon, h)
             if x.empty:
                 continue
