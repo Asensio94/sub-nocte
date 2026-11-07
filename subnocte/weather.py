@@ -36,7 +36,6 @@ HOURLY_LEVELS = ([f"{v}_{h}hPa" for h in LEVEL_HPA for v in ("wind_speed", "wind
                  + ["temperature_850hPa", "geopotential_height_850hPa"])
 LEVELS_YEAR0 = 2021  # the forecast archive has no pressure levels before 2021
 PAUSE_S = 1.0        # courtesy towards the free service
-BATCH_POINTS = 50    # points per request when asking for many at once
 RETRIES = 14
 BACKOFF_S = 90       # the free quota renews by the minute and by the hour
 BACKOFF_MAX_S = 900  # once the hourly quota is exhausted the wait is real, retrying in a loop does not help
@@ -62,8 +61,8 @@ def _chunks(years: list[int], maximum: int) -> list[tuple[int, int]]:
     return chunks
 
 
-def _get_hourly(url: str, params: dict, log=print, timeout: int = 300) -> dict | list:
-    """One Open-Meteo request with the retry policy below; a list of answers when it asks for several points."""
+def _get_hourly(url: str, params: dict, timeout: float, backoff: float, log=print) -> list[dict]:
+    """One request with retries; the answer as a list, one item per point asked for."""
     for attempt in range(RETRIES):
         try:
             r = requests.get(url, params=params, timeout=timeout)
@@ -71,11 +70,11 @@ def _get_hourly(url: str, params: dict, log=print, timeout: int = 300) -> dict |
                 raise requests.RequestException(f"HTTP {r.status_code}")
             r.raise_for_status()
             j = r.json()
-            if all("hourly" in x for x in (j if isinstance(j, list) else [j])):
-                return j
+            items = j if isinstance(j, list) else [j]  # several points come back as a list, one as an object
+            if all("hourly" in x for x in items):
+                return items
             # quota exhausted or another logical error: arrives as 200 with an error flag and a reason
-            raise requests.RequestException((j if isinstance(j, dict) else {}).get("reason",
-                                                                                 "response without hourly data"))
+            raise requests.RequestException(items[0].get("reason", "response without hourly data"))
         except requests.RequestException as e:
             if attempt == RETRIES - 1:
                 raise
@@ -85,42 +84,44 @@ def _get_hourly(url: str, params: dict, log=print, timeout: int = 300) -> dict |
             if "hourly api request limit" in msg or ("429" in msg and attempt >= 1):
                 wait = _until_next_hour()
             else:
-                wait = min(BACKOFF_S * (attempt + 1), BACKOFF_MAX_S)
+                wait = int(min(backoff * (attempt + 1), BACKOFF_MAX_S))
             log(f"  Open-Meteo: {e}; retrying in {wait} s")
             time.sleep(wait)
+    raise AssertionError("unreachable")
 
 
-def _frame(j: dict) -> pd.DataFrame:
-    df = pd.DataFrame(j["hourly"])
+def _frame(item: dict) -> pd.DataFrame:
+    df = pd.DataFrame(item["hourly"])
     df["time"] = pd.to_datetime(df.pop("time"), utc=True)
     return df
 
 
-def _params(start: dt.date, end: dt.date, hourly: list[str] | None) -> dict:
-    return {"start_date": start.isoformat(), "end_date": end.isoformat(), "hourly": ",".join(hourly or HOURLY),
-            "timezone": "UTC", "wind_speed_unit": "ms"}
-
-
 def fetch_hourly(lat: float, lon: float, start: dt.date, end: dt.date, url: str = ARCHIVE,
-                 hourly: list[str] | None = None, log=print) -> pd.DataFrame:
-    return _frame(_get_hourly(url, {"latitude": lat, "longitude": lon, **_params(start, end, hourly)}, log=log))
+                 hourly: list[str] | None = None, log=print, timeout: float = 300,
+                 backoff: float = BACKOFF_S) -> pd.DataFrame:
+    """Hourly series at one point. The long timeout is for the archive, where years of data take a while."""
+    return fetch_hourly_many([(lat, lon)], start, end, url, hourly, log, timeout, backoff)[0]
 
 
-def fetch_hourly_many(lats: list[float], lons: list[float], start: dt.date, end: dt.date, url: str = ARCHIVE,
-                      hourly: list[str] | None = None, log=print) -> list[pd.DataFrame]:
-    """The same for many points, BATCH_POINTS per request, in the order given.
+def fetch_hourly_many(points: list[tuple[float, float]], start: dt.date, end: dt.date, url: str = ARCHIVE,
+                      hourly: list[str] | None = None, log=print, timeout: float = 300,
+                      backoff: float = BACKOFF_S, per_request: int = 50) -> list[pd.DataFrame]:
+    """Hourly series at several points, `per_request` of them in each request, in the order given.
 
-    One request per point is what timed out the wind step on the shared GitHub runner: 151 zones, each one a
-    round trip that can hang for minutes. Open-Meteo takes comma-separated coordinates and answers a list.
+    Open-Meteo takes comma-separated coordinates and answers with one series per point, so a few requests replace
+    one per point. The quota counts points, not requests, so this saves time and not quota.
     """
-    out = []
-    for i in range(0, len(lats), BATCH_POINTS):
-        la, lo = lats[i:i + BATCH_POINTS], lons[i:i + BATCH_POINTS]
-        j = _get_hourly(url, {"latitude": ",".join(f"{x:.4f}" for x in la),
-                              "longitude": ",".join(f"{x:.4f}" for x in lo), **_params(start, end, hourly)},
-                        log=log, timeout=120)
-        out += [_frame(x) for x in (j if isinstance(j, list) else [j])]
-        time.sleep(PAUSE_S)
+    out: list[pd.DataFrame] = []
+    for i in range(0, len(points), per_request):
+        batch = points[i:i + per_request]
+        params = {"latitude": ",".join(f"{la:.4f}" for la, _ in batch),
+                  "longitude": ",".join(f"{lo:.4f}" for _, lo in batch),
+                  "start_date": start.isoformat(), "end_date": end.isoformat(),
+                  "hourly": ",".join(hourly or HOURLY), "timezone": "UTC", "wind_speed_unit": "ms"}
+        items = _get_hourly(url, params, timeout, backoff, log)
+        if len(items) != len(batch):
+            raise requests.RequestException(f"asked for {len(batch)} points, got {len(items)}")
+        out += [_frame(x) for x in items]
     return out
 
 
