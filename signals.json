@@ -1,7 +1,7 @@
 {
  "source": "sub-nocte",
  "version": 1,
- "generated": "2026-11-12T14:17Z",
+ "generated": "2026-11-13T09:41Z",
  "coverage": {
   "label": "Ciudades con radar meteorológico",
   "sites": [],
@@ -9,9 +9,9 @@
  },
  "signals": [
   {
-   "id": "Madrid-2026-11-12",
+   "id": "Madrid-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
+   "date": "2026-11-13",
    "title": "Madrid: migración nocturna baja prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
@@ -30,9 +30,9 @@
    }
   },
   {
-   "id": "Barcelona-2026-11-12",
+   "id": "Barcelona-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
+   "date": "2026-11-13",
    "title": "Barcelona: migración nocturna moderada prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
@@ -51,9 +51,9 @@
    }
   },
   {
-   "id": "Valencia-2026-11-12",
+   "id": "Valencia-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
+   "date": "2026-11-13",
    "title": "Valencia: migración nocturna baja prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
@@ -72,9 +72,9 @@
    }
   },
   {
-   "id": "Sevilla-2026-11-12",
+   "id": "Sevilla-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
+   "date": "2026-11-13",
    "title": "Sevilla: migración nocturna baja prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
@@ -93,17 +93,17 @@
    }
   },
   {
-   "id": "Zaragoza-2026-11-12",
+   "id": "Zaragoza-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
-   "title": "Zaragoza: migración nocturna moderada prevista",
+   "date": "2026-11-13",
+   "title": "Zaragoza: migración nocturna baja prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
     "Zaragoza"
    ],
    "precision": "radar",
    "deadline": null,
-   "status": "moderate",
+   "status": "low",
    "value": null,
    "details": {
     "city": "Zaragoza",
@@ -114,17 +114,17 @@
    }
   },
   {
-   "id": "Málaga-2026-11-12",
+   "id": "Málaga-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
-   "title": "Málaga: migración nocturna alta prevista",
+   "date": "2026-11-13",
+   "title": "Málaga: migración nocturna baja prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
     "Málaga"
    ],
    "precision": "radar",
    "deadline": null,
-   "status": "high",
+   "status": "low",
    "value": null,
    "details": {
     "city": "Málaga",
@@ -135,9 +135,9 @@
    }
   },
   {
-   "id": "Murcia-2026-11-12",
+   "id": "Murcia-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
+   "date": "2026-11-13",
    "title": "Murcia: migración nocturna moderada prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
@@ -156,17 +156,17 @@
    }
   },
   {
-   "id": "Palma-2026-11-12",
+   "id": "Palma-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
-   "title": "Palma: migración nocturna baja prevista",
+   "date": "2026-11-13",
+   "title": "Palma: migración nocturna moderada prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
     "Palma"
    ],
    "precision": "radar",
    "deadline": null,
-   "status": "low",
+   "status": "moderate",
    "value": null,
    "details": {
     "city": "Palma",
@@ -177,17 +177,17 @@
    }
   },
   {
-   "id": "Bilbao-2026-11-12",
+   "id": "Bilbao-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
-   "title": "Bilbao: migración nocturna alta prevista",
+   "date": "2026-11-13",
+   "title": "Bilbao: migración nocturna moderada prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
     "Bilbao"
    ],
    "precision": "radar",
    "deadline": null,
-   "status": "high",
+   "status": "moderate",
    "value": null,
    "details": {
     "city": "Bilbao",
@@ -198,9 +198,9 @@
    }
   },
   {
-   "id": "Alicante-2026-11-12",
+   "id": "Alicante-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
+   "date": "2026-11-13",
    "title": "Alicante: migración nocturna baja prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
@@ -219,9 +219,9 @@
    }
   },
   {
-   "id": "Córdoba-2026-11-12",
+   "id": "Córdoba-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
+   "date": "2026-11-13",
    "title": "Córdoba: migración nocturna baja prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
@@ -240,9 +240,9 @@
    }
   },
   {
-   "id": "Valladolid-2026-11-12",
+   "id": "Valladolid-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
+   "date": "2026-11-13",
    "title": "Valladolid: migración nocturna baja prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
@@ -261,9 +261,9 @@
    }
   },
   {
-   "id": "Vigo-2026-11-12",
+   "id": "Vigo-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
+   "date": "2026-11-13",
    "title": "Vigo: migración nocturna baja prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
@@ -282,17 +282,17 @@
    }
   },
   {
-   "id": "Gijón-2026-11-12",
+   "id": "Gijón-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
-   "title": "Gijón: migración nocturna alta prevista",
+   "date": "2026-11-13",
+   "title": "Gijón: migración nocturna moderada prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
     "Gijón"
    ],
    "precision": "radar",
    "deadline": null,
-   "status": "high",
+   "status": "moderate",
    "value": null,
    "details": {
     "city": "Gijón",
@@ -303,17 +303,17 @@
    }
   },
   {
-   "id": "Granada-2026-11-12",
+   "id": "Granada-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
-   "title": "Granada: migración nocturna alta prevista",
+   "date": "2026-11-13",
+   "title": "Granada: migración nocturna moderada prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
     "Granada"
    ],
    "precision": "radar",
    "deadline": null,
-   "status": "high",
+   "status": "moderate",
    "value": null,
    "details": {
     "city": "Granada",
@@ -324,9 +324,9 @@
    }
   },
   {
-   "id": "Cáceres-2026-11-12",
+   "id": "Cáceres-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
+   "date": "2026-11-13",
    "title": "Cáceres: migración nocturna baja prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
@@ -345,17 +345,17 @@
    }
   },
   {
-   "id": "Almería-2026-11-12",
+   "id": "Almería-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
-   "title": "Almería: migración nocturna alta prevista",
+   "date": "2026-11-13",
+   "title": "Almería: migración nocturna moderada prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
     "Almería"
    ],
    "precision": "radar",
    "deadline": null,
-   "status": "high",
+   "status": "moderate",
    "value": null,
    "details": {
     "city": "Almería",
@@ -366,17 +366,17 @@
    }
   },
   {
-   "id": "Santander-2026-11-12",
+   "id": "Santander-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
-   "title": "Santander: migración nocturna moderada prevista",
+   "date": "2026-11-13",
+   "title": "Santander: migración nocturna baja prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
     "Santander"
    ],
    "precision": "radar",
    "deadline": null,
-   "status": "moderate",
+   "status": "low",
    "value": null,
    "details": {
     "city": "Santander",
@@ -387,9 +387,9 @@
    }
   },
   {
-   "id": "Salamanca-2026-11-12",
+   "id": "Salamanca-2026-11-13",
    "kind": "migration",
-   "date": "2026-11-12",
+   "date": "2026-11-13",
    "title": "Salamanca: migración nocturna baja prevista",
    "url": "https://asensio94.github.io/sub-nocte/",
    "municipality_names": [
