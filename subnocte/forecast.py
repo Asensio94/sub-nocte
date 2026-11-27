@@ -38,6 +38,10 @@ from .solar import sun_elevation
 
 FORECAST = "https://api.open-meteo.com/v1/forecast"
 HOURLY_ALL = HOURLY + HOURLY_LEVELS  # surface and pressure levels in a single request
+# A forecast answers in a second or two. Now and then a request gets no answer at all (seen often from GitHub's
+# shared runners), so it is dropped early and retried soon, instead of the archive's 300 s wait plus 90 s pause.
+FORECAST_TIMEOUT_S = 60
+FORECAST_BACKOFF_S = 10
 FORECAST_DAYS = 7
 
 # Percentiles of each city's own prediction distribution that separate the four alert levels.
@@ -100,15 +104,16 @@ def fetch_forecast(lat: float, lon: float, days: int = FORECAST_DAYS, log=print)
     """
     today = dt.datetime.now(dt.timezone.utc).date()
     return fetch_hourly(lat, lon, today - dt.timedelta(days=1), today + dt.timedelta(days=days),
-                        url=FORECAST, hourly=HOURLY_ALL, log=log)
+                        url=FORECAST, hourly=HOURLY_ALL, log=log,
+                        timeout=FORECAST_TIMEOUT_S, backoff=FORECAST_BACKOFF_S)
 
 
-def fetch_forecast_many(lats: list[float], lons: list[float], days: int = FORECAST_DAYS,
-                        log=print) -> list[pd.DataFrame]:
+def fetch_forecasts(points: list[tuple[float, float]], days: int = FORECAST_DAYS, log=print) -> list[pd.DataFrame]:
     """`fetch_forecast` for many points in a few requests, in the order given."""
     today = dt.datetime.now(dt.timezone.utc).date()
-    return fetch_hourly_many(lats, lons, today - dt.timedelta(days=1), today + dt.timedelta(days=days),
-                             url=FORECAST, hourly=HOURLY_ALL, log=log)
+    return fetch_hourly_many(points, today - dt.timedelta(days=1), today + dt.timedelta(days=days),
+                             url=FORECAST, hourly=HOURLY_ALL, log=log,
+                             timeout=FORECAST_TIMEOUT_S, backoff=FORECAST_BACKOFF_S)
 
 
 def load_models(data_dir: Path) -> tuple:
